@@ -1,0 +1,104 @@
+# renovate
+
+## What
+
+Platform-agnostic dep update bot. Opens MRs/PRs to bump outdated deps across npm, pip/uv, Docker base images, GitHub Actions, GitLab CI `include:`, Helm, Terraform, mise/asdf, pre-commit, and dozens more ecosystems. Self-hosted on GitLab via scheduled CI pipeline; native GitHub App on GitHub.
+
+## Why
+
+- **Works on GitLab.** Dependabot doesn't (without third-party shims). Repo on GitLab → use renovate.
+- **More ecosystems than dependabot.** Helm charts, Dockerfile `FROM`, docker-compose, GitLab CI `include:`, pre-commit hooks, mise/asdf tool versions — all out of the box.
+- **Better grouping & scheduling.** `packageRules` collapse coupled bumps into one MR.
+- **Per-rule automerge.** Auto-merge devDeps patch/minor without touching prod deps.
+- **`config:recommended` preset** = sane defaults; override only what each repo actually needs.
+
+## Config
+
+### Minimal baseline — every repo starts here
+
+`renovate.json` at repo root:
+
+```json
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "prConcurrentLimit": 4,
+  "prHourlyLimit": 1
+}
+```
+
+That's the whole universal config. Everything below is **per-repo opt-in** under `packageRules`.
+
+### Patterns (pick what fits the repo)
+
+Treat these as snippets to drop into `packageRules`. **Do not paste all of them** — each adds noise unless that repo actually has those deps.
+
+**Group coupled ecosystems** — when multiple deps move in lockstep, one grouped MR beats five separate ones:
+
+```json
+{
+  "matchPackagePrefixes": ["@some-ecosystem/"],
+  "groupName": "Some Ecosystem"
+}
+```
+
+Good fits: framework + its types (`react` + `@types/react`), UI lib families, lint plugin families. Bad fits: random unrelated deps — a failing group blocks the whole batch.
+
+**Pin major version** — block premature upgrades to a major you can't take yet:
+
+```json
+{
+  "matchPackageNames": ["some-lib"],
+  "allowedVersions": "^2"
+}
+```
+
+Use when the next major has a known breaking change you've deferred. Remove the pin when you're ready.
+
+**Automerge low-risk dev bumps** — only enable if CI is trusted to catch regressions:
+
+```json
+{
+  "matchDepTypes": ["devDependencies"],
+  "matchUpdateTypes": ["patch", "minor"],
+  "automerge": true
+}
+```
+
+Never automerge production deps. Never automerge `major`.
+
+### GitLab self-hosted runner (`.gitlab-ci.yml`)
+
+Renovate on GitLab is a scheduled CI job, not a managed app. Add a scheduled pipeline (Settings → CI/CD → Schedules, e.g. nightly) that runs:
+
+```yaml
+renovate:
+  stage: maintenance
+  image: renovate/renovate:latest
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule" && $RENOVATE == "true"'
+  variables:
+    LOG_LEVEL: info
+    RENOVATE_PLATFORM: gitlab
+    RENOVATE_ENDPOINT: $CI_API_V4_URL
+    RENOVATE_TOKEN: $RENOVATE_BOT_TOKEN
+    RENOVATE_AUTODISCOVER: "true"
+  script:
+    - renovate
+```
+
+`RENOVATE_BOT_TOKEN` = GitLab personal access token (api scope) of a bot user. Set as masked CI variable.
+
+### GitHub (native app)
+
+Install the [Renovate GitHub App](https://github.com/apps/renovate) on the org. No CI job needed — config is just `renovate.json`.
+
+## Gotchas
+
+- **`prConcurrentLimit` matters.** Defaults are aggressive; 4–6 keeps the MR list reviewable. `prHourlyLimit: 1` prevents pipeline thrash.
+- **Don't over-group.** One giant MR that fails CI blocks every dep in the group. Group only deps that genuinely move together.
+- **Major-pin without a calendar reminder rots.** When you write `"allowedVersions": "^2"`, leave a comment or issue saying when to revisit — otherwise you sit on stale majors forever.
+- **Automerge needs real test coverage.** A green pipeline with low coverage is not "trusted CI." Start with devDeps patch only; expand later.
+- **Renovate covers tool versions too** ([[mise]] `.mise.toml`, pre-commit hooks) — unlike dependabot. One bot for deps + tools + CI + Dockerfiles.
+- **Pair with [[releases-gitlab]] / [[releases-github]].** Renovate commits use `chore(deps):` by default → semantic-release / release-please hide them from changelogs automatically. Aligns with [[conventional-commits]].
+- **Not a replacement for [[security]].** Renovate bumps versions; trivy/semgrep find vulns. Run both.
