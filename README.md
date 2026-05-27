@@ -25,6 +25,8 @@ playbook/        # tooling preferences, scoped
 | JS/TS lint/format | [biome](https://biomejs.dev/) |
 | Releases (GitHub) | [release-please](https://github.com/googleapis/release-please) |
 | Releases (GitLab) | semantic-release |
+| Dep updates (GitHub) | [dependabot](https://docs.github.com/en/code-security/dependabot) |
+| Dep updates (GitLab) | [renovate](https://docs.renovatebot.com/) |
 | SAST | semgrep |
 | Vuln scanning | trivy (fs + image) |
 | Multi-arch builds | docker bake |
