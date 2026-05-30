@@ -1,3 +1,12 @@
+---
+tool: uv
+scope: python
+tier: baseline
+summary: "Fast Python package manager + venv + lockfile"
+targets: ["pyproject.toml", "uv.lock"]
+detect: ["pyproject.toml", "**/*.py"]
+---
+
 # uv
 
 ## What

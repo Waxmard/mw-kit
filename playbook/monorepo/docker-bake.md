@@ -1,3 +1,12 @@
+---
+tool: docker-bake
+scope: monorepo
+tier: optional
+summary: "Declarative multi-platform builds + skip-redundant-push CI"
+targets: ["docker-bake.hcl"]
+detect: ["**/Dockerfile*", "docker-bake.hcl"]
+---
+
 # Docker Bake
 
 ## What

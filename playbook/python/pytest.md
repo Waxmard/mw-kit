@@ -1,3 +1,12 @@
+---
+tool: pytest
+scope: python
+tier: baseline
+summary: "pytest + pytest-cov config and coverage gating"
+targets: ["pyproject.toml"]
+detect: ["**/*.py"]
+---
+
 # pytest + coverage
 
 ## What

@@ -1,3 +1,11 @@
+---
+tool: layout
+scope: monorepo
+tier: optional
+summary: "Polyglot monorepo directory shape + tooling boundaries"
+targets: []
+---
+
 # Monorepo Layout
 
 ## Shape

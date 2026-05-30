@@ -1,3 +1,12 @@
+---
+tool: biome
+scope: node
+tier: baseline
+summary: "JS/TS lint + format + import sort (replaces eslint + prettier)"
+targets: ["biome.json", "package.json"]
+detect: ["package.json", "**/*.{ts,tsx,js,jsx}"]
+---
+
 # biome
 
 ## What

@@ -6,10 +6,13 @@ My tooling preferences for new projects. Narrative docs explaining each choice a
 
 ```
 playbook/        # tooling preferences, scoped
+  MANIFEST.md    # generated index: tool → scope, tier, target files, detect globs
   universal/     # applies to every project
   python/        # python-specific
   node/          # node/typescript-specific
   monorepo/      # monorepo-specific (docker bake, multi-package)
+scripts/
+  build_manifest.py  # regenerates playbook/MANIFEST.md from page frontmatter
 ```
 
 ## Tooling at a glance
@@ -35,4 +38,6 @@ playbook/        # tooling preferences, scoped
 ## Conventions
 
 - Each tool gets its own page under the right `playbook/<scope>/` folder.
-- Each page: **What**, **Why**, **Config**, **Gotchas**.
+- Each page opens with YAML frontmatter (`tool`, `scope`, `tier`, `summary`, `targets`, `detect`, optional `platform`) — the machine-readable index source.
+- Each page body: **What**, **Why**, **Config**, **Gotchas**. The `## Config` block is the canonical config to diff a consumer repo against.
+- `playbook/MANIFEST.md` is generated from frontmatter — run `python3 scripts/build_manifest.py` after editing any frontmatter. Don't hand-edit it.

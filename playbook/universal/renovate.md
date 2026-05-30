@@ -1,3 +1,11 @@
+---
+tool: renovate
+scope: universal
+tier: baseline
+summary: "Platform-agnostic dependency update bot (required on GitLab)"
+targets: ["renovate.json"]
+---
+
 # renovate
 
 ## What

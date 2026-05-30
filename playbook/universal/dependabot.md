@@ -1,3 +1,12 @@
+---
+tool: dependabot
+scope: universal
+tier: baseline
+summary: "GitHub-native dependency update PRs"
+targets: [".github/dependabot.yml"]
+platform: github
+---
+
 # dependabot
 
 ## What

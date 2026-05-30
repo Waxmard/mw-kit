@@ -1,3 +1,12 @@
+---
+tool: ci-paths
+scope: monorepo
+tier: optional
+summary: "Path-filtered per-subproject CI workflows"
+targets: [".github/workflows/"]
+platform: github
+---
+
 # Path-Filtered CI Workflows
 
 ## What
