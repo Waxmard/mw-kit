@@ -1,3 +1,11 @@
+---
+tool: makefile
+scope: monorepo
+tier: optional
+summary: "Root Makefile orchestrator delegating to subprojects"
+targets: ["Makefile"]
+---
+
 # Root Makefile Pattern
 
 ## What

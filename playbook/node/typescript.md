@@ -1,3 +1,12 @@
+---
+tool: typescript
+scope: node
+tier: baseline
+summary: "Strict tsconfig, noEmit type-checking"
+targets: ["tsconfig.json"]
+detect: ["tsconfig.json", "**/*.{ts,tsx}"]
+---
+
 # TypeScript
 
 ## What

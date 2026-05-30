@@ -1,3 +1,12 @@
+---
+tool: security
+scope: universal
+tier: baseline
+summary: "semgrep (SAST) + trivy fs/image, SARIF to GitHub Code Scanning"
+targets: [".github/workflows/security.yml"]
+platform: github
+---
+
 # Security Scanning
 
 ## What

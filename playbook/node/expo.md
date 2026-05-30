@@ -1,3 +1,12 @@
+---
+tool: expo
+scope: node
+tier: optional
+summary: "Expo SDK conventions for React Native apps"
+targets: ["package.json", "app.json", "app.config.ts"]
+detect: ["app.json", "app.config.ts", "app.config.js"]
+---
+
 # Expo / React Native
 
 ## What

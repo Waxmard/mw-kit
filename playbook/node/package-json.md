@@ -1,3 +1,12 @@
+---
+tool: package-json
+scope: node
+tier: baseline
+summary: "Standard scripts + dependency pinning conventions"
+targets: ["package.json"]
+detect: ["package.json"]
+---
+
 # package.json Conventions
 
 ## Scripts

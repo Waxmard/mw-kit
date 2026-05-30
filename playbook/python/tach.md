@@ -1,3 +1,12 @@
+---
+tool: tach
+scope: python
+tier: optional
+summary: "Module-import boundary enforcement"
+targets: ["tach.toml"]
+detect: ["**/*.py"]
+---
+
 # tach
 
 ## What

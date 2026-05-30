@@ -1,3 +1,12 @@
+---
+tool: mypy
+scope: python
+tier: baseline
+summary: "Static type checker, strict mode"
+targets: ["pyproject.toml"]
+detect: ["**/*.py"]
+---
+
 # mypy
 
 ## What

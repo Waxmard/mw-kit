@@ -1,3 +1,11 @@
+---
+tool: mise
+scope: universal
+tier: baseline
+summary: "Pinned per-project tool versions (node, python, uv, ...)"
+targets: ["mise.toml"]
+---
+
 # mise
 
 ## What

@@ -1,3 +1,11 @@
+---
+tool: conventional-commits
+scope: universal
+tier: baseline
+summary: "Commit message format feeding release tooling"
+targets: []
+---
+
 # Conventional Commits
 
 ## What

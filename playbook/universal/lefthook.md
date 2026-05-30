@@ -1,3 +1,11 @@
+---
+tool: lefthook
+scope: universal
+tier: baseline
+summary: "Git hooks with autofix + restage (stage_fixed)"
+targets: ["lefthook.yml"]
+---
+
 # lefthook
 
 ## What

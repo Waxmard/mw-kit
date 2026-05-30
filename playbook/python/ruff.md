@@ -1,3 +1,12 @@
+---
+tool: ruff
+scope: python
+tier: baseline
+summary: "Lint + format (replaces flake8 + isort + black + bandit-partial)"
+targets: ["pyproject.toml"]
+detect: ["**/*.py"]
+---
+
 # ruff
 
 ## What
@@ -11,7 +20,9 @@
 - Format is black-compatible (drop-in).
 - Rule selection is explicit (you opt in to families).
 
-## Rule selection
+## Config
+
+Canonical `[tool.ruff]` block — the full preferred config to diff a repo against:
 
 ```toml
 [tool.ruff]
@@ -25,7 +36,27 @@ ignore = [
     "PLR0913",  # too-many-arguments (noisy with FastAPI Depends)
     "PLR2004",  # magic-value-comparison (HTTP codes in tests)
 ]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = [
+    "S101",     # asserts ok in tests
+    "S105",     # hardcoded test passwords ok
+    "S106",     # same kwarg form
+    "PLC0415",  # scoped imports in fixtures
+]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = [
+    "fastapi.Depends", "fastapi.Query", "fastapi.Path",
+    "fastapi.Body", "fastapi.Header", "fastapi.Cookie",
+    "fastapi.File", "fastapi.Form", "fastapi.Security",
+]
 ```
+
+### Rule selection
 
 | Code | Pack | Why |
 |---|---|---|
@@ -41,37 +72,17 @@ ignore = [
 
 **Skipped on purpose**: `D` (docstrings) — too noisy, comments are a per-project call; `ANN` (annotations) — mypy already enforces.
 
-## Per-file overrides
+### Per-file overrides
 
-```toml
-[tool.ruff.lint.per-file-ignores]
-"tests/**" = [
-    "S101",     # asserts ok in tests
-    "S105",     # hardcoded test passwords ok
-    "S106",     # same kwarg form
-    "PLC0415",  # scoped imports in fixtures
-]
-```
+`tests/**` exempts the bandit assert/password rules (`S101`/`S105`/`S106`) and scoped-import rule (`PLC0415`) — asserts and hardcoded test passwords are fine in tests, and fixtures legitimately import inside functions.
 
-## FastAPI-specific
+### FastAPI-specific
 
-```toml
-[tool.ruff.lint.flake8-bugbear]
-extend-immutable-calls = [
-    "fastapi.Depends", "fastapi.Query", "fastapi.Path",
-    "fastapi.Body", "fastapi.Header", "fastapi.Cookie",
-    "fastapi.File", "fastapi.Form", "fastapi.Security",
-]
-```
+`flake8-bugbear.extend-immutable-calls` lists the FastAPI dependency markers. Without it, every `Depends(get_db)` in a default argument trips `B008` (function-call-in-default-argument).
 
-Without this, every `Depends(get_db)` in a default argument triggers `B008`.
+### Import sorting
 
-## Import sorting
-
-```toml
-[tool.ruff.lint.isort]
-combine-as-imports = true
-```
+`isort.combine-as-imports = true` collapses `from x import (a, b)` style imports cleanly.
 
 ## Commands
 

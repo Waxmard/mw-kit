@@ -1,3 +1,12 @@
+---
+tool: releases-gitlab
+scope: universal
+tier: baseline
+summary: "semantic-release: tag + changelog on GitLab"
+targets: [".releaserc.json", ".gitlab-ci.yml"]
+platform: gitlab
+---
+
 # Releases on GitLab: semantic-release
 
 ## What

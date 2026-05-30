@@ -1,3 +1,11 @@
+---
+tool: docs-gen
+scope: universal
+tier: optional
+summary: "Generate README/CLAUDE/AGENTS from partials via a small Python script"
+targets: ["docs/src/", "scripts/build_docs.py"]
+---
+
 # Docs Generation (Partials)
 
 ## What
