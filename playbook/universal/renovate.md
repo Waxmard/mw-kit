@@ -22,12 +22,19 @@ Platform-agnostic dep update bot. Opens MRs/PRs to bump outdated deps across npm
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
-  "prConcurrentLimit": 4,
-  "prHourlyLimit": 1
+  "prConcurrentLimit": 3,
+  "prHourlyLimit": 0,
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "minor & patch deps"
+    },
+    { "matchUpdateTypes": ["major"], "prPriority": -5 }
+  ]
 }
 ```
 
-That's the whole universal config. Everything below is **per-repo opt-in** under `packageRules`.
+Baseline does the triage work: minor/patch → one grouped MR (any count, 1 slot); majors → individual, never grouped. Since the group eats only 1 of the 3 slots, **at most 2 majors stay open at once** (`prConcurrentLimit − 1`). `prPriority: -5` ensures the group MR opens ahead of majors when slots are full. Everything below is **per-repo opt-in**.
 
 ### Patterns (pick what fits the repo)
 
@@ -95,7 +102,8 @@ Install the [Renovate GitHub App](https://github.com/apps/renovate) on the org. 
 
 ## Gotchas
 
-- **`prConcurrentLimit` matters.** Defaults are aggressive; 4–6 keeps the MR list reviewable. `prHourlyLimit: 1` prevents pipeline thrash.
+- **`prConcurrentLimit` is global, not per-update-type.** It's enforced per-repo across all branches at once — you **cannot** cap "majors to 1–2 concurrent" with it. To make majors trickle while minors flow, use `prPriority` (deprioritize majors) + grouping (collapse minors), not a per-type limit that doesn't exist. The trick: grouping collapses all minor/patch into 1 slot, so **concurrent majors = `prConcurrentLimit − 1`**. Baseline `3` → 1 group MR + at most 2 majors. Want fewer/more majors → adjust this one number.
+- **`prHourlyLimit` is PRs created *per hour per run* — leave it `0` (off).** On a frequent runner (GitHub app) it only smooths bursts; on an infrequent one (GitLab nightly/weekly CI) it **throttles you to N PRs per run**, silently overriding `prConcurrentLimit`. Grouping already shrinks the per-run burst and `prConcurrentLimit` caps the onboarding flood, so the hourly limit just adds a footgun.
 - **Don't over-group.** One giant MR that fails CI blocks every dep in the group. Group only deps that genuinely move together.
 - **Major-pin without a calendar reminder rots.** When you write `"allowedVersions": "^2"`, leave a comment or issue saying when to revisit — otherwise you sit on stale majors forever.
 - **Automerge needs real test coverage.** A green pipeline with low coverage is not "trusted CI." Start with devDeps patch only; expand later.
