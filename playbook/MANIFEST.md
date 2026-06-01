@@ -30,7 +30,6 @@ Machine-readable index of every playbook page. Source of truth = each page's YAM
 | `mypy` | baseline | Static type checker, strict mode | `pyproject.toml` | `**/*.py` | any | [python/mypy.md](python/mypy.md) |
 | `pytest` | baseline | pytest + pytest-cov config and coverage gating | `pyproject.toml` | `**/*.py` | any | [python/pytest.md](python/pytest.md) |
 | `ruff` | baseline | Lint + format (replaces flake8 + isort + black + bandit-partial) | `pyproject.toml` | `**/*.py` | any | [python/ruff.md](python/ruff.md) |
-| `tach` | optional | Module-import boundary enforcement | `tach.toml` | `**/*.py` | any | [python/tach.md](python/tach.md) |
 | `uv` | baseline | Fast Python package manager + venv + lockfile | `pyproject.toml`, `uv.lock` | `pyproject.toml`, `**/*.py` | any | [python/uv.md](python/uv.md) |
 
 ## node

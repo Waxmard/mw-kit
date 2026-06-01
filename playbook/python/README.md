@@ -5,5 +5,4 @@
 - [uv.md](./uv.md) — package manager + venv
 - [ruff.md](./ruff.md) — lint + format (rule selection)
 - [mypy.md](./mypy.md) — strict typing config
-- [tach.md](./tach.md) — module boundary enforcement
 - [pytest.md](./pytest.md) — testing + coverage

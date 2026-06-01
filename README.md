@@ -24,7 +24,6 @@ scripts/
 | Python lint/format | [ruff](https://docs.astral.sh/ruff/) |
 | Python typecheck | [mypy](https://mypy.readthedocs.io/) strict |
 | Python deps | [uv](https://docs.astral.sh/uv/) |
-| Python module boundaries | [tach](https://docs.gauge.sh/) |
 | JS/TS lint/format | [biome](https://biomejs.dev/) |
 | Releases (GitHub) | [release-please](https://github.com/googleapis/release-please) |
 | Releases (GitLab) | semantic-release |

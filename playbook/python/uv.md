@@ -52,7 +52,7 @@ dependencies = ["fastapi>=0.128"]
 dev = ["pytest>=7", "mypy>=1.3", "ruff>=0.15"]
 
 [dependency-groups]
-dev = ["pytest-cov>=7", "tach>=0.34"]
+dev = ["pytest-cov>=7"]
 ```
 
 Two dep buckets exist — historical reason. `[project.optional-dependencies]` is PEP 621 standard; `[dependency-groups]` is PEP 735 newer. Use whichever or both; CI installs `--extra dev --group dev`.
