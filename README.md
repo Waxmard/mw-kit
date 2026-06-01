@@ -19,7 +19,7 @@ scripts/
 
 | Concern | Choice |
 |---|---|
-| Tool versions | [mise](https://mise.jdx.dev/) |
+| Tool versions (node/polyglot) | [mise](https://mise.jdx.dev/) — uv covers pure-python |
 | Git hooks | [lefthook](https://lefthook.dev/) (autofix + restage) |
 | Python lint/format | [ruff](https://docs.astral.sh/ruff/) |
 | Python typecheck | [mypy](https://mypy.readthedocs.io/) strict |
