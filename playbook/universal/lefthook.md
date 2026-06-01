@@ -49,13 +49,6 @@ pre-commit:
       glob: "**/*.py"
       run: uv run ruff format {staged_files}
       stage_fixed: true
-
-    tach:
-      root: fastapi/
-      glob:
-        - "app/**/*.py"
-        - "tach.toml"
-      run: uv run tach check
 ```
 
 ## Install
@@ -74,6 +67,6 @@ Root `package.json`:
 ## Gotchas
 
 - `stage_fixed: true` is the whole point. Don't omit it.
-- For tools that don't accept file lists (like `tach`), omit `{staged_files}` and let them scan the project.
+- For tools that don't accept file lists, omit `{staged_files}` and let them scan the project.
 - Use `root:` so commands run from the subproject directory.
 - Keep a `check:staged` npm script for biome that uses `--no-errors-on-unmatched` (lefthook may pass paths outside biome's `includes`).
