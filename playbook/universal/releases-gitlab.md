@@ -17,6 +17,8 @@ platform: gitlab
 
 release-please is GitHub-flavored (uses Actions, GitHub PR auto-merge labels). semantic-release runs anywhere; GitLab plugin handles releases + MR comments cleanly.
 
+**Python repos: use [[releases-python]] (python-semantic-release) instead** — same conventional-commits flow without pulling node into a Python pipeline. This page is for node/other repos on GitLab. Never apply both.
+
 ## Config
 
 `.releaserc.json`:
