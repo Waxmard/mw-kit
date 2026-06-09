@@ -33,6 +33,7 @@ scripts/
 | Vuln scanning | trivy (fs + image) |
 | Multi-arch builds | docker bake |
 | Docs generation | python script with `{{ include:partials/X.md }}` directives |
+| Per-file size cap | line-limit script (lefthook + CI), default 800 lines |
 
 ## Conventions
 

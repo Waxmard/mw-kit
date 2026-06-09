@@ -7,6 +7,7 @@ Tooling decisions applicable to every project regardless of language.
 - [mise.md](./mise.md) — pinned tool versions (node, python, uv, etc.)
 - [lefthook.md](./lefthook.md) — git hooks with autofix + restage
 - [docs-gen.md](./docs-gen.md) — generate README/CLAUDE/AGENTS from partials
+- [line-limit.md](./line-limit.md) — per-file line cap enforced in lefthook + CI
 - [releases-github.md](./releases-github.md) — release-please for GitHub
 - [releases-gitlab.md](./releases-gitlab.md) — semantic-release for GitLab
 - [security.md](./security.md) — semgrep (SAST) + trivy (fs + image)
