@@ -29,6 +29,7 @@ Machine-readable index of every playbook page. Source of truth = each page's YAM
 | Tool | Tier | Summary | Targets | Detect | Platform | Page |
 |---|---|---|---|---|---|---|
 | `mypy` | baseline | Static type checker, strict mode | `pyproject.toml` | `**/*.py` | any | [python/mypy.md](python/mypy.md) |
+| `pydantic` | baseline | Data validation + settings via pydantic v2 / pydantic-settings | `pyproject.toml` | `**/*.py` | any | [python/pydantic.md](python/pydantic.md) |
 | `pytest` | baseline | pytest + pytest-cov config and coverage gating | `pyproject.toml` | `**/*.py` | any | [python/pytest.md](python/pytest.md) |
 | `releases-python` | baseline | python-semantic-release: tag + changelog for Python repos on GitLab (no node) | `pyproject.toml`, `.gitlab-ci.yml` | `pyproject.toml`, `**/*.py` | `gitlab` | [python/releases-python.md](python/releases-python.md) |
 | `ruff` | baseline | Lint + format (replaces flake8 + isort + black + bandit-partial) | `pyproject.toml` | `**/*.py` | any | [python/ruff.md](python/ruff.md) |
