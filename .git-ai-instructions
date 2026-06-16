@@ -1,0 +1,9 @@
+User POV: developers and the tooling-sync / merge-bot skills consuming this playbook —
+the per-tool pages and the generated MANIFEST are the product. "User-facing" = a change to
+the guidance or canonical config a consumer would act on.
+
+This repo is almost all prose, so do not default everything to docs:
+- A new tool page, or a recommendation a consumer can newly adopt → feat
+- Correcting a wrong ## Config block, frontmatter target, or detect glob → fix
+- Rewording or restructuring a page without changing the guidance it gives → docs
+- scripts/build_manifest.py (the only executable) → classify by its own change, not docs

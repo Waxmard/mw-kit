@@ -12,6 +12,7 @@ Tooling decisions applicable to every project regardless of language.
 - [releases-gitlab.md](./releases-gitlab.md) — semantic-release for GitLab
 - [security.md](./security.md) — semgrep (SAST) + trivy (fs + image)
 - [conventional-commits.md](./conventional-commits.md) — commit message format
+- [git-ai-instructions.md](./git-ai-instructions.md) — repo-local commit/PR guidance for git-ai, framed by user POV
 - [contributing.md](./contributing.md) — CONTRIBUTING.md: branching, commits, MR/PR + review flow
 - [codeowners.md](./codeowners.md) — required reviewers auto-assigned per path
 - [dependabot.md](./dependabot.md) — automated dep updates (GitHub only — GH Actions + npm + pip)

@@ -37,6 +37,7 @@ scripts/
 | Per-file size cap | line-limit script (lefthook + CI), default 800 lines |
 | Contribution flow | `CONTRIBUTING.md` — branching, commits, MR/PR + bot-then-human review |
 | Required reviewers | `CODEOWNERS` — path → owner, gates the human approval |
+| Commit/PR AI guidance | `.git-ai-instructions` — repo user-POV for [git-ai](https://github.com/Waxmard/git-ai) prefixing |
 
 ## Conventions
 
