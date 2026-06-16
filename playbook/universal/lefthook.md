@@ -64,6 +64,12 @@ Root `package.json`:
 
 `npm install` triggers `prepare`, which installs hooks into `.git/hooks/`.
 
+**No `package.json` (pure-Python / non-JS repo)?** Don't add one just for this.
+Install the lefthook binary directly — `mise use lefthook`, `brew install lefthook`,
+or `uv tool install lefthook` — then run `lefthook install` once. The hooks still
+target each subproject via `root:` (e.g. `root: orchestrator/`), with the command
+running `uv run ruff …` inside it.
+
 ## Gotchas
 
 - `stage_fixed: true` is the whole point. Don't omit it.

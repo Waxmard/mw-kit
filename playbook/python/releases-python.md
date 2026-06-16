@@ -16,7 +16,7 @@ platform: gitlab
 
 ## Why over node semantic-release
 
-[[releases-gitlab]] works, but drags `node:22` + five npm plugins into a Python repo just to cut a tag. PSR is one pip install, keeps the version where Python tooling expects it (`[project].version`), and configures in `pyproject.toml` next to ruff/mypy. **Python repo on GitLab → use this page instead of [[releases-gitlab]]; never both.**
+[[releases-gitlab]] works, but drags `node:22` + five npm plugins into a Python repo just to cut a tag. PSR is one pip install, keeps the version where Python tooling expects it (`[project].version`), and configures in `pyproject.toml` next to ruff/mypy. **Python repo on GitLab → use this page instead of [[releases-gitlab]]; never both.** A multi-component monorepo → [[releases-monorepo]] instead: PSR computes one version per repo and can't path-scope the bump to a single component.
 
 Reference implementations: `partshop/wolfcoder` (origin of this pattern), `data-den/braindump`.
 
@@ -88,6 +88,7 @@ Project access token with `api` + `write_repository` scope, saved as masked `SEM
 
 - **`GIT_DEPTH: "0"` is required** — PSR needs full history + tags to find the previous release; a shallow clone silently computes the wrong bump.
 - **`[skip ci]` in `commit_message` is load-bearing** — without it the release commit triggers another pipeline (and on a careless setup, a release loop).
+- **Image tags ≠ release tags — don't build images on the release tag.** `[skip ci]` on the release commit suppresses the tag pipeline, so a tag-triggered image build never fires. Build the image on `main` with a `$CI_COMMIT_SHORT_SHA` tag, then `crane`-retag it to the released version inside (or right after) the release job. See [[releases-monorepo]] for the `crane tag` snippet.
 - **`tag_format = "{version}"` means bare tags** (`1.4.0`, no `v` prefix). Fine, but pick once — changing the format later breaks previous-tag detection.
 - **First run:** start `version = "0.0.0"`; changelog `mode = "update"` auto-initializes a missing `CHANGELOG.md`, then requires the `<!-- version list -->` insertion flag to stay in the file.
 - **`chore(deps)` now releases.** With `chore` in `patch_tags`, Renovate bumps ([[renovate]]) each cut a patch instead of accumulating — more frequent tags than the stock config. Drop `chore` from `patch_tags` to revert to accumulate-until-`feat`/`fix`.
