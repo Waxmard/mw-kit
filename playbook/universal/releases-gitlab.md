@@ -27,7 +27,15 @@ release-please is GitHub-flavored (uses Actions, GitHub PR auto-merge labels). s
 {
   "branches": ["main"],
   "plugins": [
-    "@semantic-release/commit-analyzer",
+    ["@semantic-release/commit-analyzer", {
+      "releaseRules": [
+        { "type": "refactor", "release": "patch" },
+        { "type": "build", "release": "patch" },
+        { "type": "chore", "release": "patch" },
+        { "type": "ci", "release": "patch" },
+        { "type": "style", "release": "patch" }
+      ]
+    }],
     "@semantic-release/release-notes-generator",
     ["@semantic-release/changelog", { "changelogFile": "CHANGELOG.md" }],
     ["@semantic-release/git", {
@@ -59,7 +67,12 @@ release:
 
 Project access token with `api` + `write_repository` scope. Save as `SEMANTIC_RELEASE_TOKEN` CI variable, masked.
 
+## Bump rules
+
+`releaseRules` **merges with**, doesn't replace, the analyzer defaults: breaking → major, `feat` → minor, `fix`/`perf`/`revert` → patch. The rules above add `refactor`, `build`, `chore`, `ci`, `style` → patch so nearly every conventional commit cuts a release. Drop a line to exclude a type. `docs`/`test` stay non-releasing here by omission.
+
 ## Gotchas
 
 - Tag-on-push by default (no review PR). For a review workflow, use `dryRun` on MRs and let main pushes tag.
 - The `@semantic-release/git` plugin commits the changelog back — make sure the bot user can push to `main` (protected branch exception).
+- **`chore` now releases**, so dependency bumps (`chore(deps): ...`) cut a patch on their own — desired here, but it means more frequent tags than the stock config.
