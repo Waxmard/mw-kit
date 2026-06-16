@@ -37,6 +37,9 @@ commit_parser = "conventional"
 changelog_file = "CHANGELOG.md"
 upload_to_vcs_release = true
 
+[tool.semantic_release.commit_parser_options]
+patch_tags = ["fix", "perf", "refactor", "build", "chore", "ci", "style"]
+
 [tool.semantic_release.changelog]
 mode = "update"
 insertion_flag = "<!-- version list -->"
@@ -48,6 +51,8 @@ token = { env = "SEMANTIC_RELEASE_TOKEN" }
 [tool.semantic_release.branches.main]
 match = "main"
 ```
+
+`patch_tags` **replaces** the parser default (`["fix", "perf"]`) — list every patch-bumping type, hence `fix`/`perf` are repeated. `minor_tags` stays default (`["feat"]`); `allowed_tags` already covers all these types, so no extra config. `docs`/`test` stay non-releasing by omission.
 
 A pip-only repo (no packaging) still works: a tool-config-only `pyproject.toml` just needs the minimal `[project]` table for `version_toml` to point at — it doesn't force a build backend or change installs.
 
@@ -85,6 +90,6 @@ Project access token with `api` + `write_repository` scope, saved as masked `SEM
 - **`[skip ci]` in `commit_message` is load-bearing** — without it the release commit triggers another pipeline (and on a careless setup, a release loop).
 - **`tag_format = "{version}"` means bare tags** (`1.4.0`, no `v` prefix). Fine, but pick once — changing the format later breaks previous-tag detection.
 - **First run:** start `version = "0.0.0"`; changelog `mode = "update"` auto-initializes a missing `CHANGELOG.md`, then requires the `<!-- version list -->` insertion flag to stay in the file.
-- **`chore(deps)` doesn't release.** Renovate bumps ([[renovate]]) accumulate until the next `feat`/`fix` cuts a version — expected, not a bug.
+- **`chore(deps)` now releases.** With `chore` in `patch_tags`, Renovate bumps ([[renovate]]) each cut a patch instead of accumulating — more frequent tags than the stock config. Drop `chore` from `patch_tags` to revert to accumulate-until-`feat`/`fix`.
 - **Coexists with CI image versioning** (e.g. a `determine-version` component tagging images): PSR versions the repo/changelog; image tags can stay on the pipeline's own scheme. Don't try to unify them in one step.
 - Requires [[conventional-commits]] adherence — a `Fix stuff` commit is invisible to the version calculator.
