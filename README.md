@@ -35,6 +35,8 @@ scripts/
 | Multi-arch builds | docker bake |
 | Docs generation | python script with `{{ include:partials/X.md }}` directives |
 | Per-file size cap | line-limit script (lefthook + CI), default 800 lines |
+| Contribution flow | `CONTRIBUTING.md` — branching, commits, MR/PR + bot-then-human review |
+| Required reviewers | `CODEOWNERS` — path → owner, gates the human approval |
 
 ## Conventions
 

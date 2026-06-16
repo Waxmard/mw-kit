@@ -22,6 +22,8 @@ Types: `feat`, `fix`, `perf`, `refactor`, `docs`, `style`, `test`, `chore`, `bui
 - Browsing `git log` becomes a structured changelog by default.
 - Forces 1 commit = 1 logical change.
 
+Stated as a contributor expectation in [[contributing]].
+
 ## Examples
 
 ```

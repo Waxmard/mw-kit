@@ -101,4 +101,4 @@ The only built-in knobs (`bump-minor-pre-major`, `bump-patch-for-minor-pre-major
 
 - `release-type: simple` = manage version in `.release-please-manifest.json`. Use `release-type: python` / `node` to also bump `pyproject.toml`/`package.json`.
 - Hidden sections still influence release-or-not. `chore` alone won't cut a release; needs a `feat`/`fix`.
-- Pair with a CONTRIBUTING note enforcing Conventional Commits.
+- Pair with a CONTRIBUTING note enforcing Conventional Commits — see [[contributing]].
