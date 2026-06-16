@@ -13,6 +13,8 @@ Machine-readable index of every playbook page. Source of truth = each page's YAM
 
 | Tool | Tier | Summary | Targets | Detect | Platform | Page |
 |---|---|---|---|---|---|---|
+| `codeowners` | baseline | Required reviewers auto-assigned per path | `.github/CODEOWNERS`, `.gitlab/CODEOWNERS` | — | any | [universal/codeowners.md](universal/codeowners.md) |
+| `contributing` | baseline | CONTRIBUTING.md: branching, commits, MR/PR + review flow | `CONTRIBUTING.md` | — | any | [universal/contributing.md](universal/contributing.md) |
 | `conventional-commits` | baseline | Commit message format feeding release tooling | — | — | any | [universal/conventional-commits.md](universal/conventional-commits.md) |
 | `dependabot` | baseline | GitHub-native dependency update PRs | `.github/dependabot.yml` | — | `github` | [universal/dependabot.md](universal/dependabot.md) |
 | `docs-gen` | optional | Generate README/CLAUDE/AGENTS from partials via a small Python script | `docs/src/`, `scripts/build_docs.py` | — | any | [universal/docs-gen.md](universal/docs-gen.md) |
