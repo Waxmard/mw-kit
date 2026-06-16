@@ -36,7 +36,7 @@ User POV: <who consumes this repo's output> — <what they perceive as the produ
 - <repo-specific case> → <type>
 ```
 
-Worked example — a GitOps/deploy repo:
+Worked example — a **GitOps/deploy repo**, where POV flips because the manifest *is* the product. Most repos are not like this and need fewer (or zero) deploy rules — don't copy these bullets verbatim:
 
 ```
 User POV: the deployed apps. "User-facing" = what changes for someone using a running app,
@@ -51,3 +51,4 @@ not the fact that a manifest changed.
 
 - **POV first, rules second.** A precise `User POV:` line does most of the work; the rules just cover the cases the POV alone leaves ambiguous.
 - **Encode deltas, not defaults.** Don't restate git-ai's standard precedence (`feat > fix > …`) — every line is prompt tokens. List only where this repo differs.
+- **git-ai already routes the non-`feat` types correctly** — `ci:` (CI config), `build:` (Dockerfile, deps, build system), `docs:`, `test:`, `style:`, `chore:`. A normal app/service repo rarely needs a rule for these; don't collapse them all into `chore`. The GitOps example only overrides them because there the deploy artifact is the product.

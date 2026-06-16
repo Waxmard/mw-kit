@@ -51,7 +51,7 @@ Machine-readable index of every playbook page. Source of truth = each page's YAM
 
 | Tool | Tier | Summary | Targets | Detect | Platform | Page |
 |---|---|---|---|---|---|---|
-| `ci-paths` | optional | Path-filtered per-subproject CI workflows | `.github/workflows/` | — | `github` | [monorepo/ci-paths.md](monorepo/ci-paths.md) |
+| `ci-paths` | baseline | Path-filtered per-subproject CI workflows | `.github/workflows/` | — | `github` | [monorepo/ci-paths.md](monorepo/ci-paths.md) |
 | `docker-bake` | optional | Declarative multi-platform builds + skip-redundant-push CI | `docker-bake.hcl` | `**/Dockerfile*`, `docker-bake.hcl` | any | [monorepo/docker-bake.md](monorepo/docker-bake.md) |
 | `layout` | optional | Polyglot monorepo directory shape + tooling boundaries | — | — | any | [monorepo/layout.md](monorepo/layout.md) |
 | `makefile` | optional | Root Makefile orchestrator delegating to subprojects | `Makefile` | — | any | [monorepo/makefile.md](monorepo/makefile.md) |
