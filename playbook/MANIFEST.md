@@ -52,3 +52,4 @@ Machine-readable index of every playbook page. Source of truth = each page's YAM
 | `docker-bake` | optional | Declarative multi-platform builds + skip-redundant-push CI | `docker-bake.hcl` | `**/Dockerfile*`, `docker-bake.hcl` | any | [monorepo/docker-bake.md](monorepo/docker-bake.md) |
 | `layout` | optional | Polyglot monorepo directory shape + tooling boundaries | — | — | any | [monorepo/layout.md](monorepo/layout.md) |
 | `makefile` | optional | Root Makefile orchestrator delegating to subprojects | `Makefile` | — | any | [monorepo/makefile.md](monorepo/makefile.md) |
+| `releases-monorepo` | baseline | Per-component independent releases via semantic-release-monorepo (path-scoped bumps, component-scoped tags) | `.releaserc.json`, `package.json`, `.gitlab-ci.yml` | — | `gitlab` | [monorepo/releases-monorepo.md](monorepo/releases-monorepo.md) |
