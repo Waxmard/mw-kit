@@ -45,7 +45,7 @@ uv tool install ruff           # install global tool (pipx-style)
 ```toml
 [project]
 name = "my-app"
-requires-python = ">=3.11"
+requires-python = ">=3.14"   # newest stable; only broaden for a published library
 dependencies = ["fastapi>=0.128"]
 
 [project.optional-dependencies]
@@ -67,7 +67,7 @@ you run it as a module, not `import` it. For those, omit packaging entirely:
 [project]
 name = "my-service"
 version = "0.0.0"
-requires-python = ">=3.12"
+requires-python = ">=3.14"   # you own the runtime → pin to newest stable
 dependencies = ["fastapi[standard]>=0.121"]
 
 [dependency-groups]
@@ -113,5 +113,8 @@ or installs the project. Most services are apps — skip the ceremony.
 ## Gotchas
 
 - Commit `uv.lock`.
-- `requires-python = ">=3.11"` — pin minor, not patch.
+- **Prefer newest, by default.** `requires-python` is your **support floor** — the oldest interpreter you promise to run on, pinned minor not patch. Pick it by who installs your code:
+  - **Service / app** (you deploy it, you own the runtime): pin to the **newest stable** (`>=3.14` as of mid-2026). Nothing external constrains you, so ride the latest — newer interpreters are faster and let you use current syntax. Bump it as new stables land.
+  - **Published library** (others `pip install` it): keep the floor **broad** (`>=3.13` or lower). A high floor makes uv/pip *refuse to install* for anyone on an older interpreter — only raise it when you actually need a newer feature.
+  Either way, the floor is independent of the version you dev on (the [[mise]] pin) — keep that on the newest stable regardless.
 - `uv run` activates the venv per-command; don't `source .venv/bin/activate` manually.
