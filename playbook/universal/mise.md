@@ -32,7 +32,7 @@ detect: ["package.json", "go.mod", "**/*.go"]
 ```toml
 [tools]
 node = "22"
-python = "3.11"
+python = "3.14"
 uv = "0.6"
 ```
 

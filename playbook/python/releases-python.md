@@ -63,7 +63,7 @@ A pip-only repo (no packaging) still works: a tool-config-only `pyproject.toml` 
 ```yaml
 semantic-release:
   stage: release
-  image: python:3.12-slim
+  image: python:3.14-slim
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
   variables:
