@@ -24,7 +24,7 @@ posts findings as PR comments — the bot half of the bot-then-human review flow
 - OAuth token auth (`CLAUDE_CODE_OAUTH_TOKEN`) reuses an existing Claude
   subscription — no separate API billing to manage.
 
-## Workflow
+## Config
 
 `.github/workflows/claude-code-review.yml`:
 
