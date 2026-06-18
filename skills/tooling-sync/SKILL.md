@@ -25,7 +25,7 @@ python3 "${MW_KIT:-/Users/maxwellward/personal-dev/mw-kit}/scripts/scope.py" "$(
 
 The plan JSON:
 
-- `preflight` — `{ok, repo, platform, platform_source}`; on failure `{ok:false, error}` (not a git repo / mw-kit itself / manifest missing).
+- `preflight` — `{ok, repo, platform, platform_source}`; on failure `{ok:false, error}` (not a git repo / manifest missing).
 - `structure` — `{verdict: single_project|multi_component|ambiguous, ambiguous, manifests, root_orchestrator}`.
 - `alternatives` — `{dep_updates:{chosen,reason}, releases:{chosen,reason,note?}, dropped:[…]}`. The losing alternatives are already moved to `skipped`; `chosen` is guaranteed in-scope.
 - `in_scope` — one row per relevant page: `{tool, page, scope, tier, platform, targets, targets_present, targets_missing, matched_detect, platform_pending?}`.

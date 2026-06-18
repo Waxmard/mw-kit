@@ -1,0 +1,67 @@
+[project]
+name = "mw-kit"
+version = "0.0.0"
+description = "Personal tooling playbook + the tooling-sync skill's scope resolver"
+# LOCAL OVERRIDE of the playbook's "pin newest stable (3.14)" rule: scripts/ is
+# invoked by the tooling-sync skill via bare `python3` on arbitrary machines
+# (stock macOS ships 3.9.6), so the support floor is broad like a published
+# library, not a deployed app. ruff target-version + mypy python_version match.
+requires-python = ">=3.9"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.13",
+    "mypy>=1.18",
+    "pytest>=8",
+    "pytest-cov>=7",
+]
+
+[tool.uv]
+package = false  # scripts-only repo — nothing imports/installs mw-kit
+
+[tool.ruff]
+line-length = 88
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF", "PL", "S"]
+ignore = [
+    "PLR0911",  # too-many-return-statements
+    "PLR0913",  # too-many-arguments
+    "PLR2004",  # magic-value-comparison
+    "S404",     # subprocess import — we shell out to git deliberately
+    "S603",     # subprocess call — args are fixed, no untrusted input
+    "S607",     # partial path "git" — resolved from PATH on purpose
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = [
+    "S101",     # asserts ok in tests
+    "PLC0415",  # scoped imports in fixtures
+]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+
+[tool.mypy]
+# mypy 2.x can't target below 3.10; the 3.9 runtime floor is guarded by ruff's
+# target-version = py39 instead (the scripts use `from __future__ import
+# annotations` and no 3.10+ runtime syntax, so they run fine on stock 3.9.6).
+python_version = "3.10"
+strict = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["scripts"]
+addopts = "--cov=scripts --cov-report=term-missing"
+
+[tool.coverage.run]
+source = ["scripts"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
