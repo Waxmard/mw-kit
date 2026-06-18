@@ -14,6 +14,7 @@ Tooling decisions applicable to every project regardless of language.
 - [releases-gitlab.md](./releases-gitlab.md) — semantic-release for GitLab
 - [gitlab-pipeline-dedup.md](./gitlab-pipeline-dedup.md) — workflow:rules dedup + build-on-MR job rules (GitLab)
 - [security.md](./security.md) — semgrep (SAST) + trivy (fs + image)
+- [claude-review.md](./claude-review.md) — Claude Code reviews every PR (GitHub only)
 - [conventional-commits.md](./conventional-commits.md) — commit message format
 - [git-ai-instructions.md](./git-ai-instructions.md) — repo-local commit/PR guidance for git-ai, framed by user POV
 - [contributing.md](./contributing.md) — CONTRIBUTING.md: branching, commits, MR/PR + review flow

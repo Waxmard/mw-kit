@@ -34,6 +34,7 @@ scripts/
 | Dep updates (GitLab) | [renovate](https://docs.renovatebot.com/) |
 | SAST | semgrep |
 | Vuln scanning | trivy (fs + image) |
+| AI PR review (GitHub) | [claude-code-action](https://github.com/anthropics/claude-code-action) + `code-review` plugin |
 | Multi-arch builds | docker bake |
 | Docs generation | python script with `{{ include:partials/X.md }}` directives |
 | Per-file size cap | line-limit script (lefthook + CI), default 800 lines |
