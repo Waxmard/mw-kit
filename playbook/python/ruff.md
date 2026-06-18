@@ -27,7 +27,7 @@ Canonical `[tool.ruff]` block — the full preferred config to diff a repo again
 ```toml
 [tool.ruff]
 line-length = 88
-target-version = "py311"
+target-version = "py314"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM", "RUF", "PL", "S"]
