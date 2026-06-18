@@ -1,0 +1,23 @@
+pre-commit:
+  parallel: true
+  commands:
+    ruff-lint:
+      glob: "*.py"
+      run: uv run ruff check --fix {staged_files}
+      stage_fixed: true
+
+    ruff-format:
+      glob: "*.py"
+      run: uv run ruff format {staged_files}
+      stage_fixed: true
+
+    # Frontmatter is the source of truth for MANIFEST.md — regenerate + restage
+    # it automatically whenever a playbook page changes, so the index can't drift.
+    manifest:
+      glob: "playbook/**/*.md"
+      run: python3 scripts/build_manifest.py && git add playbook/MANIFEST.md
+
+pre-push:
+  commands:
+    ci:
+      run: make typecheck test

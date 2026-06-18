@@ -28,11 +28,13 @@ scripts/
 | JS/TS lint/format | [biome](https://biomejs.dev/) |
 | Releases (GitHub) | [release-please](https://github.com/googleapis/release-please) |
 | Releases (GitLab) | semantic-release |
+| CI (single project) | GitHub: `ci.yml` runs `make ci` · GitLab: `.gitlab-ci.yml` test stage |
 | GitLab CI dedup | `workflow:rules` (one pipeline per change, build-on-MR) |
 | Dep updates (GitHub) | [dependabot](https://docs.github.com/en/code-security/dependabot) |
 | Dep updates (GitLab) | [renovate](https://docs.renovatebot.com/) |
 | SAST | semgrep |
 | Vuln scanning | trivy (fs + image) |
+| AI PR review (GitHub) | [claude-code-action](https://github.com/anthropics/claude-code-action) + `code-review` plugin |
 | Multi-arch builds | docker bake |
 | Docs generation | python script with `{{ include:partials/X.md }}` directives |
 | Per-file size cap | line-limit script (lefthook + CI), default 800 lines |
