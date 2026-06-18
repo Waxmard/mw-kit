@@ -19,6 +19,7 @@ Machine-readable index of every playbook page. Source of truth = each page's YAM
 | `dependabot` | baseline | GitHub-native dependency update PRs | `.github/dependabot.yml` | — | `github` | [universal/dependabot.md](universal/dependabot.md) |
 | `docs-gen` | optional | Generate README/CLAUDE/AGENTS from partials via a small Python script | `docs/src/`, `scripts/build_docs.py` | — | any | [universal/docs-gen.md](universal/docs-gen.md) |
 | `git-ai-instructions` | baseline | Repo-local commit/PR guidance for git-ai, framed by user POV | `.git-ai-instructions` | `.git-ai-instructions` | any | [universal/git-ai-instructions.md](universal/git-ai-instructions.md) |
+| `gitlab-pipeline-dedup` | baseline | workflow:rules dedup + build-on-MR job rules for GitLab | `.gitlab-ci.yml` | `.gitlab-ci.yml` | `gitlab` | [universal/gitlab-pipeline-dedup.md](universal/gitlab-pipeline-dedup.md) |
 | `lefthook` | baseline | Git hooks with autofix + restage (stage_fixed) | `lefthook.yml` | — | any | [universal/lefthook.md](universal/lefthook.md) |
 | `line-limit` | optional | Per-file line cap enforced by a small script in lefthook + CI | `scripts/check-line-limit.sh`, `lefthook.yml` | — | any | [universal/line-limit.md](universal/line-limit.md) |
 | `mise` | optional | Pinned per-project tool versions — best for node/polyglot; uv covers pure-python | `mise.toml` | `package.json`, `go.mod`, `**/*.go` | any | [universal/mise.md](universal/mise.md) |

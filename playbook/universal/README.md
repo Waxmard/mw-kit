@@ -10,6 +10,7 @@ Tooling decisions applicable to every project regardless of language.
 - [line-limit.md](./line-limit.md) — per-file line cap enforced in lefthook + CI
 - [releases-github.md](./releases-github.md) — release-please for GitHub
 - [releases-gitlab.md](./releases-gitlab.md) — semantic-release for GitLab
+- [gitlab-pipeline-dedup.md](./gitlab-pipeline-dedup.md) — workflow:rules dedup + build-on-MR job rules (GitLab)
 - [security.md](./security.md) — semgrep (SAST) + trivy (fs + image)
 - [conventional-commits.md](./conventional-commits.md) — commit message format
 - [git-ai-instructions.md](./git-ai-instructions.md) — repo-local commit/PR guidance for git-ai, framed by user POV
