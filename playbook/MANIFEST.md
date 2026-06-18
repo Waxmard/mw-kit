@@ -13,7 +13,8 @@ Machine-readable index of every playbook page. Source of truth = each page's YAM
 
 | Tool | Tier | Summary | Targets | Detect | Platform | Page |
 |---|---|---|---|---|---|---|
-| `ci` | baseline | Single-project CI: lint + typecheck + test on every PR | `.github/workflows/ci.yml` | — | `github` | [universal/ci.md](universal/ci.md) |
+| `ci-github` | baseline | Single-project GitHub Actions CI: lint + typecheck + test on every PR | `.github/workflows/ci.yml` | — | `github` | [universal/ci-github.md](universal/ci-github.md) |
+| `ci-gitlab` | baseline | Single-project GitLab CI: lint + typecheck + test pipeline skeleton | `.gitlab-ci.yml` | — | `gitlab` | [universal/ci-gitlab.md](universal/ci-gitlab.md) |
 | `codeowners` | baseline | Required reviewers auto-assigned per path | `.github/CODEOWNERS`, `.gitlab/CODEOWNERS` | — | any | [universal/codeowners.md](universal/codeowners.md) |
 | `contributing` | baseline | CONTRIBUTING.md: branching, commits, MR/PR + review flow | `CONTRIBUTING.md` | — | any | [universal/contributing.md](universal/contributing.md) |
 | `conventional-commits` | baseline | Commit message format feeding release tooling | — | — | any | [universal/conventional-commits.md](universal/conventional-commits.md) |

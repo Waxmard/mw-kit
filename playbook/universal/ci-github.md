@@ -1,21 +1,21 @@
 ---
-tool: ci
+tool: ci-github
 scope: universal
 tier: baseline
-summary: "Single-project CI: lint + typecheck + test on every PR"
+summary: "Single-project GitHub Actions CI: lint + typecheck + test on every PR"
 targets: [".github/workflows/ci.yml"]
 platform: github
 ---
 
-# Single-Project CI
+# Single-Project CI (GitHub Actions)
 
 ## What
 
 One workflow that runs the full check suite — lint, typecheck, test — on every PR
 and every push to `main`. The single-repo counterpart to
-[ci-paths](../monorepo/ci-paths.md) (which path-filters per subproject). If the repo
-has exactly one toolchain at its root, this page applies; if it has multiple
-subprojects, use `ci-paths` instead.
+[ci-paths](../monorepo/ci-paths.md) (which path-filters per subproject). The GitLab
+equivalent is [ci-gitlab](./ci-gitlab.md). If the repo has exactly one toolchain at
+its root, this page applies; if it has multiple subprojects, use `ci-paths` instead.
 
 ## Why
 
@@ -98,5 +98,6 @@ committed. Same pattern works for any deterministic generator.
   step; the Makefile owns the steps. Drift between them is the whole failure mode this
   avoids.
 - **GitLab** uses `.gitlab-ci.yml` with a different shape (stages + `workflow:rules`);
-  see [gitlab-pipeline-dedup](./gitlab-pipeline-dedup.md) for the dedup rules. This
-  page's canonical block is GitHub-only.
+  see [ci-gitlab](./ci-gitlab.md) for the pipeline skeleton and
+  [gitlab-pipeline-dedup](./gitlab-pipeline-dedup.md) for the dedup rules. This page's
+  canonical block is GitHub-only.

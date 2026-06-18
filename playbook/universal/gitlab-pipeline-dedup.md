@@ -12,6 +12,10 @@ platform: gitlab
 
 ## What
 
+The **rules** half of a GitLab pipeline — when jobs run. For the full pipeline body
+(stages, image, cache, the lint/typecheck/test jobs themselves) see
+[ci-gitlab](./ci-gitlab.md); this page is the `workflow:rules` + job-`rules` it plugs in.
+
 Two cooperating pieces in `.gitlab-ci.yml`:
 
 1. A top-level `workflow:rules` block that runs **exactly one** pipeline per
