@@ -28,6 +28,7 @@ scripts/
 | JS/TS lint/format | [biome](https://biomejs.dev/) |
 | Releases (GitHub) | [release-please](https://github.com/googleapis/release-please) |
 | Releases (GitLab) | semantic-release |
+| CI (single project) | `ci.yml` — lint + typecheck + test, runs `make ci` |
 | GitLab CI dedup | `workflow:rules` (one pipeline per change, build-on-MR) |
 | Dep updates (GitHub) | [dependabot](https://docs.github.com/en/code-security/dependabot) |
 | Dep updates (GitLab) | [renovate](https://docs.renovatebot.com/) |

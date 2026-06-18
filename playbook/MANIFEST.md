@@ -13,6 +13,7 @@ Machine-readable index of every playbook page. Source of truth = each page's YAM
 
 | Tool | Tier | Summary | Targets | Detect | Platform | Page |
 |---|---|---|---|---|---|---|
+| `ci` | baseline | Single-project CI: lint + typecheck + test on every PR | `.github/workflows/ci.yml` | — | `github` | [universal/ci.md](universal/ci.md) |
 | `codeowners` | baseline | Required reviewers auto-assigned per path | `.github/CODEOWNERS`, `.gitlab/CODEOWNERS` | — | any | [universal/codeowners.md](universal/codeowners.md) |
 | `contributing` | baseline | CONTRIBUTING.md: branching, commits, MR/PR + review flow | `CONTRIBUTING.md` | — | any | [universal/contributing.md](universal/contributing.md) |
 | `conventional-commits` | baseline | Commit message format feeding release tooling | — | — | any | [universal/conventional-commits.md](universal/conventional-commits.md) |
