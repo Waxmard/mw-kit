@@ -44,7 +44,7 @@ jobs:
   semgrep:
     runs-on: ubuntu-latest
     container:
-      image: semgrep/semgrep:1.163.0
+      image: semgrep/semgrep:X.Y.Z # pin to latest stable; renovate bumps it
     steps:
       - uses: actions/checkout@v6
       - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
@@ -117,5 +117,5 @@ Cherry-pick semgrep packs per language. Don't enable everything — noise kills 
 
 - `ignore-unfixed: true` on trivy — there's nothing you can do about an unfixed CVE except wait, so don't gate PRs on it.
 - `severity: CRITICAL,HIGH,MEDIUM` — drop MEDIUM if signal-to-noise hurts.
-- Semgrep container pin (`semgrep/semgrep:1.163.0`) gives reproducible scans. Bump intentionally.
+- Semgrep container pin (`semgrep/semgrep:X.Y.Z`) gives reproducible scans — pin to a real version, don't run `:latest`. Renovate bumps it.
 - `if: always()` on SARIF upload so a scan failure still uploads partial results.

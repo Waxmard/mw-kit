@@ -70,7 +70,7 @@ semantic-release:
     GIT_DEPTH: "0"
   before_script:
     - apt-get update && apt-get install -y --no-install-recommends git
-    - pip install python-semantic-release==10.5.3
+    - pip install python-semantic-release==X.Y.Z # pin to latest stable; renovate bumps it
     - git checkout $CI_DEFAULT_BRANCH
     - git config user.email "release-bot@example.com"
     - git config user.name "Release Bot"

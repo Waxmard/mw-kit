@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from fnmatch import fnmatch
@@ -70,6 +71,33 @@ def detect_matches(pattern: str, files: list[str]) -> bool:
             ):
                 return True
     return False
+
+
+def detect_content_matches(
+    patterns: list[str], repo: Path, tracked: list[str]
+) -> str | None:
+    """Return `content:<pat>` for the first regex that matches a YAML file's body.
+
+    Some repo classes have no path marker — a plain-YAML Kubernetes/GitOps repo
+    looks like any other directory of `.yaml` until you read a file and see
+    `kind:`. Detecting those by extension (`**/*.yaml`) would falsely match every
+    repo that merely has a CI file, so the k8s scope keys on file *contents*
+    instead. Scoped to YAML files to bound the read cost.
+    """
+    if not patterns:
+        return None
+    compiled = [(pat, re.compile(pat, re.MULTILINE)) for pat in patterns]
+    for f in tracked:
+        if not f.endswith((".yaml", ".yml")):
+            continue
+        try:
+            text = (repo / f).read_text(errors="ignore")
+        except OSError:
+            continue
+        for pat, rx in compiled:
+            if rx.search(text):
+                return f"content:{pat}"
+    return None
 
 
 def target_present(target: str, repo: Path) -> bool:
@@ -188,6 +216,7 @@ def scope_pages(
         scope = p.get("scope", "")
         pf = p.get("platform") or "any"
         detect = as_list(p.get("detect"))
+        detect_content = as_list(p.get("detect_content"))
         targets = as_list(p.get("targets"))
 
         # 1. monorepo pages only apply to multi-component repos
@@ -211,10 +240,15 @@ def scope_pages(
         if pf != "any" and platform == "unknown":
             platform_pending = True  # can't decide until platform known
 
-        # 3. detect globs ("—"/empty = always relevant within its scope)
+        # 3. detect ("—"/empty = always relevant within its scope). A page is
+        #    relevant if any path glob (`detect`) OR any content regex
+        #    (`detect_content`) matches; the latter is how marker-less repo
+        #    classes (plain-YAML k8s) are identified.
         matched = None
-        if detect:
+        if detect or detect_content:
             matched = next((d for d in detect if detect_matches(d, tracked)), None)
+            if matched is None:
+                matched = detect_content_matches(detect_content, repo, tracked)
             if matched is None:
                 skipped.append(
                     {"tool": tool, "page": page, "reason": "no detect match"}

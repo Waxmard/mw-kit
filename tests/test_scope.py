@@ -148,7 +148,16 @@ def test_resolve_alternatives_drops_losers():
 # --- scope_pages end-to-end ----------------------------------------------
 
 
-def _page(tool, scope_, *, tier="baseline", platform="", detect=None, targets=None):
+def _page(
+    tool,
+    scope_,
+    *,
+    tier="baseline",
+    platform="",
+    detect=None,
+    detect_content=None,
+    targets=None,
+):
     return {
         "tool": tool,
         "_page": f"{scope_}/{tool}.md",
@@ -156,6 +165,7 @@ def _page(tool, scope_, *, tier="baseline", platform="", detect=None, targets=No
         "tier": tier,
         "platform": platform,
         "detect": detect or [],
+        "detect_content": detect_content or [],
         "targets": targets or [],
     }
 
@@ -179,6 +189,42 @@ def test_scope_pages_platform_filter_and_detect(tmp_path: Path):
     assert "gitlab-dedup" not in tools  # gitlab page on github
     ruff = next(r for r in out["in_scope"] if r["tool"] == "ruff")
     assert ruff["targets_present"] == ["pyproject.toml"]
+
+
+def test_detect_content_matches_yaml_body(tmp_path: Path):
+    (tmp_path / "deploy.yaml").write_text("apiVersion: apps/v1\nkind: Deployment\n")
+    (tmp_path / "values.yaml").write_text("replicas: 3\nimage: foo\n")
+    tracked = ["deploy.yaml", "values.yaml", "README.md"]
+    # matches the manifest, not the plain values file
+    assert (
+        scope.detect_content_matches([r"^kind:\s"], tmp_path, tracked)
+        == r"content:^kind:\s"
+    )
+
+
+def test_detect_content_no_match_when_no_manifest(tmp_path: Path):
+    (tmp_path / "values.yaml").write_text("replicas: 3\n")
+    tracked = ["values.yaml"]
+    assert scope.detect_content_matches([r"^kind:\s"], tmp_path, tracked) is None
+    # empty patterns short-circuit
+    assert scope.detect_content_matches([], tmp_path, tracked) is None
+
+
+def test_scope_pages_content_detect_identifies_k8s_repo(tmp_path: Path):
+    pages = [
+        _page("kubeconform", "k8s", detect_content=[r"^kind:\s"]),
+        _page("ruff", "python", detect=["**/*.py"]),
+    ]
+    (tmp_path / "svc.yaml").write_text("kind: Service\n")
+    tracked = ["svc.yaml"]
+    out = scope.scope_pages(
+        pages, tmp_path, tracked, "gitlab", {"verdict": "single_project"}
+    )
+    tools = {r["tool"] for r in out["in_scope"]}
+    assert "kubeconform" in tools  # content detect fired on the manifest
+    assert "ruff" not in tools  # no .py files
+    kc = next(r for r in out["in_scope"] if r["tool"] == "kubeconform")
+    assert kc["matched_detect"] == r"content:^kind:\s"
 
 
 def test_scope_pages_drops_monorepo_when_single_project(tmp_path: Path):
