@@ -11,9 +11,9 @@ platform: gitlab
 
 ## What
 
-One git repo, several independently released components (`orchestrator/`,
-`clamav/`, …). Each component gets its **own** version line, tag namespace
-(`orchestrator-v1.4.0`), changelog, and image tag — driven by the commits that
+One git repo, several independently released components (`service-a/`,
+`service-b/`, …). Each component gets its **own** version line, tag namespace
+(`service-a-v1.4.0`), changelog, and image tag — driven by the commits that
 touched *that component's directory*.
 
 [node `semantic-release`](https://semantic-release.gitbook.io/) +
@@ -28,7 +28,7 @@ Both PSR and node `semantic-release` compute **one version per repo**. They read
 commit *messages* in a range (since the last matching tag), not changed *paths*.
 So in a monorepo:
 
-- A `feat(clamav): …` commit still inflates an `orchestrator` bump — wrong.
+- A `feat(service-b): …` commit still inflates a `service-a` bump — wrong.
 - PSR has **no native path-scoped commit analysis** (its maintainers recommend
   one package per repo). GitLab `rules: changes:` can gate *whether* a release
   job runs, but once it runs the tool over-counts the range.
@@ -113,8 +113,8 @@ Root `.gitlab-ci.yml` owns shared infra and `include`s each component:
 include:
   - component: $CI_SERVER_FQDN/.../gcp-auth@0.0.4
     inputs: { gcp_service_account: builder@PROJECT.iam.gserviceaccount.com }
-  - local: orchestrator/.gitlab-ci.yml
-  # - local: clamav/.gitlab-ci.yml   # added when the component lands
+  - local: service-a/.gitlab-ci.yml
+  # - local: service-b/.gitlab-ci.yml   # added when the component lands
 
 variables:
   REGISTRY: REGION-docker.pkg.dev/PROJECT/REPO
@@ -152,11 +152,16 @@ changed:
 The image build is one `docker buildx bake <component>` target (one per
 component, see [[docker-bake]]).
 
+The test/build/scan job `rules` (the dedup × per-component `changes:` pattern)
+live in [[gitlab-pipeline-dedup]] §"Monorepo (GitLab)". Gate `build` on
+`merge_request_event` **and** `$CI_COMMIT_BRANCH` (both `changes:`-scoped), never
+`$CI_COMMIT_BRANCH` alone — otherwise the image never builds on MRs.
+
 ## Commit convention
 
 Releases need [[conventional-commits]], plus two monorepo rules:
 
-1. **Scope every commit with the component dir** — `fix(orchestrator): …`.
+1. **Scope every commit with the component dir** — `fix(service-a): …`.
 2. **Keep commits atomic — one component each.** The plugin decides *whether* a
    component releases by changed files, but the *bump size* comes from the
    message; a commit touching two components releases both with the same message.

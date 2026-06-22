@@ -94,6 +94,53 @@ branch name:
     - if [ -n "${CI_COMMIT_REF_NAME:-}" ]; then export BRANCH_SANITIZED=$(printf '%s' "$CI_COMMIT_REF_NAME" | tr '/' '-'); fi
 ```
 
+## Monorepo (GitLab)
+
+[[ci-paths]] is GitHub-only (`paths:` on `.github/workflows/`). On GitLab the same
+idea — skip the jobs of the component that didn't change — folds into the job
+`rules` themselves, **combined with** the dedup conditions above. The dedup
+contract is unchanged: every test/build/scan job still runs on an MR **and** any
+branch; it's now also `changes:`-scoped per component.
+
+Define one rule anchor per component and apply it to every job — test jobs as-is,
+build/scan with `when: always`:
+
+```yaml
+.service-a-changes: &service-a-changes
+  - service-a/**/*
+  - docker-bake.hcl
+
+.service-a-rules: &service-a-rules
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    changes: *service-a-changes
+  - if: $CI_COMMIT_BRANCH == "main"          # main always runs (no changes gate)
+  - if: $CI_COMMIT_BRANCH
+    changes: *service-a-changes              # pre-MR feature pushes, deduped
+
+service-a-lint:
+  extends: [.uv]
+  rules: *service-a-rules
+
+# build + image-scan: same conditions, plus when: always so the artifact builds
+# even if a test job failed (you still want to scan what shipped).
+service-a-build:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes: *service-a-changes
+      when: always
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: always
+    - if: $CI_COMMIT_BRANCH
+      changes: *service-a-changes
+      when: always
+```
+
+Anchors are file-local across GitLab `include`s, so if you split per-component
+files (`include: local:`) each `*-changes` / `*-rules` anchor must live in the
+file that uses it; in a single root pipeline they sit at the top. Only `release`
+stays gated to `main` (see [[releases-monorepo]]) — its per-component scoping is
+the semantic-release-monorepo plugin's job, not a `rules:` one.
+
 ## Gotchas
 
 - **No project setting controls this.** MR pipeline creation is driven entirely
@@ -108,5 +155,14 @@ branch name:
   full test+build on pre-MR feature pushes too. Workflow dedup keeps it to one run
   per push; if that churn is heavy, reach for `changes:` filters (below) rather
   than narrowing back to `main`.
-- **Pairs with [[ci-paths]] in monorepos** — add `changes:` filters to the job
-  rules to skip unaffected subprojects. The workflow dedup block stays identical.
+- **Don't drop `build`'s `merge_request_event` rule when adding `changes:`.** The
+  easy monorepo mistake: gate build on `$CI_COMMIT_BRANCH` + `changes:` only. In
+  an MR pipeline `$CI_COMMIT_BRANCH` is empty, so the image then **never builds on
+  MRs** — and the branch pipeline that would've built it is suppressed by the
+  workflow dedup. Build (and the image-scan that `needs:` it) needs its own
+  `merge_request_event` rule, also `changes:`-scoped. This asymmetry hides behind
+  a green dedup: no *duplicate* pipelines, but *missing* jobs. See
+  [Monorepo (GitLab)](#monorepo-gitlab) for the full per-component anchor.
+- **Monorepos** — [[ci-paths]] covers GitHub (`paths:`); on GitLab add `changes:`
+  filters to the job `rules` instead (see [Monorepo (GitLab)](#monorepo-gitlab)).
+  The workflow dedup block stays identical either way.
