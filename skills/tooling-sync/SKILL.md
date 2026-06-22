@@ -32,6 +32,16 @@ The plan JSON:
 - `skipped` — `{tool, page, reason}` (no detect match / platform / single-project / alternative not chosen).
 - `needs_ask` — questions the script refused to guess (unknown platform, ambiguous structure).
 - `warnings` — plan-coherence issues; surface any to the user.
+- `state` — incremental-sync memory (see below): `{present, playbook_commit_now, playbook_commit_at_last_sync, last_sync, playbook_unchanged, settled_tools, stale_tools, new_tools, all_settled}`. Each `in_scope` row also carries a `state` block: `{decision, decided_at_commit, page_changed_since_decision, settled, reason?}`.
+
+### Incremental sync (`.tooling-sync.json`)
+
+The consumer repo carries a committed `.tooling-sync.json` recording each tool's last decision and the mw-kit commit the page was at when it was made. The resolver reads it and, per tool, checks whether that page has changed in mw-kit since — so a settled decision isn't re-litigated every run. **You don't compute any of this; read it off the plan.**
+
+- A row with `state.settled: true` means the prior decision (`synced` / `declined` / `override`) still holds *and the governing page hasn't changed*. **Skip its compare** (Step 2) — fold it into a collapsed "settled" line. This is what makes declines stay quiet until their page moves and saves the per-page reads.
+- A row with `state.settled: false` is **live**: either new (`decision: "new"`), or its page changed since the decision (`page_changed_since_decision: true`). Compare these normally.
+- **Fast path:** if `state.all_settled` is true (every in-scope tool settled, nothing new or stale), there is nothing to compare. Report "Nothing new since last sync (`last_sync`, playbook @ `playbook_commit_at_last_sync` short). N tools settled." and stop — unless the user asks for a full re-check, in which case re-run the resolver with `--no-state` and compare everything.
+- If `state.present` is false, this is a first sync (or `--no-state`): compare every in-scope tool and write the file at the end.
 
 Then:
 
@@ -40,9 +50,11 @@ Then:
    - platform → `--platform github|gitlab`
    - structure → `--structure single_project|multi_component`
    For the ambiguous-structure case, a nested single component is a strong monorepo signal — present it that way. When the answer is monorepo, also consult an existing **sibling component or org reference repo** for the concrete shape (CI include structure, image-tag flow) — the playbook block is canonical, the sibling shows the wired-up reality.
-3. **Relay the scoped set** before diffing, from the JSON: in-scope tools, the chosen alternatives (with the dropped ones named), and what was skipped + why. State single-project vs monorepo. Example: "Relevant: ruff, mypy, uv, pytest, lefthook, dependabot, releases-github. Skipped: node/* (no JS), renovate (alternative to dependabot), gitlab-only pages. Scoped as single-project."
+3. **Relay the scoped set** before diffing, from the JSON: in-scope tools, the chosen alternatives (with the dropped ones named), and what was skipped + why. State single-project vs monorepo. When `state.present`, also name what's settled vs live: "Relevant: ruff, mypy, uv, pytest, lefthook, dependabot, releases-github. 5 settled since last sync (skipping); comparing 2 live: ruff (page changed), pytest (new). Skipped: node/* (no JS), renovate (alternative to dependabot). Scoped as single-project."
 
 ## Step 2 — Compare
+
+**First, drop the settled rows.** Only compare `in_scope` rows where `state.settled` is false (new tools + ones whose page changed since the last decision). Settled rows are carried straight to the Step 3 "settled" line without a read.
 
 The resolver already told you, per page, which `targets` exist (`targets_present` / `targets_missing`). Use that to avoid needless reads:
 
@@ -51,8 +63,8 @@ The resolver already told you, per page, which `targets` exist (`targets_present
 
 For each page needing a config read, compare its `targets` files against the page's canonical `## Config` block. Read the page body only for the in-scope ones.
 
-**Dispatch rule:** the per-page diff is independent and mostly mechanical (does the target exist, does its config match the canonical block).
-- **≤ 7 in-scope pages** → compare inline yourself.
+**Dispatch rule:** the per-page diff is independent and mostly mechanical (does the target exist, does its config match the canonical block). Count only the **live** (non-settled) pages:
+- **≤ 7 live pages** → compare inline yourself.
 - **≥ 8** → fan out one **Haiku** subagent per page (Agent tool, `model: haiku`), in parallel. Each subagent reads its page's canonical `## Config` block from the playbook + the repo's `targets` file(s), and returns a structured classification row (status, target file(s), headline delta, quoted deltas for drift). Escalate a page to **Sonnet** only when its config needs *semantic* merge reasoning (e.g. reconciling a hand-customized `biome.json` or a multi-section `pyproject.toml`) rather than a flat presence/equality check. You collect the rows and assemble the Step 3 report. **Apply (Step 5) stays inline in the parent** — it touches files and must stay coherent across confirmations.
 
 Each compare subagent is read-only: it reads the playbook page and the repo target, returns its row, writes nothing.
@@ -81,7 +93,10 @@ Present a grouped summary the user can act on. One line per tool: status, target
 ⚠️ mise          mise.toml — python pinned 3.10, playbook 3.11
 ➕ tach          (optional) no module-boundary enforcement — app/ has 6 layers, could benefit
 ✅ uv, mypy, lefthook — aligned
+💤 pytest, uv, dependabot — settled since last sync (2026-06-01), page unchanged
 ```
+
+The 💤 line is the settled rows you skipped — list them so the user sees they were considered, not missed. Omit it on a first sync.
 
 ## Step 4 — Decide
 
@@ -99,6 +114,36 @@ For each chosen item, one at a time:
 
 Pause after each applied change. Don't batch silently.
 
+## Step 6 — Record decisions (`.tooling-sync.json`)
+
+After the user has decided everything (applied, declined, or report-only), write the repo's `.tooling-sync.json` so the next run skips what's settled. This is the only file the skill writes that isn't a tooling config; it's still just a working-tree edit (the user commits it, like everything else).
+
+Write the file with the `Write` tool at the repo root. Schema:
+
+```json
+{
+  "schema": 1,
+  "last_sync": "2026-06-22",
+  "playbook_commit": "<mw-kit HEAD — from state.playbook_commit_now in the plan>",
+  "tools": {
+    "ruff":     { "decision": "synced",   "playbook_commit": "<HEAD>" },
+    "tach":     { "decision": "declined", "playbook_commit": "<HEAD>", "reason": "app/ not layered enough" },
+    "mypy":     { "decision": "override", "playbook_commit": "<HEAD>", "reason": "py39 floor, documented in CLAUDE.md" }
+  }
+}
+```
+
+Rules for building it:
+
+- **`decision` per tool, only for tools you evaluated this run** (live rows): `synced` (applied, or already aligned ✅), `declined` (user chose not to adopt a ❌/⚠️/➕), or `override` (🔧 deliberate local divergence). A `reason` is required for `declined`/`override`, optional for `synced`.
+- **`playbook_commit` = the current mw-kit HEAD** (`state.playbook_commit_now`) for every tool you touched — that's the page version the decision was made against, and what the next run diffs from.
+- **Carry settled rows forward unchanged.** Start from the existing `tools` map (the plan's per-row `state` already gave you each prior record); only overwrite the entries you re-evaluated. Don't drop or re-stamp settled tools — their original `playbook_commit` is what keeps page-change detection honest.
+- Set top-level `last_sync` to today and `playbook_commit` to the same HEAD.
+- **Don't list out-of-scope or skipped tools.** Only in-scope tools get records.
+- On a report-only run where the user applied nothing: still write the file — record everything you compared (✅ as `synced`, the rest the user explicitly declined; if they didn't rule on an item, leave it out so it stays live next run).
+
+Show the written file once; don't pause per-key. Mention it's part of what to commit.
+
 ## Hard rules
 
 - **Read-only until the user picks.** Steps 1–3 never modify the repo.
@@ -107,6 +152,7 @@ Pause after each applied change. Don't batch silently.
 - **Never run installs** (`npm install`, `uv add`, `pip install`) — surface them as follow-ups.
 - **Respect local overrides.** A documented or obviously-intentional divergence is flagged, not overwritten.
 - **The resolver owns scope.** Don't re-derive scope by hand-globbing or reading every page — trust `scope.py`'s plan. If a page exists but the resolver never considers it (missing from its output entirely), the manifest/frontmatter may be stale; tell the user to run `python3 scripts/build_manifest.py` in mw-kit. Never run either script *from* the consumer repo.
+- **The resolver owns incremental state too.** Don't hand-compute which pages changed or hand-edit `.tooling-sync.json`'s recall logic — read `state` off the plan, and only ever *write* the file in Step 6. To force a full re-compare, re-run the resolver with `--no-state` rather than deleting the file.
 
 ## Permissions (pre-approve these)
 

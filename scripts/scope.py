@@ -13,6 +13,12 @@ where semantic merge reasoning belongs. Anything genuinely ambiguous (unknown
 platform, single-component-but-nested layout) is surfaced under `needs_ask` rather
 than guessed.
 
+It also reads the consumer repo's `.tooling-sync.json` (incremental-sync memory the
+skill writes after the user decides) and annotates each in-scope row with the recalled
+decision plus whether the page governing it has changed in mw-kit since that decision —
+so the skill can skip re-comparing tools whose decision still holds. Pass `--no-state`
+to ignore the file and re-compare everything.
+
 Reads page frontmatter directly (the source of truth), not the generated MANIFEST.
 
 Stdlib only. Run: python3 scripts/scope.py [REPO_PATH]   (default: CWD)
@@ -36,6 +42,13 @@ from build_manifest import PLAYBOOK, parse_frontmatter
 
 # Manifest files that signal a project root, used for structure detection.
 PROJECT_MANIFESTS = ["pyproject.toml", "package.json", "go.mod"]
+
+# Per-project incremental-sync memory. Committed at the consumer repo root; the
+# skill writes it after the user decides, this script reads it to skip tools whose
+# decision still holds (their playbook page hasn't changed since it was made).
+STATE_FILE = ".tooling-sync.json"
+STATE_SCHEMA = 1
+SETTLED_DECISIONS = {"synced", "declined", "override"}
 
 
 # ---------------------------------------------------------------------------
@@ -174,6 +187,113 @@ def detect_structure(tracked: list[str]) -> dict[str, Any]:
         "ambiguous": ambiguous,
         "manifests": sorted(manifests),
         "root_orchestrator": root_orchestrator,
+    }
+
+
+# ---------------------------------------------------------------------------
+# incremental-sync memory (.tooling-sync.json)
+# ---------------------------------------------------------------------------
+
+
+def load_state(repo: Path) -> dict[str, Any] | None:
+    """Read the consumer repo's `.tooling-sync.json`, or None if absent/corrupt.
+
+    A corrupt or wrong-schema file is treated as no state (full re-compare) rather
+    than an error — the skill rewrites it cleanly on the next apply.
+    """
+    p = repo / STATE_FILE
+    if not p.is_file():
+        return None
+    try:
+        data = json.loads(p.read_text())
+    except (OSError, ValueError):
+        return None
+    if not isinstance(data, dict) or data.get("schema") != STATE_SCHEMA:
+        return None
+    return data
+
+
+def playbook_root() -> Path:
+    """The mw-kit git repo root (PLAYBOOK is its `playbook/` subdir)."""
+    return PLAYBOOK.parent
+
+
+def playbook_head() -> str | None:
+    return git(playbook_root(), "rev-parse", "HEAD")
+
+
+def page_changed_since(commit: str, page: str) -> bool:
+    """True if `playbook/<page>` has commits after `commit` in the mw-kit repo.
+
+    Unknown commit (force-push, gc, never-synced) → assume changed, so a stale or
+    unverifiable record re-surfaces rather than being silently trusted.
+    """
+    out = git(
+        playbook_root(),
+        "log",
+        "--oneline",
+        f"{commit}..HEAD",
+        "--",
+        f"playbook/{page}",
+    )
+    return True if out is None else bool(out)
+
+
+def annotate_state(
+    in_scope: list[dict[str, Any]],
+    state: dict[str, Any] | None,
+    pb_head: str | None,
+    changed_fn: Any = page_changed_since,
+) -> dict[str, Any]:
+    """Attach a `state` block to each in-scope row and return a run-level summary.
+
+    Per row: decision recalled from the state file, whether the governing page
+    changed since that decision, and whether the row is `settled` (decision still
+    holds → the skill may skip the compare). `changed_fn` is injectable for tests.
+    """
+    tools = (state or {}).get("tools", {})
+    settled: list[str] = []
+    stale: list[str] = []
+    fresh: list[str] = []
+    for row in in_scope:
+        rec = tools.get(row["tool"]) if isinstance(tools, dict) else None
+        if not isinstance(rec, dict):
+            row["state"] = {"decision": "new"}
+            fresh.append(row["tool"])
+            continue
+        decision = rec.get("decision", "unknown")
+        at = rec.get("playbook_commit")
+        if at and pb_head and at == pb_head:
+            changed = False
+        elif at:
+            changed = bool(changed_fn(at, row["page"]))
+        else:
+            changed = True
+        is_settled = (not changed) and decision in SETTLED_DECISIONS
+        st: dict[str, Any] = {
+            "decision": decision,
+            "decided_at_commit": at,
+            "page_changed_since_decision": changed,
+            "settled": is_settled,
+        }
+        if rec.get("reason"):
+            st["reason"] = rec["reason"]
+        row["state"] = st
+        (settled if is_settled else stale).append(row["tool"])
+
+    return {
+        "present": state is not None,
+        "file": STATE_FILE,
+        "playbook_commit_now": pb_head,
+        "playbook_commit_at_last_sync": (state or {}).get("playbook_commit"),
+        "last_sync": (state or {}).get("last_sync"),
+        "playbook_unchanged": bool(
+            state and pb_head and (state or {}).get("playbook_commit") == pb_head
+        ),
+        "settled_tools": sorted(settled),
+        "stale_tools": sorted(stale),
+        "new_tools": sorted(fresh),
+        "all_settled": bool(in_scope) and not stale and not fresh,
     }
 
 
@@ -363,6 +483,11 @@ def main() -> int:
         choices=["single_project", "multi_component"],
         help="override structure detection (use after resolving a needs_ask)",
     )
+    ap.add_argument(
+        "--no-state",
+        action="store_true",
+        help="ignore .tooling-sync.json and re-compare every in-scope tool",
+    )
     a = ap.parse_args()
     repo = Path(a.repo).resolve()
 
@@ -426,6 +551,10 @@ def main() -> int:
             reason = alternatives[kind]["reason"]
             warnings.append(f"{kind}: chosen '{chosen}' is not in scope ({reason})")
 
+    # incremental-sync memory: recall prior decisions, flag pages changed since
+    state = None if a.no_state else load_state(repo)
+    state_summary = annotate_state(in_scope, state, playbook_head())
+
     needs_ask: list[dict[str, str]] = []
     if platform == "unknown":
         needs_ask.append(
@@ -458,6 +587,7 @@ def main() -> int:
         },
         "structure": structure,
         "alternatives": alternatives,
+        "state": state_summary,
         "in_scope": in_scope,
         "skipped": sorted(skipped, key=lambda r: r["tool"]),
         "needs_ask": needs_ask,

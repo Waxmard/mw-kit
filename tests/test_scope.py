@@ -242,3 +242,109 @@ def test_scope_pages_platform_pending_when_unknown(tmp_path: Path):
         pages, tmp_path, [], "unknown", {"verdict": "single_project"}
     )
     assert out["in_scope"][0]["platform_pending"] is True
+
+
+# --- incremental-sync memory ----------------------------------------------
+
+
+def _scoped_row(tool, page=None):
+    return {"tool": tool, "page": page or f"python/{tool}.md"}
+
+
+def test_load_state_absent_is_none(tmp_path: Path):
+    assert scope.load_state(tmp_path) is None
+
+
+def test_load_state_corrupt_is_none(tmp_path: Path):
+    (tmp_path / scope.STATE_FILE).write_text("{not json")
+    assert scope.load_state(tmp_path) is None
+
+
+def test_load_state_wrong_schema_is_none(tmp_path: Path):
+    (tmp_path / scope.STATE_FILE).write_text('{"schema": 99, "tools": {}}')
+    assert scope.load_state(tmp_path) is None
+
+
+def test_load_state_valid_round_trips(tmp_path: Path):
+    (tmp_path / scope.STATE_FILE).write_text(
+        '{"schema": 1, "playbook_commit": "abc", "tools": {}}'
+    )
+    state = scope.load_state(tmp_path)
+    assert state is not None
+    assert state["playbook_commit"] == "abc"
+
+
+def test_annotate_state_no_state_marks_all_new():
+    rows = [_scoped_row("ruff"), _scoped_row("mypy")]
+    summary = scope.annotate_state(rows, None, "HEAD", changed_fn=lambda c, p: False)
+    assert summary["present"] is False
+    assert summary["new_tools"] == ["mypy", "ruff"]
+    assert summary["all_settled"] is False
+    assert rows[0]["state"] == {"decision": "new"}
+
+
+def test_annotate_state_same_commit_is_settled_without_git():
+    # decided at the current HEAD → page provably unchanged, changed_fn never called
+    rows = [_scoped_row("ruff")]
+    state = {
+        "playbook_commit": "HEAD",
+        "tools": {"ruff": {"decision": "synced", "playbook_commit": "HEAD"}},
+    }
+
+    def boom(commit, page):  # must not be consulted when commit == head
+        raise AssertionError("changed_fn called for same-commit row")
+
+    summary = scope.annotate_state(rows, state, "HEAD", changed_fn=boom)
+    assert rows[0]["state"]["settled"] is True
+    assert summary["settled_tools"] == ["ruff"]
+    assert summary["all_settled"] is True
+    assert summary["playbook_unchanged"] is True
+
+
+def test_annotate_state_changed_page_is_stale():
+    rows = [_scoped_row("lefthook", "universal/lefthook.md")]
+    state = {
+        "playbook_commit": "old",
+        "tools": {"lefthook": {"decision": "synced", "playbook_commit": "old"}},
+    }
+    summary = scope.annotate_state(rows, state, "new", changed_fn=lambda c, p: True)
+    assert rows[0]["state"]["settled"] is False
+    assert rows[0]["state"]["page_changed_since_decision"] is True
+    assert summary["stale_tools"] == ["lefthook"]
+
+
+def test_annotate_state_declined_unchanged_stays_suppressed():
+    # the decline-until-page-changes rule: declined + page unchanged → settled
+    rows = [_scoped_row("tach", "optional/tach.md")]
+    state = {
+        "playbook_commit": "c",
+        "tools": {
+            "tach": {"decision": "declined", "playbook_commit": "c", "reason": "flat"}
+        },
+    }
+    summary = scope.annotate_state(rows, state, "c", changed_fn=lambda c, p: False)
+    assert rows[0]["state"]["settled"] is True
+    assert rows[0]["state"]["reason"] == "flat"
+    assert summary["settled_tools"] == ["tach"]
+
+
+def test_annotate_state_missing_commit_assumes_changed():
+    rows = [_scoped_row("uv")]
+    state = {"tools": {"uv": {"decision": "override"}}}  # no playbook_commit recorded
+
+    def boom(commit, page):  # changed_fn needs a commit to diff; must be skipped
+        raise AssertionError("changed_fn called without a recorded commit")
+
+    scope.annotate_state(rows, state, "HEAD", changed_fn=boom)
+    assert rows[0]["state"]["settled"] is False
+    assert rows[0]["state"]["page_changed_since_decision"] is True
+
+
+def test_annotate_state_unknown_decision_never_settles():
+    rows = [_scoped_row("ruff")]
+    state = {
+        "playbook_commit": "c",
+        "tools": {"ruff": {"decision": "wat", "playbook_commit": "c"}},
+    }
+    scope.annotate_state(rows, state, "c", changed_fn=lambda c, p: False)
+    assert rows[0]["state"]["settled"] is False  # only synced/declined/override settle
