@@ -114,7 +114,11 @@ If `make install`-style symlinking enumerates lib files explicitly, switch it to
 pre-commit:
   commands:
     line-limit:
-      glob: "{bin/*,lib/*.sh,src/**/*.ts,**/*.py}"   # match is_source()
+      # Slashless glob → matches these extensions at any depth; is_source() in
+      # the script does the real path filtering. Avoid a `src/**/*.ext` path
+      # glob — it silently misses files directly under src/. See the lefthook
+      # page's glob-semantics gotcha.
+      glob: "*.{ts,tsx,vue,py,sh}"
       run: bash scripts/check-line-limit.sh {staged_files}
 ```
 
