@@ -97,17 +97,31 @@ def git(repo: Path, *args: str) -> str | None:
         return None
 
 
-def detect_platform(repo: Path) -> tuple[str, str]:
-    """Return (platform, source). platform is github | gitlab | unknown."""
+def detect_platform(repo: Path, tracked: list[str]) -> tuple[str, str]:
+    """Return (platform, source). platform is github | gitlab | unknown.
+
+    Prefer the origin remote; if that's inconclusive (no remote, or a
+    self-hosted instance on a vanity domain that contains neither "gitlab"
+    nor "github.com"), fall back to platform-specific CI config files in the
+    tree, which are domain-agnostic.
+    """
     url = git(repo, "remote", "get-url", "origin")
-    if not url:
-        return "unknown", "no-remote"
-    low = url.lower()
-    if "gitlab" in low:
-        return "gitlab", "remote"
-    if "github.com" in low:
-        return "github", "remote"
-    return "unknown", "remote"
+    if url:
+        low = url.lower()
+        if "gitlab" in low:
+            return "gitlab", "remote"
+        if "github.com" in low:
+            return "github", "remote"
+    # Remote inconclusive — infer from CI config files.
+    has_gitlab = ".gitlab-ci.yml" in tracked or any(
+        t.startswith(".gitlab/") for t in tracked
+    )
+    has_github = any(t.startswith(".github/workflows/") for t in tracked)
+    if has_gitlab and not has_github:
+        return "gitlab", "ci-file"
+    if has_github and not has_gitlab:
+        return "github", "ci-file"
+    return "unknown", "no-remote" if not url else "remote"
 
 
 def detect_structure(tracked: list[str]) -> dict[str, Any]:
@@ -337,12 +351,13 @@ def main() -> int:
         )
         return 1
 
+    tracked = (git(repo, "ls-files") or "").splitlines()
+
     if a.platform:
         platform, platform_source = a.platform, "override"
     else:
-        platform, platform_source = detect_platform(repo)
+        platform, platform_source = detect_platform(repo, tracked)
 
-    tracked = (git(repo, "ls-files") or "").splitlines()
     structure = detect_structure(tracked)
     if a.structure:
         structure["verdict"] = a.structure
