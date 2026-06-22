@@ -47,3 +47,19 @@ commit-msg:
     commitlint:
       run: npx --no -- commitlint --edit {1}
 ```
+
+`commitlint.config.js` — disable the body/footer line cap (the most-hit rule;
+bodies carry URLs, pasted output, and release notes that don't wrap cleanly).
+Keep the load-bearing subject/type rules:
+
+```js
+export default {
+  extends: ["@commitlint/config-conventional"],
+  rules: {
+    "body-max-line-length": [0],
+    "footer-max-line-length": [0],
+  },
+};
+```
+
+Needs `@commitlint/cli` + `@commitlint/config-conventional` as devDeps.
