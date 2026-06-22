@@ -67,7 +67,7 @@ Root `package.json`:
 **No `package.json` (pure-Python / non-JS repo)?** Don't add one just for this.
 Install the lefthook binary directly — `mise use lefthook`, `brew install lefthook`,
 or `uv tool install lefthook` — then run `lefthook install` once. The hooks still
-target each subproject via `root:` (e.g. `root: orchestrator/`), with the command
+target each subproject via `root:` (e.g. `root: service-a/`), with the command
 running `uv run ruff …` inside it.
 
 ## Gotchas
