@@ -6,7 +6,7 @@ Machine-readable index of every playbook page. Source of truth = each page's YAM
 
 - **tier** — `baseline` (most repos should adopt) vs `optional` (context-specific pattern).
 - **targets** — files/dirs in a consumer repo this page governs (what to compare / where to apply).
-- **detect** — globs; if any matches a repo path the page is relevant (— = always relevant for its scope/platform).
+- **detect** — path globs, plus `content:<re>` regexes matched against YAML bodies; if any matches the page is relevant (— = always relevant for its scope/platform).
 - **platform** — restricts relevance to `github` or `gitlab` (any = no restriction).
 
 ## universal
@@ -50,6 +50,13 @@ Machine-readable index of every playbook page. Source of truth = each page's YAM
 | `expo` | optional | Expo SDK conventions for React Native apps | `package.json`, `app.json`, `app.config.ts` | `app.json`, `app.config.ts`, `app.config.js` | any | [node/expo.md](node/expo.md) |
 | `package-json` | baseline | Standard scripts + dependency pinning conventions | `package.json` | `package.json` | any | [node/package-json.md](node/package-json.md) |
 | `typescript` | baseline | Strict tsconfig, noEmit type-checking | `tsconfig.json` | `tsconfig.json`, `**/*.{ts,tsx}` | any | [node/typescript.md](node/typescript.md) |
+
+## k8s
+
+| Tool | Tier | Summary | Targets | Detect | Platform | Page |
+|---|---|---|---|---|---|---|
+| `kubeconform` | baseline | Schema-validate K8s manifests in CI against K8s + CRD schemas | `.gitlab-ci.yml`, `.github/workflows/` | `content:^kind:\s` | `any` | [k8s/kubeconform.md](k8s/kubeconform.md) |
+| `yamllint` | baseline | Lint all YAML for syntax/style, tuned for kubectl-style manifests | `.yamllint` | `content:^kind:\s` | `any` | [k8s/yamllint.md](k8s/yamllint.md) |
 
 ## monorepo
 

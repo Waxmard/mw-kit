@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parent.parent
 PLAYBOOK = ROOT / "playbook"
 MANIFEST = PLAYBOOK / "MANIFEST.md"
 
-SCOPE_ORDER = ["universal", "python", "node", "monorepo"]
+SCOPE_ORDER = ["universal", "python", "node", "k8s", "monorepo"]
 
 ROW_TEMPLATE = (
     "| `{tool}` | {tier} | {summary} | {targets} | "
@@ -62,6 +62,20 @@ def fmt_list(val: object) -> str:
     return f"`{val}`" if val else "—"
 
 
+def _as_list(val: object) -> list[str]:
+    if isinstance(val, list):
+        return [str(x) for x in val]
+    return [str(val)] if val else []
+
+
+def combined_detect(p: dict[str, Any]) -> list[str]:
+    """Path globs (`detect`) plus content regexes (`detect_content`, shown as
+    `content:<re>`) — both signal relevance, so both appear in the Detect column."""
+    return _as_list(p.get("detect")) + [
+        f"content:{c}" for c in _as_list(p.get("detect_content"))
+    ]
+
+
 def main() -> int:
     pages: list[dict[str, Any]] = []
     for md in sorted(PLAYBOOK.rglob("*.md")):
@@ -87,7 +101,8 @@ def main() -> int:
         "(context-specific pattern).",
         "- **targets** — files/dirs in a consumer repo this page governs "
         "(what to compare / where to apply).",
-        "- **detect** — globs; if any matches a repo path the page is relevant "
+        "- **detect** — path globs, plus `content:<re>` regexes matched against "
+        "YAML bodies; if any matches the page is relevant "
         "(— = always relevant for its scope/platform).",
         "- **platform** — restricts relevance to `github` or `gitlab` "
         "(any = no restriction).",
@@ -114,7 +129,7 @@ def main() -> int:
                     tier=p.get("tier", "") or "—",
                     summary=p.get("summary", "") or "",
                     targets=fmt_list(p.get("targets")),
-                    detect=fmt_list(p.get("detect")),
+                    detect=fmt_list(combined_detect(p)),
                     platform=f"`{p['platform']}`" if p.get("platform") else "any",
                     path=p["_path"],
                 )

@@ -10,6 +10,7 @@ playbook/        # tooling preferences, scoped
   universal/     # applies to every project
   python/        # python-specific
   node/          # node/typescript-specific
+  k8s/           # kubernetes-manifest / gitops repos (content-detected on `kind:`)
   monorepo/      # monorepo-specific (docker bake, multi-package)
 scripts/
   build_manifest.py  # regenerates playbook/MANIFEST.md from page frontmatter
@@ -26,6 +27,8 @@ scripts/
 | Python deps | [uv](https://docs.astral.sh/uv/) |
 | Python validation/settings | [pydantic](https://docs.pydantic.dev/) v2 + pydantic-settings |
 | JS/TS lint/format | [biome](https://biomejs.dev/) |
+| YAML lint (k8s) | [yamllint](https://www.yamllint.com/) (kubectl-style config) |
+| K8s manifest validation | [kubeconform](https://github.com/yannh/kubeconform) (schema + CRD catalog, CI) |
 | Releases (GitHub) | [release-please](https://github.com/googleapis/release-please) |
 | Releases (GitLab) | semantic-release |
 | CI (single project) | GitHub: `ci.yml` runs `make ci` · GitLab: `.gitlab-ci.yml` test stage |
@@ -45,6 +48,6 @@ scripts/
 ## Conventions
 
 - Each tool gets its own page under the right `playbook/<scope>/` folder.
-- Each page opens with YAML frontmatter (`tool`, `scope`, `tier`, `summary`, `targets`, `detect`, optional `platform`) — the machine-readable index source.
+- Each page opens with YAML frontmatter (`tool`, `scope`, `tier`, `summary`, `targets`, `detect` and/or `detect_content`, optional `platform`) — the machine-readable index source. `detect_content` matches regexes against YAML bodies, for repo classes with no path marker (e.g. k8s keyed on `^kind:`).
 - Each page body: **What**, **Why**, **Config**, **Gotchas**. The `## Config` block is the canonical config to diff a consumer repo against.
 - `playbook/MANIFEST.md` is generated from frontmatter — run `python3 scripts/build_manifest.py` after editing any frontmatter. Don't hand-edit it.
