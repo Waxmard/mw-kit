@@ -172,3 +172,26 @@ The apply phase uses `Edit` / `Write` on the consumer repo's own config files. T
 - **Stale playbook:** if the repo pins a newer version than the playbook, the playbook is behind — note it, maybe suggest the user update mw-kit, don't downgrade the repo.
 - **Optional noise:** don't push `tier: optional` pages hard. Mention once, only when the repo plausibly benefits (e.g. tach only for a layered app, docker-bake only if it ships images).
 - **Platform mismatch:** a github-only page (security workflow, dependabot, release-please) on a gitlab repo is out of scope — its gitlab counterpart applies instead.
+
+## Retro — improve this skill
+
+This skill is **two-way**: after the run, spend one beat on whether the run exposed something the
+skill itself should encode. Most clean runs need no change — don't force it.
+
+Propose an edit only on real signal:
+
+- A scope/merge case these instructions didn't cover and you had to improvise (a config-merge
+  shape not in Pitfalls, a repo layout the path-remap didn't anticipate, a new alternative pair).
+- The user corrected a recommendation or repeated an instruction.
+- A step here was wrong or stale (resolver flag changed, a permission no longer needed).
+- You repeated a manual workaround that belongs in the skill.
+
+Distinguish skill drift from **playbook** drift: a missing/stale *tool choice or `## Config`
+snippet* belongs in the mw-kit playbook page, not this skill — note it as "update mw-kit"
+rather than editing here. Only fix the skill when the *process* (scope, compare, merge, apply)
+was wrong.
+
+When a signal fires, **propose** the concrete edit: name the section, show before/after lines,
+one sentence of why. Apply only after the user says yes — this file is the skill source in the
+mw-kit repo (symlinked global), so an edit here is a repo change the user commits; never edit it
+silently. If nothing fired, say nothing — no "run went well" noise.
