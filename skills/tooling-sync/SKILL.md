@@ -116,7 +116,7 @@ Pause after each applied change. Don't batch silently.
 
 ## Step 6 — Record decisions (`.tooling-sync.json`)
 
-After the user has decided everything (applied, declined, or report-only), write the repo's `.tooling-sync.json` so the next run skips what's settled. This is the only file the skill writes that isn't a tooling config; it's still just a working-tree edit (the user commits it, like everything else).
+After the user has decided everything (applied, declined, or report-only), write the repo's `.tooling-sync.json` so the next run skips what's settled. This is the only file the skill writes that isn't a tooling config; it's still just a working-tree edit (the user commits it, like everything else). Note: some users globally gitignore `.tooling-sync.json` — then it stays local-only (never committed) and still drives the next sync on that machine; don't tell the user to commit it if it isn't showing in `git status`.
 
 Write the file with the `Write` tool at the repo root. Schema:
 
