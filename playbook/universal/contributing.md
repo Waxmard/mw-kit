@@ -50,7 +50,9 @@ We follow [Conventional Commits](https://www.conventionalcommits.org/): `<type>(
 `feat:` → minor, `fix:` → patch, `!`/`BREAKING CHANGE:` → major. `docs`/`chore`/`refactor`/`test`
 are used as normal. These types drive automated versioning (see Deploys & Releases).
 
-Let [git-ai](https://github.com/Waxmard/git-ai) draft a conventional commit from staged changes:
+Let [git-ai](https://github.com/Waxmard/git-ai) draft a conventional commit from staged changes.
+Install the CLI once with `npm install -g @waxmard/git-ai` (the `waxmard-git-ai` PyPI package is a
+library, not the CLI), then:
 
     git add -A
     git commit -m "$(git-ai commit)"
