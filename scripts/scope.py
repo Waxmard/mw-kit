@@ -370,10 +370,16 @@ def scope_pages(
             if matched is None:
                 matched = detect_content_matches(detect_content, repo, tracked)
             if matched is None:
-                skipped.append(
-                    {"tool": tool, "page": page, "reason": "no detect match"}
-                )
-                continue
+                # A baseline page whose only `detect` signal is its own target is
+                # invisible exactly when the target is absent — the one case
+                # baseline tier exists to flag. Keep it in-scope as missing.
+                tier = p.get("tier", "")
+                self_detecting = bool(detect) and set(detect) <= set(targets)
+                if not (tier == "baseline" and self_detecting):
+                    skipped.append(
+                        {"tool": tool, "page": page, "reason": "no detect match"}
+                    )
+                    continue
 
         present = [t for t in targets if target_present(t, repo)]
         row: dict[str, Any] = {
