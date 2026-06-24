@@ -32,7 +32,7 @@ Platform-agnostic dep update bot. Opens MRs/PRs to bump outdated deps across npm
   "extends": ["config:recommended"],
   "prConcurrentLimit": 3,
   "prHourlyLimit": 0,
-  "minimumReleaseAge": "7 days",
+  "minimumReleaseAge": "3 days",
   "internalChecksFilter": "strict",
   "packageRules": [
     {
@@ -46,7 +46,7 @@ Platform-agnostic dep update bot. Opens MRs/PRs to bump outdated deps across npm
 
 Baseline does the triage work: minor/patch → one grouped MR (any count, 1 slot); majors → individual, never grouped. Since the group eats only 1 of the 3 slots, **at most 2 majors stay open at once** (`prConcurrentLimit − 1`). `prPriority: -5` ensures the group MR opens ahead of majors when slots are full. Everything below is **per-repo opt-in**.
 
-`minimumReleaseAge: "7 days"` holds a release back for a week before opening any MR — a supply-chain buffer so a compromised or broken version gets yanked/fixed before it can land. `internalChecksFilter: "strict"` suppresses the pending-stability MRs while they age (no half-baked branches). **Vulnerability remediation bypasses the age automatically**, so security fixes are not delayed. Aligns with [[security]].
+`minimumReleaseAge: "3 days"` holds a release back for three days before opening any MR — a supply-chain buffer so a compromised or broken version gets yanked/fixed before it can land. `internalChecksFilter: "strict"` suppresses the pending-stability MRs while they age (no half-baked branches). **Vulnerability remediation bypasses the age automatically**, so security fixes are not delayed. Aligns with [[security]].
 
 ### Patterns (pick what fits the repo)
 
@@ -116,7 +116,7 @@ Install the [Renovate GitHub App](https://github.com/apps/renovate) on the org. 
 
 - **`prConcurrentLimit` is global, not per-update-type.** It's enforced per-repo across all branches at once — you **cannot** cap "majors to 1–2 concurrent" with it. To make majors trickle while minors flow, use `prPriority` (deprioritize majors) + grouping (collapse minors), not a per-type limit that doesn't exist. The trick: grouping collapses all minor/patch into 1 slot, so **concurrent majors = `prConcurrentLimit − 1`**. Baseline `3` → 1 group MR + at most 2 majors. Want fewer/more majors → adjust this one number.
 - **`prHourlyLimit` is PRs created *per hour per run* — leave it `0` (off).** On a frequent runner (GitHub app) it only smooths bursts; on an infrequent one (GitLab nightly/weekly CI) it **throttles you to N PRs per run**, silently overriding `prConcurrentLimit`. Grouping already shrinks the per-run burst and `prConcurrentLimit` caps the onboarding flood, so the hourly limit just adds a footgun.
-- **Don't re-impose the age on vulns.** `minimumReleaseAge` is bypassed by Renovate's vulnerability remediation by default — leave it that way. Adding a custom `vulnerabilityAlerts` block that re-applies the age delays security fixes by a week. Don't.
+- **Don't re-impose the age on vulns.** `minimumReleaseAge` is bypassed by Renovate's vulnerability remediation by default — leave it that way. Adding a custom `vulnerabilityAlerts` block that re-applies the age delays security fixes by three days. Don't.
 - **Don't over-group.** One giant MR that fails CI blocks every dep in the group. Group only deps that genuinely move together.
 - **Major-pin without a calendar reminder rots.** When you write `"allowedVersions": "^2"`, leave a comment or issue saying when to revisit — otherwise you sit on stale majors forever.
 - **Automerge needs real test coverage.** A green pipeline with low coverage is not "trusted CI." Start with devDeps patch only; expand later.
