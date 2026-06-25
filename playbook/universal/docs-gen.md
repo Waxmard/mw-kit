@@ -15,7 +15,7 @@ A small Python script renders `README.md`, `CLAUDE.md`, `AGENTS.md`, and sub-REA
 ## Why
 
 - DRY: setup instructions, repo layout, commands all live in one partial and appear in multiple docs.
-- `CLAUDE.md` and `AGENTS.md` share one template — keeping AI agents (Claude Code, Codex, Cursor) in lockstep.
+- `CLAUDE.md` and `AGENTS.md` share one template — keeping AI agents (Claude Code, Codex, Gemini CLI) in lockstep. This is the heavier alternative to the [[agent-instructions]] symlink: reach for it when partials earn their keep (shared setup/layout across several docs), not just to keep the two agent files aligned.
 - CI check fails on stale generated docs → can't merge if you edited template but forgot to render.
 - No heavy doc tooling (mkdocs, sphinx) — just markdown + a regex.
 

@@ -42,6 +42,7 @@ skills/            # Claude Code skills (symlinked into ~/.claude/skills)
 | Vuln scanning | trivy (fs + image) |
 | AI PR review (GitHub) | [claude-code-action](https://github.com/anthropics/claude-code-action) + `code-review` plugin |
 | Multi-arch builds | docker bake |
+| Agent instructions | `AGENTS.md` (agent-agnostic) as source of truth, `CLAUDE.md` symlinked to it |
 | Docs generation | python script with `{{ include:partials/X.md }}` directives |
 | Per-file size cap | line-limit script (CI gate, optional local hook), default 500 lines |
 | Contribution flow | `CONTRIBUTING.md` — branching, commits, MR/PR + bot-then-human review |
