@@ -8,12 +8,16 @@ hand the ranked list to stage 2 (the skill body), which is the actual judge of
 whether a comment is redundant.
 
 The floor is a COST DIAL, not a quality verdict. Across a 21-repo corpus the
-median code file sits near a 7% comment ratio, so a 15% floor skips the
-obviously-fine majority while surfacing anything elevated. It deliberately does
-NOT assert that 15% (or any number) is "the right amount" of comments -- that
-judgment is irreducibly contextual and belongs to stage 2. A human walks the
-ranked list top-down and stops when satisfied, which is what bounds total cost,
-so there is no top-N cap here: emit the whole list, ordered worst-first.
+median code file sits near a 7% comment ratio, so the default 8% floor sits just
+above the median: it skips only the genuinely sparse files and surfaces nearly
+everything with non-trivial commenting. This is deliberately aggressive -- the
+skill's job is to find over-commenting, including verbose-but-accurate prose, so
+the gate errs toward surfacing more and lets stage 2 (the judge) and the human
+walk decide. It does NOT assert that any ratio is "the right amount" -- that is
+contextual and belongs to stage 2. A human walks the ranked list top-down and
+stops when satisfied, which is what bounds cost, so there is no top-N cap here:
+emit the whole list, ordered worst-first. Raise --floor to be more selective on
+a large repo; lower it to sweep even sparsely-commented files.
 
 Two ways a file qualifies:
   - density: comment ratio >= floor (catches small bloated files)
@@ -38,8 +42,8 @@ import shutil
 import subprocess
 import sys
 
-FLOOR = 0.15  # density path: comment / (code + comment) >= FLOOR
-VOLUME = 80  # volume path: raw comment lines >= VOLUME
+FLOOR = 0.08  # density path: comment ratio >= FLOOR (just above the ~7% corpus median)
+VOLUME = 20  # volume path: raw comment lines >= VOLUME (many-but-sparse comments)
 MIN_DENOM = 30  # ignore tiny files: one doc block swings the ratio
 MIN_COMMENT = 8  # ...and require real comment mass on the density path
 
