@@ -14,6 +14,9 @@ playbook/        # tooling preferences, scoped
   monorepo/      # monorepo-specific (docker bake, multi-package)
 scripts/
   build_manifest.py  # regenerates playbook/MANIFEST.md from page frontmatter
+skills/            # Claude Code skills (symlinked into ~/.claude/skills)
+  tooling-sync/    # diff a repo against the playbook, apply chosen updates
+  comment-audit/   # scc pre-flight + LLM pass to find/remove redundant comments
 ```
 
 ## Tooling at a glance
@@ -44,6 +47,15 @@ scripts/
 | Contribution flow | `CONTRIBUTING.md` — branching, commits, MR/PR + bot-then-human review |
 | Required reviewers | `CODEOWNERS` — path → owner, gates the human approval |
 | Commit/PR AI guidance | `.git-ai-instructions` — repo user-POV for [git-ai](https://github.com/Waxmard/git-ai) prefixing |
+
+## Skills
+
+Claude Code skills sourced here and symlinked into `~/.claude/skills`:
+
+| Skill | What it does |
+|---|---|
+| [tooling-sync](skills/tooling-sync/) | Diffs the current repo against the playbook and applies chosen updates — merging, never clobbering. Driven by `playbook/MANIFEST.md`. |
+| [comment-audit](skills/comment-audit/) | Ranks code files by comment density/volume with an [`scc`](https://github.com/boyter/scc) pre-flight, then judges each comment (cut/keep/rewrite) one file at a time, applying edits only on per-file approval. |
 
 ## Conventions
 
