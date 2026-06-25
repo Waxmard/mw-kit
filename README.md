@@ -40,7 +40,7 @@ scripts/
 | AI PR review (GitHub) | [claude-code-action](https://github.com/anthropics/claude-code-action) + `code-review` plugin |
 | Multi-arch builds | docker bake |
 | Docs generation | python script with `{{ include:partials/X.md }}` directives |
-| Per-file size cap | line-limit script (lefthook + CI), default 800 lines |
+| Per-file size cap | line-limit script (CI gate, optional local hook), default 500 lines |
 | Contribution flow | `CONTRIBUTING.md` — branching, commits, MR/PR + bot-then-human review |
 | Required reviewers | `CODEOWNERS` — path → owner, gates the human approval |
 | Commit/PR AI guidance | `.git-ai-instructions` — repo user-POV for [git-ai](https://github.com/Waxmard/git-ai) prefixing |
