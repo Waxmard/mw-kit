@@ -69,56 +69,70 @@ comment against the code it sits on — both redundancy and verbosity are
 contextual, so you must see the code, not just the comment. How the edits get
 applied (auto vs. per-file) is Step 3; the judgment here is the same either way.
 
-This is an **aggressive** pass. The goal is the leanest set of comments that
-still carries every non-obvious fact — bias toward less. Two independent
-questions per comment: *does it say anything the code doesn't?* (if no → CUT) and
-*does it say it in more words than needed?* (if yes → TIGHTEN). A comment only
-KEEPs when it passes **both** — load-bearing **and** already terse.
+This is a **ruthless** pass. Presume every comment is noise until it proves
+otherwise. The reader is competent and has the code, the types, and `git blame` —
+so anything recoverable from those in a few seconds does not deserve a comment.
+A comment survives **only** by carrying a specific fact the code cannot show: a
+non-obvious *why*, an external constraint, a real hazard. Default to removing;
+make every KEEP justify itself by naming the fact it preserves — if you can't
+name that fact in a few words, it's a CUT.
+
+Two questions per comment: (1) *Could a competent reader get this from the
+code, types, or name?* → CUT. (2) *Is the point real but the wording fat?* →
+TIGHTEN to the bone. KEEP is the rare residue: a non-recoverable fact, already in
+the fewest possible words.
 
 ### The rubric
 
-**CUT — the comment adds nothing the code doesn't already say:**
+**CUT — the comment tells the reader nothing they can't get from the code:**
 - Restates the name or signature. `/** @param bytes - Number of bytes */` over
-  `bytes: number` — the type already says it. `/** Whether the field is required */`
-  over `isRequired?: boolean`.
-- Per-member docblocks that just echo the member: `/** Default page size */`
-  over `DEFAULT_PAGE_SIZE: 10`.
+  `bytes: number`; `/** Whether the field is required */` over `isRequired?: boolean`.
+- Per-member docblocks that echo the member: `/** Default page size */` over
+  `DEFAULT_PAGE_SIZE: 10`.
+- Explains *what* or *how* the code does something — that's the code's job. Only
+  *why* can earn a comment; description of mechanism is noise.
+- Teaches a standard language/library idiom a competent reader already knows.
+- States a "why" that's actually obvious from the surrounding context.
+- Redundant with a clear name — if renaming the symbol would make the comment
+  pointless, the name already carries it; cut the comment.
 - Decorative dividers / section banners that carry no information.
 - Commented-out code (dead code; git remembers it).
 - Narration of the obvious next line (`// loop over users` above a `for`).
-- Stale or *lying* comments — a header describing code that no longer exists
-  (e.g. a "Color utilities" banner on a file with no color code). Worse than
-  redundant. Cut it, or TIGHTEN to an accurate one-liner if a header is wanted.
+- Stale or *lying* comments — a header describing code that no longer exists.
+  Worse than noise. Cut it (or TIGHTEN to an accurate one-liner if a header earns
+  its place).
 
-**TIGHTEN — the point is real but the wording is bloated.** This is the default
-verdict for any accurate comment that runs long, and where most of the work is.
-Keep every fact; cut the words around it. Patterns:
-- Multi-sentence prose that states one idea. A 5-line file header explaining a
-  data shape can usually be 2 lines. Drop the throat-clearing ("This function
-  is responsible for…", "Note that…", "Basically…").
-- A useful kernel smothered in boilerplate — keep the kernel, cut the filler.
-- A docstring that half-restates the signature and half-explains — drop the
-  restatement, keep the explain.
-- `@param`/`@returns` tags whose text only restates the typed signature — cut the
-  tags, keep any genuine note.
-- Cute or narrative asides — keep the technical content, lose the flavor text.
-Always show the proposed replacement so the user sees exactly what it becomes.
+**TIGHTEN — the fact is real but the wording is fat.** Cut to the bone, not just
+trim. Telegraphic is the target: fragments over sentences, drop articles and
+filler ("the", "this", "basically", "note that", "is responsible for"), one line
+wherever one line will do — a multi-line block has to justify every line it keeps.
+Patterns:
+- Multi-sentence prose stating one idea → one fragment. A 5-line file header is
+  usually 1–2 lines.
+- A real kernel buried in boilerplate → keep the kernel, drop the rest.
+- A docstring half-restating the signature and half-explaining → delete the
+  restatement, keep only the explain, shortened.
+- `@param`/`@returns` tags that just restate the typed signature → cut the tags,
+  keep any genuine note as a bare line.
+- Cute or narrative asides → keep the technical fact, lose the flavor.
+Always show the exact replacement so the user sees what it becomes.
 
-**KEEP — load-bearing AND already concise; leave it untouched:**
-- The *why*: rationale, a deliberate tradeoff, why this and not the obvious thing.
-- External constraints / magic numbers with a source (`// OpenSearch
+**KEEP — a non-recoverable fact, already at its leanest. Rare.**
+- The *why* the code can't show: a deliberate tradeoff, why this not the obvious thing.
+- External constraint / magic number with a source (`// OpenSearch
   max_result_window; offset paging can't exceed this`).
-- Gotchas, warnings, ordering hazards, "don't refactor this away because…".
-- Non-obvious contracts on a public API beyond what the signature shows
-  (side effects, units, nullability rules, lifecycle).
-- Links to tickets / specs / RFCs.
-If one of these is wordy, it's a TIGHTEN, not a KEEP — KEEP is only for comments
-already at their leanest.
+- A real hazard: ordering dependency, "don't refactor this away because…", a footgun.
+- A genuine API contract beyond the signature (side effects, units, nullability).
+- Link to a ticket / spec / RFC.
+*What* and *how* never qualify — those are the code's. If a keeper is wordy it's a
+TIGHTEN, not a KEEP; KEEP is only for comments already telegraphic.
 
-The one guard against over-cutting: **never drop a fact.** Aggressive means
-shorter, not lossy — if you can't preserve the *why* / constraint / gotcha in
-fewer words, leave it. When genuinely unsure whether a fact matters, TIGHTEN
-(shorten) rather than CUT (delete) so the information survives.
+The one inviolable guard: **never delete a fact that isn't recoverable from the
+code** — a real why / constraint / hazard. Ruthless means fewer and shorter,
+never lossy. The tiebreak: if you're unsure because the comment looks like
+something the code already shows, cut it; if you're unsure because it asserts an
+external fact or hazard you *can't verify from the code*, keep it (tightened) —
+you can't safely drop what you can't confirm is redundant.
 
 ### Per-file report format
 
