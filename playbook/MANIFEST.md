@@ -13,6 +13,7 @@ Machine-readable index of every playbook page. Source of truth = each page's YAM
 
 | Tool | Tier | Summary | Targets | Detect | Platform | Page |
 |---|---|---|---|---|---|---|
+| `agent-instructions` | baseline | Agent-agnostic AGENTS.md as the source of truth, with CLAUDE.md symlinked to it | `AGENTS.md`, `CLAUDE.md` | `AGENTS.md`, `CLAUDE.md` | any | [universal/agent-instructions.md](universal/agent-instructions.md) |
 | `ci-github` | baseline | Single-project GitHub Actions CI: lint + typecheck + test on every PR | `.github/workflows/ci.yml` | — | `github` | [universal/ci-github.md](universal/ci-github.md) |
 | `ci-gitlab` | baseline | Single-project GitLab CI: lint + typecheck + test pipeline skeleton | `.gitlab-ci.yml` | — | `gitlab` | [universal/ci-gitlab.md](universal/ci-gitlab.md) |
 | `claude-review` | baseline | Claude Code reviews every PR via claude-code-action + the code-review plugin | `.github/workflows/claude-code-review.yml` | — | `github` | [universal/claude-review.md](universal/claude-review.md) |
