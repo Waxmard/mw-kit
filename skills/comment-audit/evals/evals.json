@@ -1,0 +1,26 @@
+{
+  "skill_name": "comment-audit",
+  "evals": [
+    {
+      "id": 1,
+      "name": "bloated-repo-finds-and-judges",
+      "prompt": "This UI codebase has gotten really comment-heavy over time. Can you audit it for unnecessary comments? Repo is at /Users/maxwellward/darkwolf/data-ai/insights/ui/src — just produce the audit report, list what you'd cut/keep/rewrite per file, but don't actually edit anything yet, I want to review first.",
+      "expected_output": "Runs the scc pre-flight, gets a ranked list, and for the top files produces a per-file report classifying comments cut/keep/rewrite. Must flag the redundant per-key JSDoc in constants/pagination.ts as CUT while keeping the ES_MAX_OFFSET 'why' comment, and flag the stale 'Color utilities' header in utils/helpers.ts as a stale/lying comment.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "clean-repo-stays-quiet",
+      "prompt": "Are there too many comments in /Users/maxwellward/darkwolf/data-ai/data-den/pizza-tracker/src ? Clean them up if so.",
+      "expected_output": "Runs the pre-flight, finds the repo is essentially clean (1 borderline file at most), and reports that rather than inventing cuts or flooding the user with marginal flags. Does NOT hallucinate a large cleanup.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "casual-phrasing-triggers",
+      "prompt": "go through /Users/maxwellward/darkwolf/data-ai/insights/ui/src/utils/helpers.ts and tell me which comments are just noise restating the code",
+      "expected_output": "Reads the single file directly (or via pre-flight) and identifies that the JSDoc on formatFileSize/formatDate mostly restates the signature, plus the stale top-of-file 'Color utilities' header that describes code not present. Keeps any genuinely useful note.",
+      "files": []
+    }
+  ]
+}
