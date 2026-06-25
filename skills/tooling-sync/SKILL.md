@@ -65,9 +65,11 @@ For each page needing a config read, compare its `targets` files against the pag
 
 **Dispatch rule:** the per-page diff is independent and mostly mechanical (does the target exist, does its config match the canonical block). Count only the **live** (non-settled) pages:
 - **≤ 7 live pages** → compare inline yourself.
-- **≥ 8** → fan out one **Haiku** subagent per page (Agent tool, `model: haiku`), in parallel. Each subagent reads its page's canonical `## Config` block from the playbook + the repo's `targets` file(s), and returns a structured classification row (status, target file(s), headline delta, quoted deltas for drift). Escalate a page to **Sonnet** only when its config needs *semantic* merge reasoning (e.g. reconciling a hand-customized `biome.json` or a multi-section `pyproject.toml`) rather than a flat presence/equality check. You collect the rows and assemble the Step 3 report. **Apply (Step 5) stays inline in the parent** — it touches files and must stay coherent across confirmations.
+- **≥ 8** → fan out one **Haiku** subagent per page (Agent tool, `model: haiku`), in parallel. Each subagent reads its page's canonical `## Config` block from the playbook + the repo's `targets` file(s), and returns a structured classification row (status, target file(s), headline delta, quoted deltas for drift). **When the target file is present but the subagent flags a sub-element as missing (an ecosystem block, a config table, a key), it must quote the lines it searched as proof — a present multi-block file (dependabot's per-ecosystem blocks, a multi-table `pyproject.toml`) is exactly where a fast skim false-flags an element that's actually there.** Escalate a page to **Sonnet** only when its config needs *semantic* merge reasoning (e.g. reconciling a hand-customized `biome.json` or a multi-section `pyproject.toml`) rather than a flat presence/equality check. You collect the rows and assemble the Step 3 report. **Apply (Step 5) stays inline in the parent** — it touches files and must stay coherent across confirmations.
 
 Each compare subagent is read-only: it reads the playbook page and the repo target, returns its row, writes nothing.
+
+- **Re-verify intra-file "missing" before applying.** If a row marks something absent *inside* a target that `targets_present` lists, the parent re-reads that file to confirm before the report/apply — never act on a sub-element "missing" claim on a present file without seeing it yourself.
 
 | Status | Meaning |
 |---|---|
