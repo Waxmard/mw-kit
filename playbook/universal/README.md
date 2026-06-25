@@ -7,7 +7,7 @@ Tooling decisions applicable to every project regardless of language.
 - [mise.md](./mise.md) — pinned tool versions (node, python, uv, etc.)
 - [lefthook.md](./lefthook.md) — git hooks with autofix + restage
 - [docs-gen.md](./docs-gen.md) — generate README/CLAUDE/AGENTS from partials
-- [line-limit.md](./line-limit.md) — per-file line cap enforced in lefthook + CI
+- [line-limit.md](./line-limit.md) — per-file line cap as a sprawl proxy (CI gate, optional local hook)
 - [ci-github.md](./ci-github.md) — single-project GitHub Actions CI: lint + typecheck + test
 - [ci-gitlab.md](./ci-gitlab.md) — single-project GitLab CI pipeline skeleton
 - [releases-github.md](./releases-github.md) — release-please for GitHub
