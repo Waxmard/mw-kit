@@ -40,9 +40,13 @@ stages: [test]
 
 default:
   image: ghcr.io/astral-sh/uv:python3.14-bookworm-slim
+  interruptible: true              # a newer commit cancels these (deploys opt out, see below)
 
-# One pipeline per change — MR pipeline when an MR is open, else branch pipeline.
+# One pipeline per change, and a newer commit cancels the in-flight old one — see
+# [gitlab-pipeline-dedup](./gitlab-pipeline-dedup.md).
 workflow:
+  auto_cancel:
+    on_new_commit: interruptible
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
@@ -124,6 +128,9 @@ lint:
 - **Adding a `release` stage?** Don't rebuild — see
   [releases-python](../python/releases-python.md) / [releases-gitlab](./releases-gitlab.md)
   for the release job + the `[skip ci]` / `chore(release):` dedup that stops the
-  release commit spawning another pipeline.
+  release commit spawning another pipeline. Also give that job (and any deploy)
+  `interruptible: false` — the `default: interruptible: true` above makes jobs
+  auto-cancellable, which you don't want mid-release. See
+  [gitlab-pipeline-dedup](./gitlab-pipeline-dedup.md#auto-cancel-superseded-pipelines).
 - **Multi-component repo?** This is single-project only — add `changes:` filters per
   [ci-paths](../monorepo/ci-paths.md) (the `workflow:` block stays identical).

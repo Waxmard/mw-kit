@@ -37,6 +37,11 @@ on:
   push:
     branches: [main]
 
+# A newer commit on the same ref cancels the in-flight run (PRs only — see below).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -72,6 +77,26 @@ Swap the toolchain setup; the skeleton is identical:
       - run: npm run ci   # or: biome check + tsc + test
 ```
 
+## Auto-cancel superseded runs
+
+When you push a fixup to a PR, the run testing the previous commit is now wasted —
+cancel it. GitHub's `concurrency` block does this: runs sharing a `group` can't overlap,
+and `cancel-in-progress` kills the older one when a newer starts. The GitLab counterpart
+is `workflow:auto_cancel` (see
+[gitlab-pipeline-dedup](./gitlab-pipeline-dedup.md#auto-cancel-superseded-pipelines)).
+
+```yaml
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+```
+
+`group` keys on the ref, so each branch/PR gets its own lane — a push to one PR never
+cancels another's run. `cancel-in-progress` is gated to `pull_request` on purpose: on
+`main` you usually want **every** commit to get a full run (each may build/deploy), so
+rapid pushes shouldn't cancel each other. Drop the `${{ ... }}` for a bare `true` only
+if no job on `main` has side effects you'd lose by cancelling.
+
 ## Generated-file freshness gate
 
 If the repo commits a generated artifact (manifest, lockfile-derived index, docs from
@@ -97,6 +122,10 @@ committed. Same pattern works for any deterministic generator.
 - **Don't duplicate command lists** between `ci.yml` and the Makefile. One `make ci`
   step; the Makefile owns the steps. Drift between them is the whole failure mode this
   avoids.
+- **Don't `cancel-in-progress: true` a deploy/release workflow.** Cancelling a
+  half-finished deploy or publish leaves things torn. Gating to `pull_request` (above)
+  already exempts `main`; if a workflow *only* deploys, leave `cancel-in-progress` off
+  entirely. Same intent as the GitLab `interruptible: false` exemption.
 - **GitLab** uses `.gitlab-ci.yml` with a different shape (stages + `workflow:rules`);
   see [ci-gitlab](./ci-gitlab.md) for the pipeline skeleton and
   [gitlab-pipeline-dedup](./gitlab-pipeline-dedup.md) for the dedup rules. This page's
