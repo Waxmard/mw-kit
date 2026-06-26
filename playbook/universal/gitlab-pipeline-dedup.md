@@ -2,7 +2,7 @@
 tool: gitlab-pipeline-dedup
 scope: universal
 tier: baseline
-summary: "workflow:rules dedup for GitLab — exactly one pipeline per change (branch- or MR-preferred)"
+summary: "GitLab pipeline economy — workflow:rules dedup (one pipeline per change) + auto-cancel of superseded runs"
 targets: [".gitlab-ci.yml"]
 detect: [".gitlab-ci.yml"]
 platform: gitlab
@@ -198,8 +198,44 @@ file that uses it; in a single root pipeline they sit at the top. Only `release`
 stays gated to `main` (see [[releases-monorepo]]) — its per-component scoping is
 the semantic-release-monorepo plugin's job, not a `rules:` one.
 
+## Auto-cancel superseded pipelines
+
+Dedup (above) stops *two* pipelines firing for *one* commit. This is the orthogonal
+waste: a pipeline still running when a **newer commit** lands on the same branch is
+now testing dead code — kill it. GitLab's UI calls this "auto-cancel redundant
+pipelines"; since GitLab 16.0 the `workflow:auto_cancel` keyword sets it **in code**
+and *overrides* the project setting, so you never touch the UI.
+
+```yaml
+workflow:
+  auto_cancel:
+    on_new_commit: interruptible   # a newer commit cancels still-running interruptible jobs
+  rules:
+    # ... dedup rules from Config above ...
+```
+
+Only does anything for jobs marked **`interruptible: true`** — that flag lives in the
+pipeline body, so it's set repo-wide via `default:` in [ci-gitlab](./ci-gitlab.md),
+with deploy/release jobs opted back out (`interruptible: false`). The two halves are a
+pair: `auto_cancel` decides the policy, `interruptible` marks which jobs it may cancel.
+
+`on_new_commit` values: `conservative` (default — won't cancel a pipeline once any
+*uninterruptible* job has started), **`interruptible`** (cancel the running
+interruptible jobs and let the rest finish — the one you want), `none` (off). Optional
+companion: `on_job_failure: all` cancels the rest of the pipeline the moment any job
+fails (fail-fast), vs `none` to let siblings finish.
+
 ## Gotchas
 
+- **`auto_cancel` does nothing without `interruptible: true` on the jobs.** The
+  keyword names a policy; the flag opts each job in. A pipeline of all-default
+  (uninterruptible) jobs is never auto-cancelled no matter the `on_new_commit` value.
+  Set `default: interruptible: true` (see [ci-gitlab](./ci-gitlab.md)) so it's on by
+  default, then exempt only the jobs that must finish.
+- **Exempt deploys/releases — `interruptible: false`.** A superseded commit cancelling
+  a half-done deploy or a `crane`-retag release leaves the registry/cluster in a torn
+  state. Mark any job with external side effects uninterruptible; `interruptible` is
+  safe only for read-only checks (lint/typecheck/test/build-to-throwaway-tag).
 - **Precondition: the dedup rule needs jobs that run on `merge_request_event` —
   retrofitting it onto a branch-only pipeline breaks *all* CI.** The two Config
   pieces are a contract, not independent: `$CI_OPEN_MERGE_REQUESTS → never`
