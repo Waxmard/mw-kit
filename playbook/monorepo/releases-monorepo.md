@@ -55,7 +55,10 @@ Each component dir holds two files.
     [
       "@semantic-release/commit-analyzer",
       {
+        "preset": "conventionalcommits",
         "releaseRules": [
+          { "breaking": true, "release": "major" },
+          { "revert": true, "release": "patch" },
           { "type": "refactor", "release": "patch" },
           { "type": "build", "release": "patch" },
           { "type": "chore", "release": "patch" },
@@ -64,7 +67,7 @@ Each component dir holds two files.
         ]
       }
     ],
-    "@semantic-release/release-notes-generator",
+    ["@semantic-release/release-notes-generator", { "preset": "conventionalcommits" }],
     "@semantic-release/changelog",
     [
       "@semantic-release/exec",
@@ -97,9 +100,16 @@ name + path (the component is e.g. a Python app, not a JS package):
 }
 ```
 
-- `releaseRules` extends the angular preset's `feat`→minor / `fix`,`perf`→patch
-  so housekeeping types (`refactor`/`build`/`chore`/`ci`/`style`) also cut a
-  patch — drop it for stock angular behaviour.
+- `releaseRules` are **first-match-wins**; a custom rule shadows the analyzer
+  defaults for any commit it matches (it does not merge). `breaking`→major is
+  listed first so a `feat!` can't be downgraded by a later `type` rule; the
+  housekeeping types (`refactor`/`build`/`chore`/`ci`/`style`) add patch bumps,
+  and `feat`/`fix`/`perf` fall through to defaults. See [[releases-gitlab]]
+  §"Bump rules".
+- `"preset": "conventionalcommits"` (on analyzer **and** notes-generator, plus
+  the `conventional-changelog-conventionalcommits` install below) is required for
+  the `!` breaking marker to parse — the default angular preset ignores it, so
+  `feat!` ships as a plain minor. See [[releases-gitlab]] §"Preset".
 - `prepareCmd` writes the computed version back into the component's manifest
   (Python keeps `version = "0.0.0"` as a placeholder; the git tag is truth).
 - `publishCmd` retags the already-built image (see CI below) — `crane` only runs
@@ -142,7 +152,7 @@ changed:
     - test -n "$GCLOUD_TOKEN"   || { echo "gcp-auth must expose GCLOUD_TOKEN"; exit 1; }
     - cd <component>
   script:
-    - npm install --no-save semantic-release@25 semantic-release-monorepo@8 @semantic-release/{changelog,commit-analyzer,exec,git,gitlab,release-notes-generator}
+    - npm install --no-save semantic-release@25 semantic-release-monorepo@8 conventional-changelog-conventionalcommits @semantic-release/{changelog,commit-analyzer,exec,git,gitlab,release-notes-generator}
     - npx semantic-release
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
@@ -180,10 +190,9 @@ Releases need [[conventional-commits]], plus two monorepo rules:
   `chore(deps): …`. To accumulate instead, add
   `{ "type": "chore", "scope": "deps", "release": false }` ahead of the `chore`
   rule.
-- **Sparse changelogs for housekeeping releases** — `release-notes-generator`
-  (angular) only renders `feat`/`fix`/`perf` sections, so a `refactor`-only
-  release bumps the version but writes a thin entry. Switch to the
-  `conventionalcommits` preset if you want every type in the notes.
+- **The `conventionalcommits` preset (config above) also renders every type's
+  section** in the changelog, so a `refactor`-only release writes a real entry
+  rather than the thin one the angular preset would produce.
 - **One version *per component*, not per repo.** Independent cadences are the
   point; don't try to unify them into a single repo version.
 - **Tokens:** `GITLAB_TOKEN` (api + write_repository, bot allowed on protected
