@@ -127,6 +127,12 @@ name + path (the component is e.g. a Python app, not a JS package):
   the `conventional-changelog-conventionalcommits` install below) is required for
   the `!` breaking marker to parse — the default angular preset ignores it, so
   `feat!` ships as a plain minor. See [[releases-gitlab]] §"Preset".
+- **Pin `conventional-changelog-conventionalcommits@9`** (install line above) and
+  Renovate-guard it to `<10`. v10 is the new `@conventional-changelog/*`
+  generation, silently incompatible with `release-notes-generator@14`/`writer@8`:
+  it drops every commit at render time, so all releases get header-only
+  changelogs (no body) while still bumping and tagging. See [[releases-gitlab]]
+  §"Preset" / §"Gotchas".
 - `prepareCmd` writes the computed version back into the component's manifest
   (Python keeps `version = "0.0.0"` as a placeholder; the git tag is truth).
 - `publishCmd` retags the already-built image (see CI below) — `crane` only runs
@@ -169,7 +175,7 @@ changed:
     - test -n "$GCLOUD_TOKEN"   || { echo "gcp-auth must expose GCLOUD_TOKEN"; exit 1; }
     - cd <component>
   script:
-    - npm install --no-save semantic-release@25 semantic-release-monorepo@8 conventional-changelog-conventionalcommits @semantic-release/{changelog,commit-analyzer,exec,git,gitlab,release-notes-generator}
+    - npm install --no-save semantic-release@25 semantic-release-monorepo@8 conventional-changelog-conventionalcommits@9 @semantic-release/{changelog,commit-analyzer,exec,git,gitlab,release-notes-generator}
     - npx semantic-release
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
