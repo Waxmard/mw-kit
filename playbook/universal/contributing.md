@@ -51,13 +51,14 @@ We follow [Conventional Commits](https://www.conventionalcommits.org/): `<type>(
 are used as normal. These types drive automated versioning (see Deploys & Releases).
 
 Let [git-ai](https://github.com/Waxmard/git-ai) draft a conventional commit from staged changes.
-Install the CLI once with `npm install -g @waxmard/git-ai` (the `waxmard-git-ai` PyPI package is a
-library, not the CLI), then:
+Install the CLI once with `npm install -g @waxmard/git-ai` (or `uv tool install waxmard-git-ai` /
+`pip install waxmard-git-ai` — same CLI, needs `bash` on `PATH`), then:
 
     git add -A
-    git commit -m "$(git-ai commit)"
+    git-ai commit                     # prints a Conventional Commits message to stdout — review it
+    git commit -m "$(git-ai commit)"  # …or commit with it in one line
 
-Run `git-ai setup` once to configure a provider. Edit the suggestion before committing.
+Run `git-ai setup` once to configure a provider.
 
 ## Merge Requests / Pull Requests
 Always open one — even for small changes.
