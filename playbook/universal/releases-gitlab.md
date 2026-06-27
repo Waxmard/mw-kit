@@ -39,7 +39,24 @@ release-please is GitHub-flavored (uses Actions, GitHub PR auto-merge labels). s
         { "type": "style", "release": "patch" }
       ]
     }],
-    ["@semantic-release/release-notes-generator", { "preset": "conventionalcommits" }],
+    ["@semantic-release/release-notes-generator", {
+      "preset": "conventionalcommits",
+      "presetConfig": {
+        "types": [
+          { "type": "feat", "section": "Features" },
+          { "type": "fix", "section": "Bug Fixes" },
+          { "type": "perf", "section": "Performance Improvements" },
+          { "type": "revert", "section": "Reverts" },
+          { "type": "refactor", "section": "Refactoring" },
+          { "type": "build", "section": "Build System" },
+          { "type": "chore", "section": "Chores" },
+          { "type": "ci", "section": "Continuous Integration" },
+          { "type": "style", "section": "Styles" },
+          { "type": "docs", "hidden": true },
+          { "type": "test", "hidden": true }
+        ]
+      }
+    }],
     ["@semantic-release/changelog", { "changelogFile": "CHANGELOG.md" }],
     ["@semantic-release/git", {
       "assets": ["CHANGELOG.md", "package.json"],
@@ -78,7 +95,9 @@ That's why `{ "breaking": true, "release": "major" }` is listed **first**: a `fe
 
 ## Preset
 
-`"preset": "conventionalcommits"` on **both** `commit-analyzer` and `release-notes-generator` is required — without it semantic-release uses the **angular** preset, whose header regex doesn't recognize the `!` breaking marker, so `feat!:` is treated as a non-breaking `feat` (only a `BREAKING CHANGE:` footer would bump major). The preset ships in a separate package: add `conventional-changelog-conventionalcommits` as a devDep (and to the pipeline `npx -p …` list, as above). The notes-generator preset also renders every type's section in the changelog, not just `feat`/`fix`/`perf`.
+`"preset": "conventionalcommits"` on **both** `commit-analyzer` and `release-notes-generator` is required — without it semantic-release uses the **angular** preset, whose header regex doesn't recognize the `!` breaking marker, so `feat!:` is treated as a non-breaking `feat` (only a `BREAKING CHANGE:` footer would bump major). The preset ships in a separate package: add `conventional-changelog-conventionalcommits` as a devDep (and to the pipeline `npx -p …` list, as above).
+
+**`presetConfig.types` on the notes-generator is mandatory whenever `releaseRules` releases on types beyond `feat`/`fix`/`perf`.** The conventionalcommits preset's *default* type table hides `refactor`/`build`/`ci`/`chore`/`style` — so a release driven solely by one of those bumps the version but writes a **header-only changelog entry with no body**. The fix is to spell out a `presetConfig.types` list that un-hides every type you release on (config above). Keep `presetConfig.types` aligned with `releaseRules`: every type that cuts a release needs a visible `section` here, or its release lands blank.
 
 ## Gotchas
 

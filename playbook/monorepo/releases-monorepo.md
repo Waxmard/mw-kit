@@ -67,7 +67,24 @@ Each component dir holds two files.
         ]
       }
     ],
-    ["@semantic-release/release-notes-generator", { "preset": "conventionalcommits" }],
+    ["@semantic-release/release-notes-generator", {
+      "preset": "conventionalcommits",
+      "presetConfig": {
+        "types": [
+          { "type": "feat", "section": "Features" },
+          { "type": "fix", "section": "Bug Fixes" },
+          { "type": "perf", "section": "Performance Improvements" },
+          { "type": "revert", "section": "Reverts" },
+          { "type": "refactor", "section": "Refactoring" },
+          { "type": "build", "section": "Build System" },
+          { "type": "chore", "section": "Chores" },
+          { "type": "ci", "section": "Continuous Integration" },
+          { "type": "style", "section": "Styles" },
+          { "type": "docs", "hidden": true },
+          { "type": "test", "hidden": true }
+        ]
+      }
+    }],
     "@semantic-release/changelog",
     [
       "@semantic-release/exec",
@@ -190,9 +207,12 @@ Releases need [[conventional-commits]], plus two monorepo rules:
   `chore(deps): …`. To accumulate instead, add
   `{ "type": "chore", "scope": "deps", "release": false }` ahead of the `chore`
   rule.
-- **The `conventionalcommits` preset (config above) also renders every type's
-  section** in the changelog, so a `refactor`-only release writes a real entry
-  rather than the thin one the angular preset would produce.
+- **`presetConfig.types` is mandatory on the notes-generator** (config above).
+  The conventionalcommits preset *hides* `refactor`/`build`/`ci`/`chore`/`style`
+  by default, so a release driven only by one of those — e.g. a `refactor`-only
+  component bump — writes a **header-only changelog entry with no body**.
+  Spelling out `presetConfig.types` un-hides them; keep that list aligned with
+  `releaseRules` or those releases land blank.
 - **One version *per component*, not per repo.** Independent cadences are the
   point; don't try to unify them into a single repo version.
 - **Tokens:** `GITLAB_TOKEN` (api + write_repository, bot allowed on protected
