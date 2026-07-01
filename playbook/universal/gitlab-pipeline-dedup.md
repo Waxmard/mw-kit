@@ -85,6 +85,32 @@ The trade-off: you forgo **merged-results pipelines** (testing the real merge
 result) and other MR-only features. Most repos don't miss them — adopt the
 MR-preferred variant below only when you specifically want them.
 
+**"Every job" includes build/push-image jobs — don't narrow one to `main` out of
+a misplaced instinct that "pushes an artifact" means "gate like a deploy."** That
+silently re-creates the branch/MR split this pattern exists to avoid (now it's one
+job instead of two pipelines) and means feature branches never get build feedback
+until merge. Gate the job the same as everything else (`if: $CI_COMMIT_BRANCH`,
+plus `changes:` if scoping it); instead scope the **tag** so non-main branches
+can't clobber the tag your deploy config actually points at:
+
+```yaml
+build-image:
+  stage: build
+  rules:
+    - if: $CI_COMMIT_BRANCH
+      changes: [Dockerfile, src/**/*]
+  script:
+    - |
+      if [ "$CI_COMMIT_BRANCH" = "$CI_DEFAULT_BRANCH" ]; then TAG=latest; else TAG="$CI_COMMIT_REF_SLUG"; fi
+      docker build -t "$REGISTRY/app:$TAG" . && docker push "$REGISTRY/app:$TAG"
+```
+
+Only a `release`/promotion step that decides "this build is now the thing that's
+live" gates to `main` (see the `release` examples below and [[releases-gitlab]]).
+That's a different axis from "don't rebuild at tag time" (Why, above) — this is
+about which *branches* build, that's about whether *tagging a release* triggers a
+*second* build instead of retagging the one the branch pipeline already produced.
+
 ### Opt-in — MR-preferred (suppress the branch pipeline)
 
 When you *want* MR pipelines: reviewers test the merged result, MR-scoped
