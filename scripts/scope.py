@@ -370,12 +370,15 @@ def scope_pages(
             if matched is None:
                 matched = detect_content_matches(detect_content, repo, tracked)
             if matched is None:
-                # A baseline page whose only `detect` signal is its own target is
-                # invisible exactly when the target is absent — the one case
-                # baseline tier exists to flag. Keep it in-scope as missing.
+                # A universal baseline page whose only `detect` signal is its own
+                # target is invisible exactly when the target is absent — the one
+                # case baseline tier exists to flag. Keep it in-scope as missing.
+                # Scoped to universal only: a scope-restricted (node/python/k8s)
+                # page needs an actual ecosystem signal, not just its own absence,
+                # or every repo outside that ecosystem gets falsely flagged.
                 tier = p.get("tier", "")
                 self_detecting = bool(detect) and set(detect) <= set(targets)
-                if not (tier == "baseline" and self_detecting):
+                if not (scope == "universal" and tier == "baseline" and self_detecting):
                     skipped.append(
                         {"tool": tool, "page": page, "reason": "no detect match"}
                     )
