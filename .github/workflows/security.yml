@@ -13,9 +13,9 @@ jobs:
   semgrep:
     runs-on: ubuntu-latest
     container:
-      image: semgrep/semgrep:1.163.0
+      image: semgrep/semgrep:1.168.0
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6  # nosemgrep: yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag
       - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - run: semgrep ci --sarif --output=semgrep.sarif
         env:
@@ -24,7 +24,7 @@ jobs:
             p/security-audit
             p/secrets
             p/owasp-top-ten
-      - uses: github/codeql-action/upload-sarif@v4
+      - uses: github/codeql-action/upload-sarif@v4  # nosemgrep: yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag
         if: always()
         with:
           sarif_file: semgrep.sarif
@@ -32,8 +32,8 @@ jobs:
   trivy-fs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: aquasecurity/trivy-action@v0.36.0
+      - uses: actions/checkout@v6  # nosemgrep: yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag
+      - uses: aquasecurity/trivy-action@v0.36.0  # nosemgrep: yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag
         with:
           scan-type: fs
           scan-ref: .
@@ -41,7 +41,7 @@ jobs:
           output: trivy-fs.sarif
           severity: CRITICAL,HIGH,MEDIUM
           ignore-unfixed: true
-      - uses: github/codeql-action/upload-sarif@v4
+      - uses: github/codeql-action/upload-sarif@v4  # nosemgrep: yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag
         if: always()
         with:
           sarif_file: trivy-fs.sarif

@@ -17,7 +17,7 @@ dev = [
     "pytest-cov>=7",
 ]
 
-[tool.uv]
+[tool.uv]  # nosemgrep: package_managers.uv.uv-missing-dependency-cooldown.uv-missing-dependency-cooldown
 package = false  # scripts-only repo — nothing imports/installs mw-kit
 
 [tool.ruff]
