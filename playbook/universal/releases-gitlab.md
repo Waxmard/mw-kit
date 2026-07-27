@@ -106,11 +106,21 @@ That's why `{ "breaking": true, "release": "major" }` is listed **first**: a `fe
 }
 ```
 
+**The `^9` floor matters as much as the `<10` ceiling — and it is why the preset must be a *direct* devDep, not an inherited one.** `commit-analyzer@13` and `release-notes-generator@14` both end with `return { ...loadedConfig.parser, ...parserOpts }` — they read the **`.parser` / `.writer`** keys, which the preset only started exposing in **v8**. v7 and earlier expose the old `.parserOpts` / `.writerOpts` names, so the spread yields `undefined` and **every preset option is silently discarded**; the parser falls back to its built-in defaults, which have no `breakingHeaderPattern` at all. Verified on a clean install of `semantic-release@25.0.3`:
+
+| preset version | `feat!: x` | `feat: x` | `chore: x` |
+| --- | --- | --- | --- |
+| `7.0.2` | **no release** | minor | patch |
+| `9.3.1` | major | minor | patch |
+
+Note the failure is *worse* than the angular fallback: angular at least parses `feat!` as a minor, while a v7 preset parses it as nothing at all. Nothing logs a warning — `preset` resolves, returns an object, and the options evaporate. This is the trap when the package arrives **transitively** (e.g. `@commitlint/config-conventional` pulls its own copy): a lockfile can say `9.3.1` while a stale `node_modules` still has `7.0.2`, and the two disagree about whether `feat!` cuts a release. Declare it in `devDependencies` yourself so the range is yours to control.
+
 **`presetConfig.types` on the notes-generator is mandatory whenever `releaseRules` releases on types beyond `feat`/`fix`/`perf`.** The conventionalcommits preset's *default* type table hides `refactor`/`build`/`ci`/`chore`/`style` — so a release driven solely by one of those bumps the version but writes a **header-only changelog entry with no body**. The fix is to spell out a `presetConfig.types` list that un-hides every type you release on (config above). Keep `presetConfig.types` aligned with `releaseRules`: every type that cuts a release needs a visible `section` here, or its release lands blank.
 
 ## Gotchas
 
 - **`feat!` needs the `conventionalcommits` preset** (see above) — under the default angular preset the `!` is ignored and the breaking change ships as a plain minor.
+- **`feat!` silently cutting *no* release means the preset resolved below v8.** Not a config bug — declaring `preset` has no effect on v7 and earlier (key rename, see Preset). Check the installed version, not the lockfile: `npm ls conventional-changelog-conventionalcommits`. A stale `node_modules` reproduces this locally while CI is fine, and vice versa.
 - Tag-on-push by default (no review PR). For a review workflow, use `dryRun` on MRs and let main pushes tag.
 - The `@semantic-release/git` plugin commits the changelog back — make sure the bot user can push to `main` (protected branch exception).
 - **`chore` now releases**, so dependency bumps (`chore(deps): ...`) cut a patch on their own — desired here, but it means more frequent tags than the stock config.

@@ -208,6 +208,9 @@ back to a gate after each file's report:
 - Never touch the code itself — only comment lines.
 - After editing, it's fine to let the user's normal formatter/linter (prettier,
   ruff) reflow; don't run builds yourself unless asked.
+- If you do run the project's checks, re-check `git status` afterward — a package
+  manager (`uv`, `npm`) may rewrite its lockfile as a side effect. Revert that
+  churn so the audit's diff stays comment-only.
 
 ## Step 4 — Wrap up
 
