@@ -63,6 +63,35 @@ already excludes config/markup languages and test files; trust it.
 
 ## Step 2 — Audit: classify every comment, worst-first
 
+### Who does the reading
+
+Scale the audit to the size of the `suspects` list. The judgment is per-file and
+files are disjoint, so this parallelizes cleanly:
+
+- **≤ 6 suspects** → audit inline. Spawn overhead beats the savings.
+- **> 6** → fan out **Sonnet** subagents (Agent tool, `model: sonnet`), ~6 files
+  per subagent, batched worst-first, launched in parallel (all Agent calls in a
+  single message). Don't dispatch the whole list at once on a big repo — go a
+  wave at a time so the user can bail early and so a bad rubric read shows up
+  before it's spent on 100 files.
+
+Each subagent gets: its file paths, the repo root, the active mode, and an
+instruction to read the rubric and report format from Step 2 of
+`${MW_KIT:-/Users/maxwellward/personal-dev/mw-kit}/skills/comment-audit/SKILL.md`
+— don't paraphrase the rubric into the prompt, it drifts. It returns **only** the
+per-file report blocks in the format below.
+
+What the subagent does with its verdicts depends on the mode:
+- **Auto mode** → it applies its own CUTs and TIGHTENs (disjoint files, so no
+  write conflicts) and returns the report as a record of what it did.
+- **Per-file mode** → it applies **nothing** and returns proposed edits only.
+  Subagents can't prompt the user, so the gate and the writes both stay in the
+  parent.
+
+Stays in the parent either way: the `git status` precondition, the mode
+announcement, the per-file gate, ordering the collected reports back into rank
+order, and the Step 4 summary.
+
 Walk the `suspects` list in order. For each file: read it fully, then classify
 **every** comment into cut / tighten / keep using the rubric below. Judge each
 comment against the code it sits on — both redundancy and verbosity are
@@ -177,7 +206,8 @@ Stream through the ranked list: for each file, classify (Step 2), **apply the
 CUTs and TIGHTENs immediately**, and emit a one-line record (e.g.
 `mockBackend.ts — 2 cut, 3 tightened, 4 kept`). No per-file pause. Keep going to
 the end of the list, then hand off to Step 4 so the user reviews the whole diff
-at once.
+at once. When the audit is fanned out, the subagents do the applying and you emit
+their one-line records as each wave returns.
 
 One precondition makes this safe: **the audit's edits should be the only
 uncommitted change**, so `git diff` shows exactly what the audit did and
