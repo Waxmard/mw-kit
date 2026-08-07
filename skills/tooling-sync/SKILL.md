@@ -50,7 +50,11 @@ Then:
    - platform → `--platform github|gitlab`
    - structure → `--structure single_project|multi_component`
    For the ambiguous-structure case, a nested single component is a strong monorepo signal — present it that way. When the answer is monorepo, also consult an existing **sibling component or org reference repo** for the concrete shape (CI include structure, image-tag flow) — the playbook block is canonical, the sibling shows the wired-up reality.
-3. **Relay the scoped set** before diffing, from the JSON: in-scope tools, the chosen alternatives (with the dropped ones named), and what was skipped + why. State single-project vs monorepo. When `state.present`, also name what's settled vs live: "Relevant: ruff, mypy, uv, pytest, lefthook, dependabot, releases-github. 5 settled since last sync (skipping); comparing 2 live: ruff (page changed), pytest (new). Skipped: node/* (no JS), renovate (alternative to dependabot). Scoped as single-project."
+3. **Greenfield repo → scope in the planned stack by hand.** Detection is *presence*-based (`**/*.py`, `package.json`, `go.mod`), so a repo whose stack is **decided but not yet written** scopes as "no language" and every language page lands in `skipped` with `no detect match`. The signal: `structure.manifests` is empty **and** no language-scope page is in `in_scope`. Don't take that at face value on a near-empty repo — ask what stack it's being built in (check a design doc / README / the user's stated plan first), then pull that scope's pages in manually and compare them as ❌ missing. There is no resolver flag for this; the manual scope-in *is* the fix, so say plainly which pages you added and why.
+
+   **Re-check the alternatives too.** Alternative resolution keys off the same absent detection, so it can pick the wrong winner: an empty repo on GitLab resolves `releases` → `releases-gitlab` (node semantic-release), when a repo about to be written in Python wants `releases-python`. Flip it and record the loser as `declined` with the reason (Step 6).
+
+4. **Relay the scoped set** before diffing, from the JSON: in-scope tools, the chosen alternatives (with the dropped ones named), and what was skipped + why. State single-project vs monorepo. When `state.present`, also name what's settled vs live: "Relevant: ruff, mypy, uv, pytest, lefthook, dependabot, releases-github. 5 settled since last sync (skipping); comparing 2 live: ruff (page changed), pytest (new). Skipped: node/* (no JS), renovate (alternative to dependabot). Scoped as single-project."
 
 ## Step 2 — Compare
 
@@ -177,6 +181,8 @@ The apply phase uses `Edit` / `Write` on the consumer repo's own config files. T
 - **Stale playbook:** if the repo pins a newer version than the playbook, the playbook is behind — note it, maybe suggest the user update mw-kit, don't downgrade the repo.
 - **Optional noise:** don't push `tier: optional` pages hard. Mention once, only when the repo plausibly benefits (e.g. tach only for a layered app, docker-bake only if it ships images).
 - **Platform mismatch:** a github-only page (security workflow, dependabot, release-please) on a gitlab repo is out of scope — its gitlab counterpart applies instead.
+- **A global gitignore can hide a target you just created.** The `.tooling-sync.json` case is called out in Step 6, but it generalizes: users commonly ignore `CLAUDE.md`, `*plan.md`, and similar globally, so an applied file can be correct on disk and invisible to `git status`. After applying, `git status --short` and — for anything missing — `git check-ignore -v <path>`. It's usually not a bug to fix (a locally-ignored `CLAUDE.md` symlink still works; the real `AGENTS.md` is what commits), but say which applied files will and won't be committed rather than implying all of them are staged-ready.
+- **Trust a reference repo's config, not its prose.** When mirroring a sibling/reference repo (the monorepo-shape case in Step 1, or "match what project X does"), read the actual config file — `pyproject.toml`, `package.json`, `mise.toml`. A reference repo's own `AGENTS.md`/`README` version claims drift from its config and are a real source of wrong pins; the playbook block plus the sibling's *config* are canonical, its docs are not.
 
 ## Retro — improve this skill
 
