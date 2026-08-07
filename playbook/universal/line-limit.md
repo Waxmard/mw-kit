@@ -172,6 +172,6 @@ If `make install`-style symlinking enumerates lib files explicitly, switch it to
 
 - **Tune the threshold deliberately** — too low forces artificial splits that hurt cohesion (a blunt cap can fragment a genuinely cohesive module). When you raise the limit for a repo, log *why*.
 - **It's a sprawl proxy, not a complexity check** — for internal complexity (long/branchy functions) lean on ruff `C901`/`PLR091x` and biome complexity rules instead; this script is orthogonal to those.
-- **Exclude generated + fixtures**, or the check fights `docs-gen` output, big test fixtures, and vendored code.
+- **Exclude generated + fixtures**, or the check fights generated output, big test fixtures, and vendored code.
 - A hard cap is a guardrail, not a design principle — split along real seams (cohesive function clusters), not at the arbitrary line where the counter trips.
 - A local pre-commit hook only sees *staged* files and is skippable; CI scans the whole tree and isn't — CI is the gate, the hook is just early warning.

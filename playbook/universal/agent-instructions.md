@@ -87,7 +87,6 @@ the moment a genuine Claude-only section appears.
 - **Symlink direction matters.** `AGENTS.md` is the real file; `CLAUDE.md` /
   `GEMINI.md` point at it. Reverse it and tools expecting the standard file follow a
   dangling-looking alias.
-- **Generated docs satisfy this too.** A repo using [[docs-gen]] renders both
-  `CLAUDE.md` and `AGENTS.md` as real files from one template — that's the same
-  lockstep guarantee by a different mechanism, so don't also symlink there. The
-  symlink is the lighter default for repos without the partials machinery.
+- **A repo that already generates both files is satisfied.** If `CLAUDE.md` and
+  `AGENTS.md` are rendered as real files from one template, that's the same lockstep
+  guarantee by a different mechanism — don't replace generated files with symlinks.

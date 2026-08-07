@@ -21,7 +21,6 @@ Root Makefile orchestrates subprojects. Top-level targets are aggregates; subpro
 help:
 	@echo "Setup: setup"
 	@echo "Quality: lint | fix | typecheck | test | ci"
-	@echo "Docs: docs-build | docs-check"
 	@echo "Subprojects: backend-<target> | frontend-<target>"
 
 # ----- Setup -----
@@ -37,14 +36,7 @@ lint:      backend-lint frontend-lint
 fix:       backend-fix frontend-fix
 typecheck: backend-typecheck frontend-typecheck
 test:      backend-test
-ci:        backend-ci frontend-lint frontend-typecheck docs-check
-
-# ----- Docs (generated from docs/src) -----
-.PHONY: docs-build docs-check
-docs-build:
-	mise exec -- python3 scripts/build_docs.py --write
-docs-check:
-	mise exec -- python3 scripts/build_docs.py --check
+ci:        backend-ci frontend-lint frontend-typecheck
 
 # ----- Backend: pattern rule delegates anything -----
 backend-%:
@@ -65,10 +57,6 @@ frontend-typecheck:
 `backend-%: $(MAKE) -C fastapi $*` means **any** target in `fastapi/Makefile` is reachable from root as `make backend-X`. Add `make logs` to fastapi/Makefile → `make backend-logs` works at root automatically.
 
 Frontend uses explicit targets because npm scripts aren't structured the same way.
-
-## Why `mise exec --` for docs
-
-Ensures python version pinned by `mise.toml` is used, even outside a shell with mise activated (CI runners).
 
 ## Anti-pattern: putting everything at root
 

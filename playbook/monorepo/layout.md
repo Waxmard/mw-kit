@@ -18,8 +18,7 @@ my-repo/
 ├── Makefile              # orchestrator: delegates to subprojects
 ├── fastapi/              # python project (own pyproject, own Makefile)
 ├── frontend/             # node project (own package.json)
-├── docs/src/             # doc templates
-├── scripts/              # repo-wide tooling (build_docs.py)
+├── scripts/              # repo-wide tooling
 └── .github/workflows/    # path-filtered per subproject
 ```
 

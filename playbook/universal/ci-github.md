@@ -99,8 +99,8 @@ if no job on `main` has side effects you'd lose by cancelling.
 
 ## Generated-file freshness gate
 
-If the repo commits a generated artifact (manifest, lockfile-derived index, docs from
-partials), add a job that regenerates it and fails on drift — the generator stays
+If the repo commits a generated artifact (manifest, lockfile-derived index, rendered
+docs), add a job that regenerates it and fails on drift — the generator stays
 honest without a human noticing a stale checkout:
 
 ```yaml

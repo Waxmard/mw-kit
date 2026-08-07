@@ -21,7 +21,6 @@ Machine-readable index of every playbook page. Source of truth = each page's YAM
 | `contributing` | baseline | CONTRIBUTING.md: branching, commits, MR/PR + review flow | `CONTRIBUTING.md` | — | any | [universal/contributing.md](universal/contributing.md) |
 | `conventional-commits` | baseline | Commit message format feeding release tooling | — | — | any | [universal/conventional-commits.md](universal/conventional-commits.md) |
 | `dependabot` | baseline | GitHub-native dependency update PRs | `.github/dependabot.yml` | — | `github` | [universal/dependabot.md](universal/dependabot.md) |
-| `docs-gen` | optional | Generate README/CLAUDE/AGENTS from partials via a small Python script | `docs/src/`, `scripts/build_docs.py` | — | any | [universal/docs-gen.md](universal/docs-gen.md) |
 | `git-ai-instructions` | baseline | Repo-local commit/PR guidance for git-ai, framed by user POV | `.git-ai-instructions` | `.git-ai-instructions` | any | [universal/git-ai-instructions.md](universal/git-ai-instructions.md) |
 | `gitlab-pipeline-dedup` | baseline | GitLab pipeline economy — workflow:rules dedup (one pipeline per change) + auto-cancel of superseded runs | `.gitlab-ci.yml` | `.gitlab-ci.yml` | `gitlab` | [universal/gitlab-pipeline-dedup.md](universal/gitlab-pipeline-dedup.md) |
 | `lefthook` | baseline | Git hooks with autofix + restage (stage_fixed) | `lefthook.yml` | — | any | [universal/lefthook.md](universal/lefthook.md) |
