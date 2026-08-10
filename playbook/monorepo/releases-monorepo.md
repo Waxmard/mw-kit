@@ -150,6 +150,7 @@ include:
   # - local: service-b/.gitlab-ci.yml   # added when the component lands
 
 variables:
+  DOCKER_BUILDKIT: "1"
   REGISTRY: REGION-docker.pkg.dev/PROJECT/REPO
 stages: [test, build, scan, release, maintenance]
 ```
