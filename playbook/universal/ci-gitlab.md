@@ -42,6 +42,9 @@ default:
   image: ghcr.io/astral-sh/uv:python3.14-bookworm-slim
   interruptible: true              # a newer commit cancels these (deploys opt out, see below)
 
+variables:
+  DOCKER_BUILDKIT: "1"
+
 # One pipeline per change, and a newer commit cancels the in-flight old one — see
 # [gitlab-pipeline-dedup](./gitlab-pipeline-dedup.md).
 workflow:
