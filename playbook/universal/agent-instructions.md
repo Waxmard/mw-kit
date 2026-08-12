@@ -87,6 +87,11 @@ the moment a genuine Claude-only section appears.
 - **Symlink direction matters.** `AGENTS.md` is the real file; `CLAUDE.md` /
   `GEMINI.md` point at it. Reverse it and tools expecting the standard file follow a
   dangling-looking alias.
-- **A repo that already generates both files is satisfied.** If `CLAUDE.md` and
-  `AGENTS.md` are rendered as real files from one template, that's the same lockstep
-  guarantee by a different mechanism — don't replace generated files with symlinks.
+- **Generating both files is drift, not a second valid answer.** A template that
+  renders `CLAUDE.md` and `AGENTS.md` as two real files buys the lockstep a symlink
+  gives for free — and pays for it with a generator script, a `make` target, a CI
+  staleness gate, and a pre-commit hook, all to keep two copies of one document in
+  step. Collapse it: make `AGENTS.md` the real file, symlink the rest, and delete the
+  machinery that existed only to duplicate it. Keep a doc generator only for work a
+  symlink can't do — shared prose across genuinely *different* documents — and take
+  the agent guides out of it even then.
