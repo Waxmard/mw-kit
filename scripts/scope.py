@@ -244,12 +244,17 @@ def annotate_state(
     state: dict[str, Any] | None,
     pb_head: str | None,
     changed_fn: Any = page_changed_since,
+    known_tools: set[str] | None = None,
 ) -> dict[str, Any]:
     """Attach a `state` block to each in-scope row and return a run-level summary.
 
     Per row: decision recalled from the state file, whether the governing page
     changed since that decision, and whether the row is `settled` (decision still
     holds → the skill may skip the compare). `changed_fn` is injectable for tests.
+
+    `known_tools` is every tool the playbook still has a page for; recorded tools
+    outside it are reported as `orphaned_tools` (the page was deleted or renamed,
+    so the resolver produces no row for them and the decision would rot unseen).
     """
     tools = (state or {}).get("tools", {})
     settled: list[str] = []
@@ -281,6 +286,12 @@ def annotate_state(
         row["state"] = st
         (settled if is_settled else stale).append(row["tool"])
 
+    orphaned = (
+        sorted(t for t in tools if t not in known_tools)
+        if known_tools is not None and isinstance(tools, dict)
+        else []
+    )
+
     return {
         "present": state is not None,
         "file": STATE_FILE,
@@ -293,6 +304,7 @@ def annotate_state(
         "settled_tools": sorted(settled),
         "stale_tools": sorted(stale),
         "new_tools": sorted(fresh),
+        "orphaned_tools": orphaned,
         "all_settled": bool(in_scope) and not stale and not fresh,
     }
 
@@ -562,7 +574,17 @@ def main() -> int:
 
     # incremental-sync memory: recall prior decisions, flag pages changed since
     state = None if a.no_state else load_state(repo)
-    state_summary = annotate_state(in_scope, state, playbook_head())
+    state_summary = annotate_state(
+        in_scope,
+        state,
+        playbook_head(),
+        known_tools={p["tool"] for p in pages},
+    )
+    warnings.extend(
+        f"state: '{tool}' has a recorded decision but no playbook page "
+        "(page deleted or renamed) — drop it from .tooling-sync.json"
+        for tool in state_summary["orphaned_tools"]
+    )
 
     needs_ask: list[dict[str, str]] = []
     if platform == "unknown":
