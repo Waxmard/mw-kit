@@ -32,7 +32,7 @@ The plan JSON:
 - `skipped` — `{tool, page, reason}` (no detect match / platform / single-project / alternative not chosen).
 - `needs_ask` — questions the script refused to guess (unknown platform, ambiguous structure).
 - `warnings` — plan-coherence issues; surface any to the user.
-- `state` — incremental-sync memory (see below): `{present, playbook_commit_now, playbook_commit_at_last_sync, last_sync, playbook_unchanged, settled_tools, stale_tools, new_tools, all_settled}`. Each `in_scope` row also carries a `state` block: `{decision, decided_at_commit, page_changed_since_decision, settled, reason?}`.
+- `state` — incremental-sync memory (see below): `{present, playbook_commit_now, playbook_commit_at_last_sync, last_sync, playbook_unchanged, settled_tools, stale_tools, new_tools, orphaned_tools, all_settled}`. Each `in_scope` row also carries a `state` block: `{decision, decided_at_commit, page_changed_since_decision, settled, reason?}`.
 
 ### Incremental sync (`.tooling-sync.json`)
 
@@ -42,6 +42,7 @@ The consumer repo carries a committed `.tooling-sync.json` recording each tool's
 - A row with `state.settled: false` is **live**: either new (`decision: "new"`), or its page changed since the decision (`page_changed_since_decision: true`). Compare these normally.
 - **Fast path:** if `state.all_settled` is true (every in-scope tool settled, nothing new or stale), there is nothing to compare. Report "Nothing new since last sync (`last_sync`, playbook @ `playbook_commit_at_last_sync` short). N tools settled." and stop — unless the user asks for a full re-check, in which case re-run the resolver with `--no-state` and compare everything.
 - If `state.present` is false, this is a first sync (or `--no-state`): compare every in-scope tool and write the file at the end.
+- **`state.orphaned_tools`** are recorded decisions whose playbook page no longer exists (deleted or renamed upstream). They produce no `in_scope` or `skipped` row — the record is the only trace left — so name them in the report and **drop them from the file in Step 6**. They don't block the fast path; on an otherwise all-settled run, report the fast path *and* the orphan cleanup.
 
 Then:
 
@@ -149,6 +150,7 @@ Rules for building it:
 - **Carry settled rows forward unchanged.** Start from the existing `tools` map (the plan's per-row `state` already gave you each prior record); only overwrite the entries you re-evaluated. Don't drop or re-stamp settled tools — their original `playbook_commit` is what keeps page-change detection honest.
 - Set top-level `last_sync` to today and `playbook_commit` to the same HEAD.
 - **Don't list out-of-scope or skipped tools.** Only in-scope tools get records.
+- **Delete every tool in `state.orphaned_tools`** while carrying the settled rows forward — its page is gone, so keeping the record means it never surfaces again. Say which ones you dropped.
 - On a report-only run where the user applied nothing: still write the file — record everything you compared (✅ as `synced`, the rest the user explicitly declined; if they didn't rule on an item, leave it out so it stays live next run).
 
 Show the written file once; don't pause per-key. Mention it's part of what to commit.

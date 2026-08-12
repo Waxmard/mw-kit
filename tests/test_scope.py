@@ -348,3 +348,27 @@ def test_annotate_state_unknown_decision_never_settles():
     }
     scope.annotate_state(rows, state, "c", changed_fn=lambda c, p: False)
     assert rows[0]["state"]["settled"] is False  # only synced/declined/override settle
+
+
+def test_annotate_state_flags_record_whose_page_is_gone():
+    # a deleted page yields no row at all, so the record can only surface here
+    rows = [_scoped_row("ruff")]
+    state = {
+        "playbook_commit": "c",
+        "tools": {
+            "ruff": {"decision": "synced", "playbook_commit": "c"},
+            "docs-gen": {"decision": "synced", "playbook_commit": "c"},
+        },
+    }
+    summary = scope.annotate_state(
+        rows, state, "c", changed_fn=lambda c, p: False, known_tools={"ruff", "mypy"}
+    )
+    assert summary["orphaned_tools"] == ["docs-gen"]
+    assert summary["all_settled"] is True  # orphans don't block the fast path
+
+
+def test_annotate_state_orphans_empty_without_known_tools():
+    rows = [_scoped_row("ruff")]
+    state = {"playbook_commit": "c", "tools": {"gone": {"decision": "synced"}}}
+    summary = scope.annotate_state(rows, state, "c", changed_fn=lambda c, p: False)
+    assert summary["orphaned_tools"] == []
