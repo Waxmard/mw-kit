@@ -36,7 +36,15 @@ Standard names across all projects:
 
 ## Dependencies
 
-- Pin biome exact (`"@biomejs/biome": "2.4.14"`) — minor releases change rules.
+- Resolve current stable versions from the registry before scaffolding. Template
+  and playbook versions may lag; check the lockfile as well as manifest ranges.
+- Verify peer dependency ranges before major upgrades. Keep the latest compatible
+  release when the framework's tools exclude the newest major, and document the
+  constraint in the consumer repo. Never bypass peers to claim everything is latest.
+- Match `@types/node` to the chosen Node LTS major rather than blindly following
+  its `latest` tag.
+- Pin biome exact (`"@biomejs/biome": "X.Y.Z"`, resolved to latest compatible stable)
+  — minor releases change rules.
 - Other devDeps caret OK.
 - App deps: caret for libs you trust to follow semver, exact for ones that don't (Expo, React Native).
 

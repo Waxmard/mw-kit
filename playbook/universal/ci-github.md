@@ -46,7 +46,7 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: astral-sh/setup-uv@v7
         with:
@@ -68,14 +68,16 @@ runtimes — otherwise it's wasted minutes.
 Swap the toolchain setup; the skeleton is identical:
 
 ```yaml
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: ".nvmrc"
-          cache: "npm"
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v4
       - run: npm ci
-      - run: npm run ci   # or: biome check + tsc + test
+      - run: make ci
 ```
+
+Use the repo's `mise.toml` as the Node version source. If the repo does not use
+mise, use `actions/setup-node@v7` with its existing version file instead.
+Verify current stable Action majors before copying either example; Dependabot
+maintains them after setup.
 
 ## Auto-cancel superseded runs
 

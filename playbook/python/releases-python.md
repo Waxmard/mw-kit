@@ -16,7 +16,7 @@ platform: gitlab
 
 ## Why over node semantic-release
 
-[[releases-gitlab]] works, but drags `node:22` + five npm plugins into a Python repo just to cut a tag. PSR is one pip install, keeps the version where Python tooling expects it (`[project].version`), and configures in `pyproject.toml` next to ruff/mypy. **Python repo on GitLab → use this page instead of [[releases-gitlab]]; never both.** A multi-component monorepo → [[releases-monorepo]] instead: PSR computes one version per repo and can't path-scope the bump to a single component.
+[[releases-gitlab]] works, but drags `node:24` + five npm plugins into a Python repo just to cut a tag. PSR is one pip install, keeps the version where Python tooling expects it (`[project].version`), and configures in `pyproject.toml` next to ruff/mypy. **Python repo on GitLab → use this page instead of [[releases-gitlab]]; never both.** A multi-component monorepo → [[releases-monorepo]] instead: PSR computes one version per repo and can't path-scope the bump to a single component.
 
 Reference implementations: `partshop/wolfcoder` (origin of this pattern), `data-den/braindump`.
 

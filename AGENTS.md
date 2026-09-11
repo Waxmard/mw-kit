@@ -65,7 +65,7 @@ freshness in consumer repos, so the playbook never needs a real number.
 *Exceptions, which stay concrete:* version-ref pins that must resolve to run and
 are bot-managed (GitHub Action `uses:@v6`, GitLab CI component `@x.y.z`), and
 deliberate **policy versions** the repo maintains in lockstep (`python:3.14`,
-`node:22`, `requires-python`).
+`node:24`, `requires-python`).
 
 `scope` is one of five, mirrored by the directory: `universal/` (every project),
 `python/`, `node/`, `k8s/` (Kubernetes-manifest / GitOps repos), `monorepo/`.
