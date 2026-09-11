@@ -103,7 +103,7 @@ Swap the image + setup anchor; the stage/rules structure is identical:
 
 ```yaml
 default:
-  image: node:22
+  image: node:24
 
 .npm:
   before_script:
@@ -126,7 +126,7 @@ lint:
 - **Cache `key.files: [uv.lock]`** — keying on the lockfile means the cache busts only
   when deps actually change. Keying on branch/ref instead reuses stale `.venv` across
   dependency bumps.
-- **Pin the image** (`uv:python3.14-...`, `node:22`), not `:latest` — reproducible
+- **Pin the image** (`uv:python3.14-...`, `node:24`), not `:latest` — reproducible
   pipelines, intentional bumps (renovate handles them — see [renovate](./renovate.md)).
 - **Adding a `release` stage?** Don't rebuild — see
   [releases-python](../python/releases-python.md) / [releases-gitlab](./releases-gitlab.md)

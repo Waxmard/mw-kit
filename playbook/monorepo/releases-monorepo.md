@@ -163,7 +163,7 @@ changed:
 ```yaml
 <component>-semantic-release:
   stage: release
-  image: node:22-alpine
+  image: node:24-alpine
   variables: { GIT_DEPTH: "0" }
   needs:
     - { job: gcp-auth, artifacts: true }

@@ -74,7 +74,7 @@ release-please is GitHub-flavored (uses Actions, GitHub PR auto-merge labels). s
 ```yaml
 release:
   stage: release
-  image: node:22
+  image: node:24
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
   variables:

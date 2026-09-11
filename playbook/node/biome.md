@@ -28,9 +28,13 @@ detect: ["package.json", "**/*.{ts,tsx,js,jsx}"]
 
 ## Config
 
+Replace `X.Y.Z` with the latest compatible stable Biome release and pin that same
+version in devDependencies. Verify the release when scaffolding; dependency bots
+maintain the consumer repo afterward.
+
 ```json
 {
-  "$schema": "https://biomejs.dev/schemas/2.4.14/schema.json",
+  "$schema": "https://biomejs.dev/schemas/X.Y.Z/schema.json",
   "files": {
     "includes": ["src/**/*.{ts,tsx,js,jsx,json}"]
   },

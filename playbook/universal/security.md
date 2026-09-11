@@ -46,7 +46,7 @@ jobs:
     container:
       image: semgrep/semgrep:X.Y.Z # pin to latest stable; renovate bumps it
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - run: semgrep ci --sarif --output=semgrep.sarif
         env:
@@ -66,7 +66,7 @@ jobs:
   trivy-fs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
@@ -83,7 +83,7 @@ jobs:
   trivy-image:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - run: docker build -t app-backend:ci ./fastapi
       - uses: aquasecurity/trivy-action@v0.36.0
         with:
