@@ -63,5 +63,3 @@ require Code Owner approval**.
 - The file alone requests reviewers but does **not** block merge — you must also flip
   the branch-protection toggle (GitHub) / approval rule (GitLab). Without it, CODEOWNERS
   is advisory.
-- **Don't list the review bot here** (WolfCoder/pupcoder). The bot reviews via CI; the
-  code owner is the *human* whose approval the contributing flow requires.

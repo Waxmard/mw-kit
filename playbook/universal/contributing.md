@@ -71,11 +71,7 @@ Always open one — even for small changes.
 - **Keep it focused.** One logical change per MR keeps review and the changelog clean.
 
 ## Review & Approval
-Every MR needs two passes — **automated review first, then a human.**
-
-- **Bot first.** Let the review bot ({{WolfCoder/pupcoder on GitLab; configured review bot on GitHub}})
-  review and approve before adding a human reviewer. Address its findings up front.
-- **Then a human.** A [CODEOWNER](.gitlab/CODEOWNERS) is auto-requested; one human
+A [CODEOWNER](.gitlab/CODEOWNERS) is auto-requested; one human
   approval is required to merge.
 
 ## Deploys & Releases
@@ -93,7 +89,5 @@ This is why commit hygiene matters: every commit on `main` is read by the releas
   than implying every consumer repo should read identically.
 - **Squash discipline is the whole game** for release accuracy: if the squashed commit title
   isn't conventional, the changelog and version bump are wrong regardless of the branch commits.
-- **The bot does not replace the human approval** — it's an additional, earlier gate. The
-  required approval still comes from a [[codeowners]] human.
 - Pick the matching release page: [[releases-github]], [[releases-gitlab]], Python repos →
   [[releases-python]], monorepos → [[releases-monorepo]].
