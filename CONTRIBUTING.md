@@ -36,9 +36,7 @@ Always open one — even for small changes.
 - **Keep it focused.** One logical change per PR keeps review and the history clean.
 
 ## Review & Approval
-- **Bot first.** The `claude-code-review` workflow reviews every PR automatically —
-  address its findings up front.
-- **Then a human.** A [CODEOWNER](.github/CODEOWNERS) is auto-requested; one human
+- A [CODEOWNER](.github/CODEOWNERS) is auto-requested; one human
   approval is required to merge.
 
 ## Deploys & Releases
