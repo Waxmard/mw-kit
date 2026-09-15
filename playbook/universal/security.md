@@ -68,6 +68,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: aquasecurity/trivy-action@v0.36.0
+        env:
+          TRIVY_INCLUDE_DEV_DEPS: 'true'
         with:
           scan-type: fs
           scan-ref: .
@@ -116,6 +118,9 @@ Cherry-pick semgrep packs per language. Don't enable everything — noise kills 
 ## Gotchas
 
 - `ignore-unfixed: true` on trivy — there's nothing you can do about an unfixed CVE except wait, so don't gate PRs on it.
+- `TRIVY_INCLUDE_DEV_DEPS: 'true'` keeps npm/yarn/Gradle application dependencies
+  visible when they live under development dependency classifications. Without it,
+  an app with every package in `devDependencies` produces an empty vulnerability scan.
 - `severity: CRITICAL,HIGH,MEDIUM` — drop MEDIUM if signal-to-noise hurts.
 - Semgrep container pin (`semgrep/semgrep:X.Y.Z`) gives reproducible scans — pin to a real version, don't run `:latest`. Renovate bumps it.
 - `if: always()` on SARIF upload so a scan failure still uploads partial results.

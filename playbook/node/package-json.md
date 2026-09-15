@@ -2,8 +2,8 @@
 tool: package-json
 scope: node
 tier: baseline
-summary: "Standard scripts + dependency pinning conventions"
-targets: ["package.json"]
+summary: "Standard scripts, dependency pinning, and release-age policy"
+targets: ["package.json", ".npmrc"]
 detect: ["package.json"]
 ---
 
@@ -47,6 +47,20 @@ Standard names across all projects:
   — minor releases change rules.
 - Other devDeps caret OK.
 - App deps: caret for libs you trust to follow semver, exact for ones that don't (Expo, React Native).
+
+## Supply-chain delay
+
+`.npmrc`:
+
+```ini
+engine-strict=true
+min-release-age=7
+```
+
+`min-release-age` excludes package versions published within the last seven days
+from resolution. Security fixes blocked by this window fail loudly; temporarily add
+the package to `min-release-age-exclude[]` when a verified urgent fix cannot wait.
+Requires npm 11.10 or newer.
 
 ## Root package.json (monorepo dev tooling)
 
