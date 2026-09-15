@@ -47,7 +47,7 @@ Machine-readable index of every playbook page. Source of truth = each page's YAM
 |---|---|---|---|---|---|---|
 | `biome` | baseline | JS/TS lint + format + import sort (replaces eslint + prettier) | `biome.json`, `package.json` | `package.json`, `**/*.{ts,tsx,js,jsx}` | any | [node/biome.md](node/biome.md) |
 | `expo` | optional | Expo SDK conventions for React Native apps | `package.json`, `app.json`, `app.config.ts` | `app.json`, `app.config.ts`, `app.config.js` | any | [node/expo.md](node/expo.md) |
-| `package-json` | baseline | Standard scripts + dependency pinning conventions | `package.json` | `package.json` | any | [node/package-json.md](node/package-json.md) |
+| `package-json` | baseline | Standard scripts, dependency pinning, and release-age policy | `package.json`, `.npmrc` | `package.json` | any | [node/package-json.md](node/package-json.md) |
 | `typescript` | baseline | Strict tsconfig, noEmit type-checking | `tsconfig.json` | `tsconfig.json`, `**/*.{ts,tsx}` | any | [node/typescript.md](node/typescript.md) |
 
 ## k8s
