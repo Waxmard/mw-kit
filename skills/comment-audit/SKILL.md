@@ -2,17 +2,16 @@
 name: comment-audit
 description: >
   Audit a codebase for redundant, stale, verbose, or noise comments and clean
-  them up. A cheap `scc`-based pre-flight ranks code files by comment
-  density/volume so the expensive LLM read only touches files worth checking;
-  then it judges each comment (cut redundant / tighten verbose / keep
-  load-bearing) and applies the edits, defaulting to auto-apply across the repo
-  with a `git diff` review after (a per-file gate is available on request).
-  Aggressive by default — it trims accurate-but-wordy comments, not just
-  redundant ones. Use this whenever the user wants to find or remove unnecessary
-  comments, reduce comment noise, tighten verbose or over-long comments, check
-  for over-commenting or redundant docstrings/JSDoc, clean up commented-out code,
-  or asks "are there too many comments here" or "these comments are too verbose"
-  — even if they don't name a tool. Trigger: "audit comments", "too many
+  them up. A cheap `scc`-based pre-flight ranks files by comment density so the
+  expensive LLM read only touches files worth checking; then it judges each
+  comment (cut redundant / tighten verbose / keep load-bearing) and applies the
+  edits, auto-applying across the repo with a `git diff` review after (per-file
+  gate on request). Aggressive by default — it trims accurate-but-wordy
+  comments, not just redundant ones. Use whenever the user wants to find or
+  remove unnecessary comments, reduce comment noise, tighten verbose comments,
+  check for over-commenting or redundant docstrings/JSDoc, clean up
+  commented-out code, or asks "are there too many comments here" — even if they
+  don't name a tool. Trigger: "audit comments", "too many
   comments", "comments too verbose", "find redundant comments", "clean up
   comments", "tighten comments", "comment audit", "remove noise comments", or
   /comment-audit.

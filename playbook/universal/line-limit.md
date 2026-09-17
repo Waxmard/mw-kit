@@ -11,7 +11,7 @@ targets: ["scripts/check-line-limit.sh"]
 ## What
 
 A small portable-bash script fails the build when any hand-written source file
-exceeds a per-file line cap (**default 500**). **CI is the gate** — a full-tree
+exceeds a per-file line cap (**default 800**). **CI is the gate** — a full-tree
 scan that can't be bypassed. A local pre-commit hook is *optional* fast feedback,
 not enforcement (any git hook is skippable with `--no-verify`).
 
@@ -31,7 +31,7 @@ Sprawl has no clean lint rule — cohesion metrics (LCOM/`cohesion`, Radon MI, D
 ## When to use it / when not
 
 - **Use** on repos you actively maintain and want to keep modular. Deliberate and opinionated — hence `optional` tier, not baseline.
-- The threshold is a preference, **tune per repo** (default 500; a doc-heavy or generated-heavy repo may want higher, a tight library lower).
+- The threshold is a preference, **tune per repo** (default 800; a doc-heavy or generated-heavy repo may want higher, a tight library lower).
 - **Exclude** what shouldn't be governed: generated files, vendored code, test fixtures, prompt text, lockfiles. The check only looks at *hand-written source*.
 
 ## The script
@@ -46,10 +46,10 @@ Sprawl has no clean lint rule — cohesion metrics (LCOM/`cohesion`, Radon MI, D
 #   scripts/check-line-limit.sh            # scan the repo source set (CI)
 #   scripts/check-line-limit.sh FILE...    # check only the given files (local hook)
 #
-# Override the cap with LINE_LIMIT (default 500).
+# Override the cap with LINE_LIMIT (default 800).
 set -euo pipefail
 
-LIMIT="${LINE_LIMIT:-500}"
+LIMIT="${LINE_LIMIT:-800}"
 
 # Is PATH one of the source files this check governs? Adjust per repo — list the
 # hand-written source dirs/extensions, exclude generated/vendored/fixtures.
