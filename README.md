@@ -42,7 +42,7 @@ skills/            # Claude Code skills (symlinked into ~/.claude/skills)
 | Vuln scanning | trivy (fs + image) |
 | Multi-arch builds | docker bake |
 | Agent instructions | `AGENTS.md` (agent-agnostic) as source of truth, `CLAUDE.md` symlinked to it |
-| Per-file size cap | line-limit script (CI gate, optional local hook), default 500 lines |
+| Per-file size cap | line-limit script (CI gate, optional local hook), default 800 lines |
 | Contribution flow | `CONTRIBUTING.md` — branching, commits, MR/PR + human review |
 | Required reviewers | `CODEOWNERS` — path → owner, gates the human approval |
 | Commit/PR AI guidance | `.git-ai-instructions` — repo user-POV for [git-ai](https://github.com/Waxmard/git-ai) prefixing |
