@@ -69,6 +69,7 @@ workflow:
     key:
       files: [uv.lock]
     paths: [.venv/, .cache/uv/]
+    policy: pull
   variables:
     UV_CACHE_DIR: .cache/uv
 
@@ -82,15 +83,29 @@ lint:
 typecheck:
   stage: test
   extends: [.uv, .test-rules]
+  cache:
+    - key:
+        files: [uv.lock]
+      paths: [.venv/, .cache/uv/]
+      policy: pull
+    - key: mypy-$CI_COMMIT_REF_SLUG
+      fallback_keys:
+        - mypy-$CI_DEFAULT_BRANCH
+      paths: [.mypy_cache/]
+      policy: pull-push
   script:
     - uv run mypy .
 
 test:
   stage: test
   extends: [.uv, .test-rules]
+  cache:
+    key:
+      files: [uv.lock]
+    paths: [.venv/, .cache/uv/]
+    policy: pull-push
   script:
     - uv run pytest
-```
 
 Three jobs instead of one `make ci` step: GitLab runs stage jobs in parallel, so
 splitting lint/typecheck/test gives independent pass/fail and concurrent runners —
@@ -112,12 +127,22 @@ default:
     key:
       files: [package-lock.json]
     paths: [node_modules/]
+    policy: pull
 
 lint:
   stage: test
   extends: [.npm, .test-rules]
   script: [npm run lint]
-```
+
+test:
+  stage: test
+  extends: [.npm, .test-rules]
+  cache:
+    key:
+      files: [package-lock.json]
+    paths: [node_modules/]
+    policy: pull-push
+  script: [npm test]
 
 ## Gotchas
 
@@ -126,6 +151,15 @@ lint:
 - **Cache `key.files: [uv.lock]`** — keying on the lockfile means the cache busts only
   when deps actually change. Keying on branch/ref instead reuses stale `.venv` across
   dependency bumps.
+- **Cache policy `policy: pull` on consumer jobs, `pull-push` on only one.** In a
+  parallel stage, default cache policy causes every job to re-pack and upload the
+  identical multi-gigabyte cache archive on finish (15–30s wasted runner time per
+  job). Set `policy: pull` on the base anchor (`.uv`, `.npm`) and override with
+  `policy: pull-push` exclusively on the `test` job.
+- **Incremental compiler cache (`.mypy_cache`)** — static typecheckers like mypy
+  benefit from branch-keyed incremental state (`key: mypy-$CI_COMMIT_REF_SLUG`) with
+  fallback to the default branch (`fallback_keys: [mypy-$CI_DEFAULT_BRANCH]`),
+  cutting cached typecheck runs from 30s+ down to ~2s.
 - **Pin the image** (`uv:python3.14-...`, `node:24`), not `:latest` — reproducible
   pipelines, intentional bumps (renovate handles them — see [renovate](./renovate.md)).
 - **Adding a `release` stage?** Don't rebuild — see

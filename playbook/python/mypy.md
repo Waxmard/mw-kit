@@ -61,8 +61,11 @@ dev = [
 - run: uv run mypy app/
 ```
 
+In GitLab CI, cache `.mypy_cache/` keyed by branch slug with a fallback to the default branch (see [ci-gitlab](../universal/ci-gitlab.md)). This avoids repeating AST/type analysis from scratch on every run.
+
 ## Gotchas
 
 - Don't typecheck tests by default — too many assertion ergonomics. If you want to: separate config target.
 - Pin `python_version` to match the `requires-python` floor in [[uv]] — newest stable for a service (`3.14`), the broad floor for a published library — *not* the version you dev on. Targeting a newer version than you support lets version-only syntax slip past the checker and break users on the floor.
+- **Cache `.mypy_cache` across runs.** Mypy generates fine-grained cache artifacts in `.mypy_cache/`. Key the cache on the branch ref with fallback to the default branch to reduce CI typecheck times from 30s+ to 1–2s on typical commits.
 - SQLAlchemy 2.0 mapped types work out of box. SQLAlchemy 1.x needs `sqlalchemy-stubs`.
