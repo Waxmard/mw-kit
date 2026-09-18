@@ -129,3 +129,4 @@ setup-buildx:
 - The hash must include the Dockerfile and any build-context files outside the service dir (e.g. shared `requirements/` or `.dockerignore`).
 - `docker manifest inspect` returns 0 only if all platforms exist. If you add a new platform later, all old hashes are "missing" → rebuild.
 - Use `--cache-from` / `--cache-to` GH Actions cache backend for additional speedup beyond skip-on-hash.
+- **Multi-arch on single-arch runners:** building ARM64 on x86 CI runners requires QEMU user-space emulation (3–5x slower during package installs and layer exports). If your deployment target (Cloud Run, standard x86 GKE nodes) runs exclusively on AMD64, drop the ARM64 platform target from CI and build only for `linux/amd64`.

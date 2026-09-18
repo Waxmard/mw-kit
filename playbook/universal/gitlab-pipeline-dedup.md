@@ -299,3 +299,20 @@ fails (fail-fast), vs `none` to let siblings finish.
 - **Monorepos** — [[ci-paths]] covers GitHub (`paths:`); on GitLab add `changes:`
   filters to the job `rules` instead (see [Monorepo (GitLab)](#monorepo-gitlab)).
   The workflow dedup block stays identical either way.
+- **`allow_failure: true` inside `rules:` for manual jobs.** In manual cleanup or
+  stop jobs (`when: manual`, e.g. environment teardown), placing `allow_failure: true`
+  at the job top-level is overridden by the `rules:` array entry (which defaults to
+  `allow_failure: false`). This leaves open MR pipelines permanently stuck in `running`
+  status instead of completing with `success`. Place `allow_failure: true` inside the
+  specific `rules:` item:
+  ```yaml
+  cleanup:
+    rules:
+      - if: $CI_MERGE_REQUEST_IID
+        when: manual
+        allow_failure: true
+  ```
+- **DAG unblocking (`needs:`).** Downstream jobs (such as review deployments) should
+  only `needs:` jobs whose artifacts or gating they strictly depend on. Decouple
+  independent security checks (`trivy-image-scan`) so deployments start immediately
+  in parallel with scans instead of waiting in serial.
