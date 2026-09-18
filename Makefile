@@ -11,7 +11,7 @@ help:
 setup:
 	uv sync
 
-# ----- Quality (single python subproject today; add Go targets later) -----
+# ----- Quality -----
 fmt:
 	uv run ruff check --fix scripts/ tests/
 	uv run ruff format scripts/ tests/
