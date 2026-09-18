@@ -35,10 +35,10 @@ from fnmatch import fnmatch
 from pathlib import Path
 from typing import Any
 
-# parse_frontmatter / PLAYBOOK live next door in build_manifest.py — reuse them so
-# the two scripts can never disagree on how a page's frontmatter is read.
+# PLAYBOOK / load_pages live next door in build_manifest.py — reuse them so
+# the two scripts can never disagree on how playbook pages are read.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from build_manifest import PLAYBOOK, parse_frontmatter
+from build_manifest import PLAYBOOK, as_list, load_pages
 
 # Manifest files that signal a project root, used for structure detection.
 PROJECT_MANIFESTS = ["pyproject.toml", "package.json", "go.mod"]
@@ -116,7 +116,9 @@ def detect_content_matches(
 def target_present(target: str, repo: Path) -> bool:
     """True if a page `target` exists in the repo (file, dir, or glob match)."""
     if any(c in target for c in "*?["):
-        return any(list(repo.glob(pat)) for pat in expand_braces(target))
+        return any(
+            next(repo.glob(pat), None) is not None for pat in expand_braces(target)
+        )
     return (repo / target).exists()
 
 
@@ -177,11 +179,8 @@ def detect_structure(tracked: list[str]) -> dict[str, Any]:
         # one project, but nested under a named component dir — strong monorepo
         # signal but not conclusive. Ask.
         verdict, ambiguous = "ambiguous", True
-    elif manifests:
-        verdict, ambiguous = "single_project", False
     else:
         verdict, ambiguous = "single_project", False
-
     return {
         "verdict": verdict,
         "ambiguous": ambiguous,
@@ -312,25 +311,6 @@ def annotate_state(
 # ---------------------------------------------------------------------------
 # page scoping
 # ---------------------------------------------------------------------------
-
-
-def load_pages() -> list[dict[str, Any]]:
-    pages: list[dict[str, Any]] = []
-    for md in sorted(PLAYBOOK.rglob("*.md")):
-        if md.name in {"README.md", "MANIFEST.md"}:
-            continue
-        fm = parse_frontmatter(md.read_text())
-        if not fm or "tool" not in fm:
-            continue
-        fm["_page"] = md.relative_to(PLAYBOOK).as_posix()
-        pages.append(fm)
-    return pages
-
-
-def as_list(val: object) -> list[str]:
-    if isinstance(val, list):
-        return [str(x) for x in val]
-    return [str(val)] if val else []
 
 
 def scope_pages(
