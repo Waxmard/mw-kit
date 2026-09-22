@@ -125,6 +125,13 @@ def test_release_gitlab_python_vs_plain():
     )
 
 
+def test_release_gitlab_existing_releaserc_beats_python_detect():
+    out = scope._resolve_release(
+        "gitlab", multi=False, is_py=True, semrel_configured=True
+    )
+    assert out["chosen"] == "releases-gitlab"
+
+
 def test_release_unknown_platform_is_none():
     assert scope._resolve_release("unknown", multi=False, is_py=False)["chosen"] is None
 
