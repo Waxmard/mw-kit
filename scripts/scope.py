@@ -405,7 +405,9 @@ def _resolve_dep_bot(platform: str, configured: set[str]) -> tuple[str, str]:
     return "dependabot", "github default (renovate is the alternative)"
 
 
-def _resolve_release(platform: str, multi: bool, is_py: bool) -> dict[str, Any]:
+def _resolve_release(
+    platform: str, multi: bool, is_py: bool, semrel_configured: bool = False
+) -> dict[str, Any]:
     """Pick the release tool, but only one with a page for the platform.
 
     The releases-monorepo page is gitlab-only; release-please (github) handles
@@ -428,6 +430,11 @@ def _resolve_release(platform: str, multi: bool, is_py: bool) -> dict[str, Any]:
                 "(no dedicated page)"
             )
         return out
+    if platform == "gitlab" and semrel_configured:
+        return {
+            "chosen": "releases-gitlab",
+            "reason": "semantic-release already configured (.releaserc.json)",
+        }
     if platform == "gitlab" and is_py:
         return {
             "chosen": "releases-python",
@@ -450,6 +457,10 @@ def resolve_alternatives(
         platform,
         multi=structure["verdict"] == "multi_component",
         is_py=any(r["scope"] == "python" for r in in_scope),
+        semrel_configured=any(
+            r["tool"] == "releases-gitlab" and ".releaserc.json" in r["targets_present"]
+            for r in in_scope
+        ),
     )
 
     dropped: list[str] = []
