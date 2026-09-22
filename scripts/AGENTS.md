@@ -3,7 +3,7 @@
 `scope.py` is the deterministic pre-flight + scope half of the `tooling-sync`
 skill: given a consumer repo path it validates the repo, detects platform +
 project structure, globs each page's `detect` patterns, resolves the baseline
-alternatives (dependabot/renovate, release tool), and reports which `targets`
+alternatives (dependency bot, release tool, Svelte tooling), and reports which `targets`
 exist — emitting a JSON plan the skill consumes. It reads page frontmatter
 directly (reusing `parse_frontmatter` from `build_manifest.py`), so the two never
 disagree. It deliberately does **not** read config contents or judge drift — that

@@ -34,6 +34,9 @@ Standard names across all projects:
 - `check:staged` — lefthook-friendly variant
 - `typecheck` — TypeScript only (no biome overlap)
 
+For Svelte apps, use the [Svelte tooling scripts](svelte.md) in place of the
+Biome and `tsc` examples above.
+
 ## Dependencies
 
 - Resolve current stable versions from the registry before scaffolding, skipping any

@@ -152,6 +152,14 @@ def test_resolve_alternatives_drops_losers():
     assert out["releases"]["chosen"] == "releases-github"
 
 
+def test_svelte_replaces_biome_only_for_single_project():
+    rows = [_row("biome", "node"), _row("svelte", "node")]
+    single = scope.resolve_alternatives(rows, "github", {"verdict": "single_project"})
+    multi = scope.resolve_alternatives(rows, "github", {"verdict": "multi_component"})
+    assert "biome" in single["dropped"]
+    assert "biome" not in multi["dropped"]
+
+
 # --- scope_pages end-to-end ----------------------------------------------
 
 
