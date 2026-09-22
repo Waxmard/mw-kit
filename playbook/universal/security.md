@@ -38,6 +38,7 @@ on:
   schedule:
     - cron: '0 12 * * 1'
 permissions:
+  actions: read
   contents: read
   security-events: write
 jobs:
@@ -48,7 +49,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
-      - run: semgrep ci --sarif --output=semgrep.sarif
+      - run: semgrep ci --sarif --output=semgrep.sarif --exclude-rule=yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag
         env:
           SEMGREP_RULES: >-
             p/python
@@ -106,7 +107,7 @@ jobs:
 
 Cherry-pick semgrep packs per language. Don't enable everything — noise kills triage. Default set:
 
-- `p/python` or `p/typescript` (language baseline)
+- `p/python`, `p/typescript`, or `p/javascript` (language baseline; `p/javascript` for plain-JS repos with no TS)
 - `p/react` if frontend
 - `p/security-audit` (cross-language)
 - `p/secrets` (credentials in code)
@@ -124,3 +125,6 @@ Cherry-pick semgrep packs per language. Don't enable everything — noise kills 
 - `severity: CRITICAL,HIGH,MEDIUM` — drop MEDIUM if signal-to-noise hurts.
 - Semgrep container pin (`semgrep/semgrep:X.Y.Z`) gives reproducible scans — pin to a real version, don't run `:latest`. Renovate bumps it.
 - `if: always()` on SARIF upload so a scan failure still uploads partial results.
+- `--exclude-rule=…github-actions-mutable-action-tag` — semgrep otherwise blocks on every `uses: …@vN` tag, including this workflow's own. Major-tag pins are deliberate policy here (Dependabot bumps them); SHA pinning isn't worth the churn.
+- `actions: read` is required by `upload-sarif` on **private** repos (it reads the workflow run); without it the upload fails with `Resource not accessible by integration`.
+- **Code scanning needs a public repo or GitHub Advanced Security.** On a private repo without GHAS, every upload fails with `Code scanning is not enabled`. Either make the repo public, or drop the `upload-sarif` steps and gate on exit codes: `semgrep ci` (no `--sarif`) already exits 1 on blocking findings; give trivy `format: table` + `exit-code: '1'`. Findings then live in job logs, not the Security tab.

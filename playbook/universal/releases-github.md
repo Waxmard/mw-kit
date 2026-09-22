@@ -71,7 +71,7 @@ jobs:
   release-please:
     runs-on: ubuntu-latest
     steps:
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@v5
         id: release
         with:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
@@ -100,5 +100,6 @@ The only built-in knobs (`bump-minor-pre-major`, `bump-patch-for-minor-pre-major
 ## Gotchas
 
 - `release-type: simple` = manage version in `.release-please-manifest.json`. Use `release-type: python` / `node` to also bump `pyproject.toml`/`package.json`.
+- Version living in another file (a browser extension's `manifest.json`, a Helm `Chart.yaml`)? Keep `simple` and add `"extra-files": [{ "type": "json", "path": "src/manifest.json", "jsonpath": "$.version" }]` to the package config (`type: yaml` for YAML).
 - Hidden sections still influence release-or-not. `chore` alone won't cut a release; needs a `feat`/`fix`.
 - Pair with a CONTRIBUTING note enforcing Conventional Commits — see [[contributing]].

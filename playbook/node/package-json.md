@@ -36,8 +36,10 @@ Standard names across all projects:
 
 ## Dependencies
 
-- Resolve current stable versions from the registry before scaffolding. Template
-  and playbook versions may lag; check the lockfile as well as manifest ranges.
+- Resolve current stable versions from the registry before scaffolding, skipping any
+  published within the `min-release-age` window (below) — `npm install` rejects them
+  with `ETARGET`. Template and playbook versions may lag; check the lockfile as well
+  as manifest ranges.
 - Verify peer dependency ranges before major upgrades. Keep the latest compatible
   release when the framework's tools exclude the newest major, and document the
   constraint in the consumer repo. Never bypass peers to claim everything is latest.

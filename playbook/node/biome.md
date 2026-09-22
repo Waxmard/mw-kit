@@ -28,9 +28,11 @@ detect: ["package.json", "**/*.{ts,tsx,js,jsx}"]
 
 ## Config
 
-Replace `X.Y.Z` with the latest compatible stable Biome release and pin that same
-version in devDependencies. Verify the release when scaffolding; dependency bots
-maintain the consumer repo afterward.
+Replace `X.Y.Z` with the latest compatible stable Biome release that is at least
+7 days old (`.npmrc` `min-release-age=7` makes a newer pin fail `npm install` with
+`ETARGET`; see [[package-json]]) and pin that same version in devDependencies.
+Verify the release when scaffolding; dependency bots maintain the consumer repo
+afterward.
 
 ```json
 {
