@@ -4,7 +4,7 @@
 Given a consumer repo path, this script does the mechanical half of tooling-sync:
 validate the repo, detect platform + project structure, glob each playbook page's
 `detect` patterns against the repo's tracked files, resolve the baseline
-alternatives (dependabot vs renovate, which release tool), and check which of each
+alternatives (dependency bot, release tool, Svelte tooling), and check which of each
 in-scope page's `targets` files actually exist. It emits a single JSON "scope plan"
 on stdout.
 
@@ -448,7 +448,7 @@ def _resolve_release(
 def resolve_alternatives(
     in_scope: list[dict[str, Any]], platform: str, structure: dict[str, Any]
 ) -> dict[str, Any]:
-    """Pick dep-update bot + release tool; drop the losing alternatives in place."""
+    """Pick dependency, release, and single-project Svelte tooling alternatives."""
     tools = {r["tool"] for r in in_scope}
     configured = {r["tool"] for r in in_scope if r["targets_present"]}
 
@@ -472,6 +472,13 @@ def resolve_alternatives(
     }
     chosen = {dep, releases["chosen"]}
     dropped = sorted(alt for alt in alternatives if alt in tools and alt not in chosen)
+    if (
+        structure["verdict"] == "single_project"
+        and "svelte" in tools
+        and "biome" in tools
+    ):
+        dropped.append("biome")
+        dropped.sort()
 
     return {
         "dep_updates": {"chosen": dep, "reason": dep_reason},

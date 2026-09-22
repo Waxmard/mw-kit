@@ -30,6 +30,7 @@ skills/            # Claude Code skills (symlinked into ~/.claude/skills)
 | Python deps | [uv](https://docs.astral.sh/uv/) |
 | Python validation/settings | [pydantic](https://docs.pydantic.dev/) v2 + pydantic-settings |
 | JS/TS lint/format | [biome](https://biomejs.dev/) |
+| Svelte lint/format/typecheck | ESLint + Prettier + `svelte-check` ([playbook](playbook/node/svelte.md)) |
 | YAML lint (k8s) | [yamllint](https://www.yamllint.com/) (kubectl-style config) |
 | K8s manifest validation | [kubeconform](https://github.com/yannh/kubeconform) (schema + CRD catalog, CI) |
 | Releases (GitHub) | [release-please](https://github.com/googleapis/release-please) |

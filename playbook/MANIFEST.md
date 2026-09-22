@@ -48,6 +48,8 @@ Machine-readable index of every playbook page. Source of truth = each page's YAM
 | `biome` | baseline | JS/TS lint + format + import sort (replaces eslint + prettier) | `biome.json`, `package.json` | `package.json`, `**/*.{ts,tsx,js,jsx}` | any | [node/biome.md](node/biome.md) |
 | `expo` | optional | Expo SDK conventions for React Native apps | `package.json`, `app.json`, `app.config.ts` | `app.json`, `app.config.ts`, `app.config.js` | any | [node/expo.md](node/expo.md) |
 | `package-json` | baseline | Standard scripts, dependency pinning, and release-age policy | `package.json`, `.npmrc` | `package.json` | any | [node/package-json.md](node/package-json.md) |
+| `playwright` | optional | Built-app browser checks for desktop and mobile web flows | `playwright.config.ts`, `package.json`, `.github/workflows/ci.yml` | `playwright.config.*`, `svelte.config.js`, `vite.config.ts` | any | [node/playwright.md](node/playwright.md) |
+| `svelte` | baseline | Svelte lint, format, and compiler-aware type checking | `eslint.config.js`, `prettier.config.js`, `tsconfig.json`, `package.json` | `**/*.svelte`, `svelte.config.js`, `svelte.config.ts` | any | [node/svelte.md](node/svelte.md) |
 | `typescript` | baseline | Strict tsconfig, noEmit type-checking | `tsconfig.json` | `tsconfig.json`, `**/*.{ts,tsx}` | any | [node/typescript.md](node/typescript.md) |
 
 ## k8s

@@ -132,6 +132,8 @@ biome:
 
 ## Gotchas
 
+- For Svelte apps, use [Svelte tooling](svelte.md) instead. Its ESLint plugin checks
+  Svelte templates, while `svelte-check` runs compiler and TypeScript diagnostics.
 - Pin biome version in devDependencies; the binary's behavior changes between minors.
 - `includes` glob in biome.json scopes everything; keep narrow (`src/**`) to skip node_modules + build artifacts implicitly.
 - Some eslint rules don't have biome equivalents yet (a-11y subset, jest-specific). If you hit one, add an issue link in the relevant code comment, don't reach for eslint.
