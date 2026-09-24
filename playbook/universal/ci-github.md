@@ -21,8 +21,10 @@ its root, this page applies; if it has multiple subprojects, use `ci-paths` inst
 
 - One required status check per repo, always run (no path filter to misfire — see the
   required-checks trap in [ci-paths](../monorepo/ci-paths.md)).
-- Mirrors the local `make ci` target, so "green locally" and "green in CI" mean the
-  same thing. CI calls the same entrypoint instead of re-listing commands that drift.
+- Mirrors the local entrypoint, so "green locally" and "green in CI" mean the same
+  thing. CI calls the same command instead of re-listing steps that drift. That command
+  is `make ci` when the repo has a Makefile, and an aggregate script (`npm run ci`)
+  when it doesn't — this page does not require a Makefile.
 - Caching keyed on the lockfile keeps runs fast without going stale.
 
 ## Config
@@ -59,8 +61,21 @@ jobs:
       - run: make ci
 ```
 
-The single `make ci` step is the contract: CI runs whatever `ci` runs locally. Add a
-matrix (`strategy.matrix.python-version`) only if you actually support multiple
+**One entrypoint, not re-listed steps.** CI must run the same command you run
+locally, so the two can't drift. Which command depends on the repo:
+
+- **Has a `Makefile`** → `make ci`, with the Makefile owning the steps (see
+  [makefile](../monorepo/makefile.md)). Preferred when the repo already has one.
+- **No Makefile** → an aggregate script: `npm run ci`, `uv run ci`, or
+  `npm run lint && npm test` behind one name. What matters is that CI calls a single
+  named entrypoint instead of spelling out the steps itself — and that the script lives
+  in the repo, so a contributor runs the identical thing.
+
+[makefile](../monorepo/makefile.md) is `monorepo`-scoped and `optional`; this page is
+`universal` and `baseline`, so a single-project repo with no Makefile is a normal,
+supported case — use the aggregate-script form.
+
+Add a matrix (`strategy.matrix.python-version`) only if you actually support multiple
 runtimes — otherwise it's wasted minutes.
 
 ## Node variant
@@ -71,11 +86,12 @@ Swap the toolchain setup; the skeleton is identical:
       - uses: actions/checkout@v7
       - uses: jdx/mise-action@v4
       - run: npm ci
-      - run: make ci
+      - run: npm run ci
 ```
 
-Use the repo's `mise.toml` as the Node version source. If the repo does not use
-mise, use `actions/setup-node@v7` with its existing version file instead.
+`npm run ci` is the aggregate-script form — swap in `make ci` if the repo has a
+Makefile. Use the repo's `mise.toml` as the Node version source. If the repo does not
+use mise, use `actions/setup-node@v7` with its existing version file instead.
 Verify current stable Action majors before copying either example; Dependabot
 maintains them after setup.
 
@@ -121,9 +137,9 @@ committed. Same pattern works for any deterministic generator.
   bumps them (see [dependabot](./dependabot.md)).
 - **`cache-dependency-glob` must point at the lockfile** (`uv.lock` / `package-lock.json`),
   not the manifest — the lock is what determines the resolved tree.
-- **Don't duplicate command lists** between `ci.yml` and the Makefile. One `make ci`
-  step; the Makefile owns the steps. Drift between them is the whole failure mode this
-  avoids.
+- **Don't duplicate command lists** between `ci.yml` and the command it calls. One
+  entrypoint step (`make ci` / `npm run ci`); the Makefile or script owns the steps.
+  Drift between them is the whole failure mode this avoids.
 - **Don't `cancel-in-progress: true` a deploy/release workflow.** Cancelling a
   half-finished deploy or publish leaves things torn. Gating to `pull_request` (above)
   already exempts `main`; if a workflow *only* deploys, leave `cancel-in-progress` off
