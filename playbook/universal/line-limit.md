@@ -51,15 +51,28 @@ set -euo pipefail
 
 LIMIT="${LINE_LIMIT:-800}"
 
+# Folders this check never governs, even when the file matches the source set.
+# Substring match, so 'src/data/' skips everything beneath it.
+EXCLUDE_DIRS=(
+  'node_modules/'   # vendored
+  '/migrations/'    # generated
+  '/fixtures/'      # test data
+)
+
 # Is PATH one of the source files this check governs? Adjust per repo — list the
-# hand-written source dirs/extensions, exclude generated/vendored/fixtures.
+# hand-written source dirs/extensions. Exclusions go in EXCLUDE_DIRS above.
 is_source() {
-  case "$1" in
-    src/*.ts | src/*.tsx) return 0 ;;
-    lib/*.sh | bin/*) return 0 ;;
-    */*.py) case "$1" in test/*|*/migrations/*) return 1 ;; *) return 0 ;; esac ;;
+  local f="$1" ex
+  case "$f" in
+    src/*.ts | src/*.tsx) ;;
+    lib/*.sh | bin/*) ;;
+    */*.py) ;;
     *) return 1 ;;
   esac
+  for ex in ${EXCLUDE_DIRS[@]+"${EXCLUDE_DIRS[@]}"}; do
+    [[ "$f" == *"$ex"* ]] && return 1
+  done
+  return 0
 }
 
 # The full governed set, for the no-argument (CI) scan.
@@ -93,7 +106,12 @@ fi
 printf 'line-limit OK (<= %d lines): %d files checked\n' "$LIMIT" "$checked"
 ```
 
-The single per-repo knob is `is_source()` — list the hand-written source paths and exclude generated/vendored/test-fixture paths there. `collect_default` uses `git ls-files` so untracked junk is never counted.
+Two per-repo knobs: `EXCLUDE_DIRS` — folder paths to skip, as plain substrings —
+and `is_source()`, the hand-written source set (dirs + extensions). Keep the
+exclusions in the list rather than folding them into the `case`: a `case`-branch
+exclusion is invisible at a glance, and `${EXCLUDE_DIRS[@]+...}` is what keeps the
+script safe under `set -u` on bash 3.2 (macOS) when the array is empty.
+`collect_default` uses `git ls-files` so untracked junk is never counted.
 
 ## CI — the gate
 
