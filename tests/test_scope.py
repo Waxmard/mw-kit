@@ -38,14 +38,53 @@ def test_detect_matches_literal_path():
     assert scope.detect_matches(".gitlab-ci.yml", ["other.yml"]) is False
 
 
-def test_target_present_file_dir_and_glob(tmp_path: Path):
+def test_resolve_target_file_dir_and_glob(tmp_path: Path):
     (tmp_path / "pyproject.toml").write_text("x")
     (tmp_path / ".github").mkdir()
     (tmp_path / ".github" / "workflows").mkdir()
-    assert scope.target_present("pyproject.toml", tmp_path) is True
-    assert scope.target_present(".github/workflows/", tmp_path) is True
-    assert scope.target_present("missing.toml", tmp_path) is False
-    assert scope.target_present(".github/*", tmp_path) is True
+    assert scope.resolve_target("pyproject.toml", tmp_path) == ["pyproject.toml"]
+    assert scope.resolve_target(".github/workflows/", tmp_path) == [
+        ".github/workflows/"
+    ]
+    assert scope.resolve_target("missing.toml", tmp_path) == []
+    assert scope.resolve_target(".github/*", tmp_path) == [".github/workflows"]
+
+
+def test_detect_matches_anchored_at_component_root():
+    assert scope.detect_matches("app.json", ["frontend/app.json"], ["frontend"]) is True
+
+
+def test_detect_matches_anchor_does_not_loosen_scope():
+    assert scope.detect_matches("app.json", ["vendor/app.json"], ["frontend"]) is False
+
+
+def test_detect_matches_without_roots_is_unchanged():
+    assert scope.detect_matches("app.json", ["frontend/app.json"]) is False
+
+
+def test_resolve_target_finds_nested_component_target(tmp_path: Path):
+    (tmp_path / "fastapi").mkdir()
+    (tmp_path / "fastapi" / "pyproject.toml").write_text("x")
+    assert scope.resolve_target("pyproject.toml", tmp_path, ["fastapi"]) == [
+        "fastapi/pyproject.toml"
+    ]
+
+
+def test_resolve_target_returns_all_matches_root_first(tmp_path: Path):
+    (tmp_path / "pyproject.toml").write_text("x")
+    (tmp_path / "fastapi").mkdir()
+    (tmp_path / "fastapi" / "pyproject.toml").write_text("x")
+    assert scope.resolve_target("pyproject.toml", tmp_path, ["fastapi"]) == [
+        "pyproject.toml",
+        "fastapi/pyproject.toml",
+    ]
+
+
+def test_resolve_target_glob_and_missing(tmp_path: Path):
+    (tmp_path / ".github").mkdir()
+    (tmp_path / ".github" / "a.yml").write_text("x")
+    assert scope.resolve_target(".github/*", tmp_path) == [".github/a.yml"]
+    assert scope.resolve_target("nope.toml", tmp_path) == []
 
 
 # --- as_list --------------------------------------------------------------
@@ -82,6 +121,14 @@ def test_structure_nested_single_manifest_is_ambiguous():
 def test_structure_no_manifest_is_single():
     s = scope.detect_structure(["README.md", "docs/x.md"])
     assert s["verdict"] == "single_project"
+
+
+def test_detect_structure_exposes_component_dirs():
+    s = scope.detect_structure(
+        ["fastapi/pyproject.toml", "frontend/package.json", "package.json"]
+    )
+    assert s["component_dirs"] == ["fastapi", "frontend"]
+    assert scope.detect_structure(["pyproject.toml"])["component_dirs"] == []
 
 
 # --- alternative resolution ----------------------------------------------
@@ -152,6 +199,50 @@ def test_resolve_alternatives_drops_losers():
     assert out["releases"]["chosen"] == "releases-github"
 
 
+def test_has_target_matches_nested_path():
+    row = {"targets_present": ["web/.releaserc.json"]}
+    assert scope.has_target(row, ".releaserc.json") is True
+
+
+def test_resolve_alternatives_sees_nested_releaserc():
+    # a nested .releaserc.json still means "semantic-release already configured"
+    rows = [
+        {
+            "tool": "releases-gitlab",
+            "scope": "universal",
+            "targets_present": ["web/.releaserc.json"],
+        },
+        {"tool": "ruff", "scope": "python", "targets_present": ["web/pyproject.toml"]},
+    ]
+    out = scope.resolve_alternatives(rows, "gitlab", {"verdict": "single_project"})
+    assert out["releases"]["chosen"] == "releases-gitlab"
+
+
+def test_nested_target_warnings_flags_manifestless_nested_target():
+    rows = [{"tool": "docker-bake", "targets_missing": ["docker-bake.hcl"]}]
+    out = scope.nested_target_warnings(rows, ["vendor/x/docker-bake.hcl"])
+    assert len(out) == 1
+    assert "vendor/x/docker-bake.hcl" in out[0]
+
+
+def test_nested_target_warnings_quiet_when_truly_absent():
+    rows = [{"tool": "docker-bake", "targets_missing": ["docker-bake.hcl"]}]
+    assert scope.nested_target_warnings(rows, ["README.md"]) == []
+    globby = [{"tool": "terraform", "targets_missing": ["*.tf"]}]
+    assert scope.nested_target_warnings(globby, ["infra/main.tf"]) == []
+
+
+def test_nested_target_warnings_quiet_when_basename_already_resolved():
+    rows = [
+        {
+            "tool": "codeowners",
+            "targets_present": [".github/CODEOWNERS"],
+            "targets_missing": [".gitlab/CODEOWNERS"],
+        }
+    ]
+    assert scope.nested_target_warnings(rows, [".github/CODEOWNERS"]) == []
+
+
 def test_svelte_replaces_biome_only_for_single_project():
     rows = [_row("biome", "node"), _row("svelte", "node")]
     single = scope.resolve_alternatives(rows, "github", {"verdict": "single_project"})
@@ -204,6 +295,39 @@ def test_scope_pages_platform_filter_and_detect(tmp_path: Path):
     assert "gitlab-dedup" not in tools  # gitlab page on github
     ruff = next(r for r in out["in_scope"] if r["tool"] == "ruff")
     assert ruff["targets_present"] == ["pyproject.toml"]
+
+
+def test_scope_pages_monorepo_resolves_nested_targets(tmp_path: Path):
+    pages = [
+        _page("ruff", "python", detect=["**/*.py"], targets=["pyproject.toml"]),
+        _page(
+            "expo",
+            "node",
+            detect=["app.json"],
+            targets=["package.json", "app.json"],
+        ),
+    ]
+    (tmp_path / "fastapi").mkdir()
+    (tmp_path / "fastapi" / "pyproject.toml").write_text("x")
+    (tmp_path / "frontend").mkdir()
+    (tmp_path / "frontend" / "package.json").write_text("{}")
+    (tmp_path / "frontend" / "app.json").write_text("{}")
+    tracked = [
+        "fastapi/app.py",
+        "fastapi/pyproject.toml",
+        "frontend/package.json",
+        "frontend/app.json",
+    ]
+    structure = {
+        "verdict": "multi_component",
+        "component_dirs": ["fastapi", "frontend"],
+    }
+    out = scope.scope_pages(pages, tmp_path, tracked, "github", structure)
+    rows = {r["tool"]: r for r in out["in_scope"]}
+    assert "expo" in rows
+    assert rows["expo"]["matched_detect"] == "app.json"
+    assert "frontend/app.json" in rows["expo"]["targets_present"]
+    assert rows["ruff"]["targets_present"] == ["fastapi/pyproject.toml"]
 
 
 def test_detect_content_matches_yaml_body(tmp_path: Path):
