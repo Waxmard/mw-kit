@@ -69,18 +69,26 @@ def expand_braces(pattern: str) -> list[str]:
     return [f"{pre}{opt}{post}" for opt in body.split(",")]
 
 
-def detect_matches(pattern: str, files: list[str]) -> bool:
+def detect_matches(
+    pattern: str, files: list[str], roots: list[str] | None = None
+) -> bool:
     """True if any tracked file matches a `detect` glob.
 
     `**/*.py` means "any .py anywhere" — match it against the full path, the
     `**/`-stripped suffix, and the basename so root-level files count too.
+
+    A bare marker glob (`app.json`, `playwright.config.*`) is authored relative
+    to a *project* root, so it must also be tested against each component dir.
     """
+    anchored = [r for r in (roots or ()) if r]
     for pat in expand_braces(pattern):
         suffix = pat[3:] if pat.startswith("**/") else None
         for f in files:
             base = f.rsplit("/", 1)[-1]
-            if fnmatch(f, pat) or (
-                suffix and (fnmatch(f, suffix) or fnmatch(base, suffix))
+            if (
+                fnmatch(f, pat)
+                or (suffix and (fnmatch(f, suffix) or fnmatch(base, suffix)))
+                or any(fnmatch(f, f"{r}/{pat}") for r in anchored)
             ):
                 return True
     return False
@@ -113,13 +121,31 @@ def detect_content_matches(
     return None
 
 
-def target_present(target: str, repo: Path) -> bool:
-    """True if a page `target` exists in the repo (file, dir, or glob match)."""
-    if any(c in target for c in "*?["):
-        return any(
-            next(repo.glob(pat), None) is not None for pat in expand_braces(target)
-        )
-    return (repo / target).exists()
+def resolve_target(
+    target: str, repo: Path, roots: list[str] | None = None
+) -> list[str]:
+    """Resolve a page `target` to the repo-relative path(s) where it exists.
+
+    A monorepo keeps its project markers at each component root, so a repo-root-only
+    check reports every nested target (`fastapi/pyproject.toml`, `frontend/biome.json`)
+    as missing. Returns paths root-first, de-duplicated.
+    """
+    out: list[str] = []
+    for root in [""] + [r for r in (roots or ()) if r]:
+        for pat in expand_braces(f"{root}/{target}" if root else target):
+            if any(c in pat for c in "*?["):
+                hits = [p.relative_to(repo).as_posix() for p in sorted(repo.glob(pat))]
+            else:
+                hits = [pat] if (repo / pat).exists() else []
+            for h in hits:
+                if h not in out:
+                    out.append(h)
+    return out
+
+
+def has_target(row: dict[str, Any], target: str) -> bool:
+    """True if `target` resolved for this row, at the repo root or any component."""
+    return any(p.rsplit("/", 1)[-1] == target for p in row.get("targets_present") or ())
 
 
 # ---------------------------------------------------------------------------
@@ -186,7 +212,17 @@ def detect_structure(tracked: list[str]) -> dict[str, Any]:
         "ambiguous": ambiguous,
         "manifests": sorted(manifests),
         "root_orchestrator": root_orchestrator,
+        "component_dirs": sorted(d for d in dirs if d),
     }
+
+
+def project_roots(structure: dict[str, Any]) -> list[str]:
+    """Repo root ("") plus every component dir — where a project's markers live."""
+    roots = [""]
+    for d in structure.get("component_dirs") or []:
+        if d and d not in roots:
+            roots.append(d)
+    return roots
 
 
 # ---------------------------------------------------------------------------
@@ -322,6 +358,7 @@ def scope_pages(
 ) -> dict[str, Any]:
     in_scope: list[dict[str, Any]] = []
     skipped: list[dict[str, Any]] = []
+    roots = project_roots(structure)
     for p in pages:
         tool = p.get("tool", "")
         page = p["_page"]
@@ -358,7 +395,9 @@ def scope_pages(
         #    classes (plain-YAML k8s) are identified.
         matched = None
         if detect or detect_content:
-            matched = next((d for d in detect if detect_matches(d, tracked)), None)
+            matched = next(
+                (d for d in detect if detect_matches(d, tracked, roots)), None
+            )
             if matched is None:
                 matched = detect_content_matches(detect_content, repo, tracked)
             if matched is None:
@@ -376,7 +415,14 @@ def scope_pages(
                     )
                     continue
 
-        present = [t for t in targets if target_present(t, repo)]
+        present: list[str] = []
+        missing: list[str] = []
+        for t in targets:
+            hits = resolve_target(t, repo, roots)
+            if hits:
+                present.extend(h for h in hits if h not in present)
+            else:
+                missing.append(t)
         row: dict[str, Any] = {
             "tool": tool,
             "page": page,
@@ -385,13 +431,43 @@ def scope_pages(
             "platform": pf,
             "targets": targets,
             "targets_present": present,
-            "targets_missing": [t for t in targets if t not in present],
+            "targets_missing": missing,
             "matched_detect": matched,
         }
         if platform_pending:
             row["platform_pending"] = True
         in_scope.append(row)
     return {"in_scope": in_scope, "skipped": skipped}
+
+
+def nested_target_warnings(
+    in_scope: list[dict[str, Any]], tracked: list[str]
+) -> list[str]:
+    """Flag targets that resolved nowhere but do exist elsewhere in the tree.
+
+    Every component root is known only via its manifest, so a nested project without
+    one is still invisible — say so instead of reporting the target as absent. A
+    target whose basename the page already resolved elsewhere (`CODEOWNERS` at
+    `.github/` vs `.gitlab/`) is a location convention, not a hidden component.
+    """
+    by_base: dict[str, list[str]] = {}
+    for f in tracked:
+        by_base.setdefault(f.rsplit("/", 1)[-1], []).append(f)
+    out: list[str] = []
+    for row in in_scope:
+        resolved = {p.rsplit("/", 1)[-1] for p in row.get("targets_present") or ()}
+        for t in row["targets_missing"]:
+            base = t.rsplit("/", 1)[-1]
+            if any(c in base for c in "*?[") or base in resolved:
+                continue
+            hits = by_base.get(base)
+            if hits:
+                out.append(
+                    f"{row['tool']}: target '{t}' is absent at the repo root and every "
+                    f"component root, but present at {hits[0]} — component dir without "
+                    "a manifest?"
+                )
+    return out
 
 
 def _resolve_dep_bot(platform: str, configured: set[str]) -> tuple[str, str]:
@@ -458,7 +534,7 @@ def resolve_alternatives(
         multi=structure["verdict"] == "multi_component",
         is_py=any(r["scope"] == "python" for r in in_scope),
         semrel_configured=any(
-            r["tool"] == "releases-gitlab" and ".releaserc.json" in r["targets_present"]
+            r["tool"] == "releases-gitlab" and has_target(r, ".releaserc.json")
             for r in in_scope
         ),
     )
@@ -583,6 +659,8 @@ def main() -> int:
         "(page deleted or renamed) — drop it from .tooling-sync.json"
         for tool in state_summary["orphaned_tools"]
     )
+
+    warnings.extend(nested_target_warnings(in_scope, tracked))
 
     needs_ask: list[dict[str, str]] = []
     if platform == "unknown":

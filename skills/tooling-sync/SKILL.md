@@ -26,9 +26,9 @@ python3 "${MW_KIT:-/Users/maxwellward/personal-dev/mw-kit}/scripts/scope.py" "$(
 The plan JSON:
 
 - `preflight` — `{ok, repo, platform, platform_source}`; on failure `{ok:false, error}` (not a git repo / manifest missing).
-- `structure` — `{verdict: single_project|multi_component|ambiguous, ambiguous, manifests, root_orchestrator}`.
+- `structure` — `{verdict: single_project|multi_component|ambiguous, ambiguous, manifests, root_orchestrator, component_dirs}`. `component_dirs` are the project roots found under the repo root; nested `targets`/`detect` are anchored there.
 - `alternatives` — `{dep_updates:{chosen,reason}, releases:{chosen,reason,note?}, dropped:[…]}`. The losing alternatives are already moved to `skipped`; `chosen` is guaranteed in-scope.
-- `in_scope` — one row per relevant page: `{tool, page, scope, tier, platform, targets, targets_present, targets_missing, matched_detect, platform_pending?}`.
+- `in_scope` — one row per relevant page: `{tool, page, scope, tier, platform, targets, targets_present, targets_missing, matched_detect, platform_pending?}`. `targets_present` holds **resolved repo-relative paths** (root-first, component-prefixed in a monorepo, e.g. `fastapi/pyproject.toml`) while `targets_missing` holds the page's raw target strings; read the `targets_present` paths directly and never re-derive them from `targets`.
 - `skipped` — `{tool, page, reason}` (no detect match / platform / single-project / alternative not chosen).
 - `needs_ask` — questions the script refused to guess (unknown platform, ambiguous structure).
 - `warnings` — plan-coherence issues; surface any to the user.
@@ -61,7 +61,7 @@ Then:
 
 **First, drop the settled rows.** Only compare `in_scope` rows where `state.settled` is false (new tools + ones whose page changed since the last decision). Settled rows are carried straight to the Step 3 "settled" line without a read.
 
-The resolver already told you, per page, which `targets` exist (`targets_present` / `targets_missing`). Use that to avoid needless reads:
+The resolver already told you, per page, which `targets` exist (`targets_present` / `targets_missing`). Use that to avoid needless reads — the `targets_present` paths are openable as-is, so a target listed there is read/edited at that path.
 
 - **No targets present** → classify directly from `tier` without reading the page: ❌ **missing (baseline)** or ➕ **suggest (optional)**. (For `conventional-commits` and other target-less pages, judge by convention/commit history, not a file.)
 - **Some/all targets present** → this is the drift question. Read the page's canonical `## Config` block and the present target file(s), then classify match vs drift.
