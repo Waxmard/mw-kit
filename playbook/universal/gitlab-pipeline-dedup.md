@@ -122,6 +122,7 @@ pipeline when a branch has an open MR, otherwise the branch pipeline:
 # the branch pipeline.
 workflow:
   rules:
+    - if: $CI_COMMIT_TAG              # keep release/tag pipelines
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
       when: never
@@ -172,6 +173,28 @@ branch name:
   before_script:
     - if [ -n "${CI_COMMIT_REF_NAME:-}" ]; then export BRANCH_SANITIZED=$(printf '%s' "$CI_COMMIT_REF_NAME" | tr '/' '-'); fi
 ```
+
+### Manually cut release tags (retag, don't rebuild)
+
+For repos that cut release tags by hand (no release tool creating them in a
+release job). The tag pipeline must exist — the `$CI_COMMIT_TAG` workflow rule
+above — and must run only a retag job:
+
+```yaml
+release-images:
+  stage: push
+  image: gcr.io/go-containerregistry/crane:debug
+  interruptible: false
+  needs: []                       # build jobs don't exist in tag pipelines
+  script:
+    - for img in api worker; do crane tag "$REGISTRY/$img:$CI_COMMIT_SHORT_SHA" "$CI_COMMIT_TAG" || exit 1; done
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^\d+\.\d+\.\d+/
+```
+
+Registry auth goes in `before_script`, per registry (`crane auth login …`). This
+is the manual-tag form of "Build once, ship the tested artifact" (Why, above): a
+missing `:$CI_COMMIT_SHORT_SHA` image fails the job instead of rebuilding.
 
 ## Monorepo (GitLab)
 
@@ -316,3 +339,11 @@ fails (fail-fast), vs `none` to let siblings finish.
   only `needs:` jobs whose artifacts or gating they strictly depend on. Decouple
   independent security checks (`trivy-image-scan`) so deployments start immediately
   in parallel with scans instead of waiting in serial.
+- **An `if: $CI_COMMIT_TAG` job rule is dead without a workflow tag rule — and harmful
+  with one if the job `needs:` branch-only jobs.** The MR-preferred workflow block
+  creates no tag pipelines, so a `$CI_COMMIT_TAG` rule on push jobs silently never
+  fires (looks like release tagging, does nothing). Adding the workflow rule then
+  breaks pipeline creation if those jobs `needs:` build jobs that only run on
+  MR/branch. Give tag pipelines a dedicated retag job with its own `needs` (see
+  [Manually cut release tags](#manually-cut-release-tags-retag-dont-rebuild)) and drop
+  `$CI_COMMIT_TAG` from the branch push jobs.
