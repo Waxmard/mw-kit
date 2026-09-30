@@ -115,3 +115,4 @@ ruff-format:
 - Don't enable `D` blanket. Pick specific docstring rules if needed.
 - `PLR*` (refactor) is subjective. Default: ignore the high-cyclomatic ones (PLR0911, PLR0913), keep PLE/PLW.
 - `S101` (asserts) trips tests — always exempt `tests/**`.
+- **`target-version` must match the lowest runtime, not the newest.** At `py314`, `ruff format` rewrites `except (A, B):` to the PEP 758 form `except A, B:`, which is a `SyntaxError` on Python < 3.14. Code that runs inside another project's interpreter (plugins, skill scripts loaded via `importlib`) must target *that* project's `requires-python`.
