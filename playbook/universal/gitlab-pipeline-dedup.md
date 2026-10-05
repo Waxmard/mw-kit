@@ -192,7 +192,10 @@ release-images:
     - if: $CI_COMMIT_TAG =~ /^\d+\.\d+\.\d+/
 ```
 
-Registry auth goes in `before_script`, per registry (`crane auth login …`). This
+Registry auth goes in `before_script`, per registry (`crane auth login …`). For
+Artifact Registry (`*.pkg.dev`), use `gcrane` with the job's own id_token instead
+of a `GCLOUD_TOKEN` handed over from another job — that token expires after an
+hour, so retries fail; see [[releases-monorepo]] §"Gotchas". This
 is the manual-tag form of "Build once, ship the tested artifact" (Why, above): a
 missing `:$CI_COMMIT_SHORT_SHA` image fails the job instead of rebuilding.
 

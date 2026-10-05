@@ -90,7 +90,7 @@ Each component dir holds two files.
       "@semantic-release/exec",
       {
         "prepareCmd": "sed -i 's/^version = \".*\"/version = \"${nextRelease.version}\"/' pyproject.toml",
-        "publishCmd": "echo \"$GCLOUD_TOKEN\" | crane auth login REGION-docker.pkg.dev -u oauth2accesstoken --password-stdin && crane tag $REGISTRY/<component>:$COMMIT_HASH ${nextRelease.version} && crane tag $REGISTRY/<component>:$COMMIT_HASH latest"
+        "publishCmd": "cd \"$CI_PROJECT_DIR\" && gcrane tag $REGISTRY/<component>:$COMMIT_HASH ${nextRelease.version} && gcrane tag $REGISTRY/<component>:$COMMIT_HASH latest"
       }
     ],
     [
@@ -135,8 +135,9 @@ name + path (the component is e.g. a Python app, not a JS package):
   §"Preset" / §"Gotchas".
 - `prepareCmd` writes the computed version back into the component's manifest
   (Python keeps `version = "0.0.0"` as a placeholder; the git tag is truth).
-- `publishCmd` retags the already-built image (see CI below) — `crane` only runs
-  when a release actually happens.
+- `publishCmd` retags the already-built image (see CI below) — `gcrane` only runs
+  when a release actually happens. It `cd`s back to the repo root because the
+  credential paths are relative to it (see Gotchas).
 
 ## CI wiring
 
@@ -148,6 +149,10 @@ include:
     inputs: { gcp_service_account: builder@PROJECT.iam.gserviceaccount.com }
   - local: service-a/.gitlab-ci.yml
   # - local: service-b/.gitlab-ci.yml   # added when the component lands
+
+# The component's id_token + GAC_JSON are what release jobs use; its job is not.
+gcp-auth:
+  rules: [{ when: never }]
 
 variables:
   DOCKER_BUILDKIT: "1"
@@ -166,14 +171,15 @@ changed:
   image: node:24-alpine
   variables: { GIT_DEPTH: "0" }
   needs:
-    - { job: gcp-auth, artifacts: true }
     - { job: <component>-build, optional: true }
   before_script:
     - apk add --no-cache curl git
     - export COMMIT_HASH=${CI_COMMIT_SHORT_SHA}
-    - <download crane, verify checksum>      # see [[docker-bake]] / backend reference
+    - <download gcrane, verify checksum>     # same go-containerregistry release tarball as crane
     - test -n "$GITLAB_TOKEN"   || { echo "set GITLAB_TOKEN (api+write_repository)"; exit 1; }
-    - test -n "$GCLOUD_TOKEN"   || { echo "gcp-auth must expose GCLOUD_TOKEN"; exit 1; }
+    - mkdir -p .gcloud
+    - echo "${GCP_JOB_JWT}" > .gcloud/gcp_job_jwt.json
+    - echo "${GAC_JSON}" > "${GOOGLE_APPLICATION_CREDENTIALS}"
     - cd <component>
   script:
     - npm install --no-save semantic-release@25 semantic-release-monorepo@8 conventional-changelog-conventionalcommits@9 @semantic-release/{changelog,commit-analyzer,exec,git,gitlab,release-notes-generator}
@@ -208,8 +214,8 @@ Releases need [[conventional-commits]], plus two monorepo rules:
 - **No `version` BuildTools component / tag-pipeline build.** The release commit
   carries `[skip ci]`, which on GitLab suppresses the tag pipeline — so you
   *can't* build images on the tag. Build on `main` with `$SHORT_SHA`, then
-  `crane`-retag to the version inside the release job. Same pattern works for a
-  single repo (`releases-python` + crane).
+  `gcrane`-retag to the version inside the release job. Same pattern works for a
+  single repo (`releases-python` + gcrane).
 - **`chore`→patch means [[renovate]] releases on every bump.** A patch per
   `chore(deps): …`. To accumulate instead, add
   `{ "type": "chore", "scope": "deps", "release": false }` ahead of the `chore`
@@ -223,8 +229,20 @@ Releases need [[conventional-commits]], plus two monorepo rules:
 - **One version *per component*, not per repo.** Independent cadences are the
   point; don't try to unify them into a single repo version.
 - **Tokens:** `GITLAB_TOKEN` (api + write_repository, bot allowed on protected
-  `main`) for `@semantic-release/gitlab`; `GCLOUD_TOKEN` (Artifact Registry
-  write, from the gcp-auth component) for the crane retag.
+  `main`) for `@semantic-release/gitlab`. Artifact Registry auth is minted in the
+  release job itself: the gcp-auth component injects a `GCP_JOB_JWT` id_token
+  into every job plus `GAC_JSON`/`GOOGLE_APPLICATION_CREDENTIALS`, and `gcrane`
+  exchanges them for a fresh token on demand.
+- **Never pass `GCLOUD_TOKEN` between jobs.** The gcp-auth job's dotenv token
+  lives one hour; a release job that queues behind the build, or a retry the
+  next day, fails with `401 UNAUTHORIZED: authentication failed` (not a 403 —
+  IAM is fine). `crane auth login` doesn't validate, so the error surfaces only
+  at the push.
+- **`gcrane` fails silently.** If the env credentials don't resolve (wrong cwd,
+  missing file) it falls back to anonymous and you only see `DENIED:
+  Unauthenticated request`. Add `-v` to see the real `Google env error`. Both
+  `GOOGLE_APPLICATION_CREDENTIALS` and `credential_source.file` inside
+  `GAC_JSON` are relative to `$CI_PROJECT_DIR`, hence the `cd` in `publishCmd`.
 - Adding a component = copy both files (swap name / `tagFormat` / image path),
   add a [[docker-bake]] target, add an `include: local` line, mirror the
   component `.gitlab-ci.yml`.
