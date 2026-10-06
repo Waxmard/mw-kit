@@ -419,7 +419,7 @@ def test_annotate_state_no_state_marks_all_new():
     assert summary["present"] is False
     assert summary["new_tools"] == ["mypy", "ruff"]
     assert summary["all_settled"] is False
-    assert rows[0]["state"] == {"decision": "new"}
+    assert rows[0]["state"] == {"decision": "new", "settled": False}
 
 
 def test_annotate_state_same_commit_is_settled_without_git():

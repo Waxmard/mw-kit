@@ -298,7 +298,7 @@ def annotate_state(
     for row in in_scope:
         rec = tools.get(row["tool"]) if isinstance(tools, dict) else None
         if not isinstance(rec, dict):
-            row["state"] = {"decision": "new"}
+            row["state"] = {"decision": "new", "settled": False}
             fresh.append(row["tool"])
             continue
         decision = rec.get("decision", "unknown")
