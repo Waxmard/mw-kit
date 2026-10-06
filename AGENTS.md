@@ -39,7 +39,7 @@ published library, not a deployed app. mypy targets `3.10` only because mypy 2.x
 can't go lower; ruff guards the real 3.9 floor.
 
 `scope.py` is the `tooling-sync` skill's pre-flight + scope resolver, and it
-powers incremental sync — see `scripts/CLAUDE.md` before editing it.
+powers incremental sync — see `scripts/AGENTS.md` before editing it.
 
 ## Page structure (the core contract)
 

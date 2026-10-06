@@ -39,7 +39,7 @@ scripts/
 | SAST | semgrep |
 | Vuln scanning | trivy (fs + image) |
 | Multi-arch builds | docker bake |
-| Agent instructions | `AGENTS.md` (agent-agnostic) as source of truth, `CLAUDE.md` symlinked to it |
+| Agent instructions | `AGENTS.md` (agent-agnostic) as the only instructions file, no `CLAUDE.md` |
 | Per-file size cap | line-limit script (CI gate, optional local hook), default 800 lines |
 | Contribution flow | `CONTRIBUTING.md` — branching, commits, MR/PR + human review |
 | Required reviewers | `CODEOWNERS` — path → owner, gates the human approval |
