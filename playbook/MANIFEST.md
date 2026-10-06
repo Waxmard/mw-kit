@@ -21,6 +21,7 @@ Machine-readable index of every playbook page. Source of truth = each page's YAM
 | `conventional-commits` | baseline | Commit message format feeding release tooling | — | — | any | [universal/conventional-commits.md](universal/conventional-commits.md) |
 | `dependabot` | baseline | GitHub-native dependency update PRs | `.github/dependabot.yml` | — | `github` | [universal/dependabot.md](universal/dependabot.md) |
 | `git-ai-instructions` | baseline | Repo-local commit/PR guidance for git-ai, framed by user POV | `.git-ai-instructions` | `.git-ai-instructions` | any | [universal/git-ai-instructions.md](universal/git-ai-instructions.md) |
+| `github-settings` | baseline | Repo settings, default-branch ruleset, Actions token, Dependabot alerts via gh api | — | — | `github` | [universal/github-settings.md](universal/github-settings.md) |
 | `gitlab-pipeline-dedup` | baseline | GitLab pipeline economy — workflow:rules dedup (one pipeline per change) + auto-cancel of superseded runs | `.gitlab-ci.yml` | `.gitlab-ci.yml` | `gitlab` | [universal/gitlab-pipeline-dedup.md](universal/gitlab-pipeline-dedup.md) |
 | `lefthook` | baseline | Git hooks with autofix + restage (stage_fixed) | `lefthook.yml` | — | any | [universal/lefthook.md](universal/lefthook.md) |
 | `line-limit` | optional | Per-file line cap as a deliberate sprawl proxy — CI-gated script, optional local hook | `scripts/check-line-limit.sh` | — | any | [universal/line-limit.md](universal/line-limit.md) |

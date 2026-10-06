@@ -32,6 +32,7 @@ scripts/
 | K8s manifest validation | [kubeconform](https://github.com/yannh/kubeconform) (schema + CRD catalog, CI) |
 | Releases (GitHub) | [release-please](https://github.com/googleapis/release-please) |
 | Releases (GitLab) | semantic-release |
+| GitHub repo settings | `gh api` baseline: squash/rebase only, ruleset on default branch, read-only Actions token ([playbook](playbook/universal/github-settings.md)) |
 | CI (single project) | GitHub: `ci.yml` runs `make ci` · GitLab: `.gitlab-ci.yml` test stage |
 | GitLab CI dedup | `workflow:rules` (one pipeline per change, build-on-MR) |
 | Dep updates (GitHub) | [dependabot](https://docs.github.com/en/code-security/dependabot) |

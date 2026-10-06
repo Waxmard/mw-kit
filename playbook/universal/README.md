@@ -12,6 +12,7 @@ Tooling decisions applicable to every project regardless of language.
 - [ci-gitlab.md](./ci-gitlab.md) — single-project GitLab CI pipeline skeleton
 - [releases-github.md](./releases-github.md) — release-please for GitHub
 - [releases-gitlab.md](./releases-gitlab.md) — semantic-release for GitLab
+- [github-settings.md](./github-settings.md) — GitHub repo settings, default-branch ruleset, Actions token, Dependabot alerts (gh api)
 - [gitlab-pipeline-dedup.md](./gitlab-pipeline-dedup.md) — workflow:rules dedup + build-on-MR job rules (GitLab)
 - [security.md](./security.md) — semgrep (SAST) + trivy (fs + image)
 - [conventional-commits.md](./conventional-commits.md) — commit message format
