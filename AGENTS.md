@@ -7,8 +7,8 @@ This file provides guidance to AI coding agents working in this repository.
 `mw-kit` is mostly a **prose playbook**: one Markdown page per tool, each explaining
 the choice *and the reasoning*. It is the source of truth that the `tooling-sync`
 skill diffs consumer repos against. It also ships two **runtime-stdlib-only** Python
-scripts in `scripts/` (the manifest generator + the skill's scope resolver) and the
-`tooling-sync` skill source under `skills/`.
+scripts in `scripts/` (the manifest generator + the skill's scope resolver). The
+`tooling-sync` skill itself lives in Waxmard/skills.
 
 ## Commands
 
@@ -83,7 +83,6 @@ scopes there.
 - `tier: baseline` means "most repos should adopt"; `optional` means
   context-specific. Pick deliberately — `tooling-sync` surfaces baseline gaps
   more loudly.
-- This repo is consumed by the `tooling-sync` skill, whose source lives in
-  `skills/tooling-sync/` here (symlinked into `~/.claude/skills/` for global
-  discovery). Keep `## Config` blocks accurate — they are read as the diff
-  target, not just docs.
+- This repo is consumed by the `tooling-sync` skill (source: Waxmard/skills; it
+  reads this repo via `$MW_KIT` or a `~/.cache/mw-kit` clone). Keep `## Config`
+  blocks accurate — they are read as the diff target, not just docs.

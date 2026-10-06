@@ -14,8 +14,6 @@ playbook/        # tooling preferences, scoped
   monorepo/      # monorepo-specific (docker bake, multi-package)
 scripts/
   build_manifest.py  # regenerates playbook/MANIFEST.md from page frontmatter
-skills/            # Claude Code skills (symlinked into ~/.claude/skills)
-  tooling-sync/    # diff a repo against the playbook, apply chosen updates
 ```
 
 ## Tooling at a glance
@@ -49,12 +47,7 @@ skills/            # Claude Code skills (symlinked into ~/.claude/skills)
 
 ## Skills
 
-Claude Code skills sourced here and symlinked into `~/.claude/skills`:
-
-| Skill | What it does |
-|---|---|
-| [tooling-sync](skills/tooling-sync/) | Diffs the current repo against the playbook and applies chosen updates — merging, never clobbering. Driven by `playbook/MANIFEST.md`. |
-| [ui-taste](skills/ui-taste/) | Maxwell's UI design preferences layered on frontend-design: fingerprint from his best UIs, overrides to its generic bans, and which design skills to load at each step. |
+The `tooling-sync` skill that consumes this playbook, and `ui-taste`, live in [Waxmard/skills](https://github.com/Waxmard/skills).
 
 ## Conventions
 
