@@ -14,11 +14,11 @@ import scope
 # --- glob helpers ---------------------------------------------------------
 
 
-def test_expand_braces_single_group():
+def test_a_brace_group_expands_to_one_pattern_per_option():
     assert scope.expand_braces("*.{ts,tsx}") == ["*.ts", "*.tsx"]
 
 
-def test_expand_braces_no_group_is_identity():
+def test_a_pattern_without_braces_is_returned_unchanged():
     assert scope.expand_braces("**/*.py") == ["**/*.py"]
 
 
@@ -28,17 +28,17 @@ def test_detect_matches_doublestar_matches_root_and_nested():
     assert scope.detect_matches("**/*.py", ["only.md"]) is False
 
 
-def test_detect_matches_brace_expansion():
+def test_detect_matches_any_option_of_a_brace_group():
     assert scope.detect_matches("**/*.{ts,tsx}", ["app/x.tsx"]) is True
     assert scope.detect_matches("**/*.{ts,tsx}", ["app/x.js"]) is False
 
 
-def test_detect_matches_literal_path():
+def test_detect_matches_a_literal_path():
     assert scope.detect_matches(".gitlab-ci.yml", [".gitlab-ci.yml"]) is True
     assert scope.detect_matches(".gitlab-ci.yml", ["other.yml"]) is False
 
 
-def test_resolve_target_file_dir_and_glob(tmp_path: Path):
+def test_resolve_target_finds_files_dirs_and_globs(tmp_path: Path):
     (tmp_path / "pyproject.toml").write_text("x")
     (tmp_path / ".github").mkdir()
     (tmp_path / ".github" / "workflows").mkdir()
@@ -80,7 +80,7 @@ def test_resolve_target_returns_all_matches_root_first(tmp_path: Path):
     ]
 
 
-def test_resolve_target_glob_and_missing(tmp_path: Path):
+def test_resolve_target_reports_glob_hits_and_missing_targets(tmp_path: Path):
     (tmp_path / ".github").mkdir()
     (tmp_path / ".github" / "a.yml").write_text("x")
     assert scope.resolve_target(".github/*", tmp_path) == [".github/a.yml"]
@@ -90,7 +90,7 @@ def test_resolve_target_glob_and_missing(tmp_path: Path):
 # --- as_list --------------------------------------------------------------
 
 
-def test_as_list_coerces():
+def test_as_list_wraps_scalars_and_drops_empties():
     assert scope.as_list(["a", "b"]) == ["a", "b"]
     assert scope.as_list("solo") == ["solo"]
     assert scope.as_list(None) == []
@@ -100,13 +100,13 @@ def test_as_list_coerces():
 # --- structure detection --------------------------------------------------
 
 
-def test_structure_single_project_root_manifest():
+def test_a_root_manifest_means_a_single_project():
     s = scope.detect_structure(["pyproject.toml", "scripts/x.py"])
     assert s["verdict"] == "single_project"
     assert s["ambiguous"] is False
 
 
-def test_structure_multi_component_sibling_manifests():
+def test_sibling_manifests_mean_a_multi_component_repo():
     s = scope.detect_structure(["api/pyproject.toml", "web/package.json"])
     assert s["verdict"] == "multi_component"
     assert s["ambiguous"] is False
@@ -146,7 +146,7 @@ def test_dep_bot_respects_configured_renovate():
     assert scope._resolve_dep_bot("github", {"renovate"})[0] == "renovate"
 
 
-def test_release_github_single():
+def test_a_single_github_project_gets_release_please():
     out = scope._resolve_release("github", multi=False, is_py=False)
     assert out["chosen"] == "releases-github"
     assert "note" not in out
@@ -163,7 +163,7 @@ def test_release_gitlab_monorepo_uses_monorepo_tool():
     assert out["chosen"] == "releases-monorepo"
 
 
-def test_release_gitlab_python_vs_plain():
+def test_gitlab_python_gets_python_semantic_release_and_plain_gets_semantic_release():
     assert scope._resolve_release("gitlab", multi=False, is_py=True)["chosen"] == (
         "releases-python"
     )
@@ -276,7 +276,7 @@ def _page(
     }
 
 
-def test_scope_pages_platform_filter_and_detect(tmp_path: Path):
+def test_scope_pages_filters_by_platform_and_detect(tmp_path: Path):
     pages = [
         _page("ruff", "python", detect=["**/*.py"], targets=["pyproject.toml"]),
         _page("biome", "node", detect=["package.json"]),

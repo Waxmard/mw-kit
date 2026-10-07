@@ -18,6 +18,7 @@ Tooling decisions applicable to every project regardless of language.
 - [conventional-commits.md](./conventional-commits.md) — commit message format
 - [git-ai-instructions.md](./git-ai-instructions.md) — repo-local commit/PR guidance for git-ai, framed by user POV
 - [contributing.md](./contributing.md) — CONTRIBUTING.md: branching, commits, MR/PR + review flow
+- [project-readme.md](./project-readme.md) — README.md: one-sentence opener, flow diagram, runnable commands, layout table
 - [codeowners.md](./codeowners.md) — required reviewers auto-assigned per path
 - [dependabot.md](./dependabot.md) — automated dep updates (GitHub only — GH Actions + npm + pip)
 - [renovate.md](./renovate.md) — automated dep updates (GitLab + GitHub, broader ecosystem coverage)

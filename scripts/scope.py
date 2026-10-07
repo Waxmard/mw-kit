@@ -1,27 +1,17 @@
 #!/usr/bin/env python3
-"""Deterministic pre-flight + scope resolution for the tooling-sync skill.
+"""Pre-flight and scope resolution for the tooling-sync skill.
 
-Given a consumer repo path, this script does the mechanical half of tooling-sync:
-validate the repo, detect platform + project structure, glob each playbook page's
-`detect` patterns against the repo's tracked files, resolve the baseline
-alternatives (dependency bot, release tool, Svelte tooling), and check which of each
-in-scope page's `targets` files actually exist. It emits a single JSON "scope plan"
-on stdout.
+Given a repo path, prints one JSON scope plan: platform, project structure,
+which playbook pages apply (by `detect` glob or `detect_content` regex), the
+winning baseline alternatives, which `targets` exist, and each page's
+recalled `.tooling-sync.json` decision with whether the page changed since.
 
-It does NOT read config contents or judge drift — that stays in the skill, which is
-where semantic merge reasoning belongs. Anything genuinely ambiguous (unknown
-platform, single-component-but-nested layout) is surfaced under `needs_ask` rather
-than guessed.
+It never reads config contents or judges drift; that reasoning stays in the
+skill. Anything ambiguous lands in `needs_ask` instead of being guessed.
+Pages are read from their frontmatter, not MANIFEST.md, so a stale manifest
+can't skew scope.
 
-It also reads the consumer repo's `.tooling-sync.json` (incremental-sync memory the
-skill writes after the user decides) and annotates each in-scope row with the recalled
-decision plus whether the page governing it has changed in mw-kit since that decision —
-so the skill can skip re-comparing tools whose decision still holds. Pass `--no-state`
-to ignore the file and re-compare everything.
-
-Reads page frontmatter directly (the source of truth), not the generated MANIFEST.
-
-Stdlib only. Run: python3 scripts/scope.py [REPO_PATH]   (default: CWD)
+Stdlib only. Run: python3 scripts/scope.py [--no-state] [REPO_PATH]
 """
 
 from __future__ import annotations
@@ -40,7 +30,6 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from build_manifest import PLAYBOOK, as_list, load_pages
 
-# Manifest files that signal a project root, used for structure detection.
 PROJECT_MANIFESTS = ["pyproject.toml", "package.json", "go.mod"]
 
 # Per-project incremental-sync memory. Committed at the consumer repo root; the
@@ -51,16 +40,11 @@ STATE_SCHEMA = 1
 SETTLED_DECISIONS = {"synced", "declined", "override"}
 
 
-# ---------------------------------------------------------------------------
 # glob helpers (detect patterns + target paths)
-# ---------------------------------------------------------------------------
 
 
 def expand_braces(pattern: str) -> list[str]:
-    """Expand a single `{a,b,c}` group, e.g. `*.{ts,tsx}` -> [`*.ts`, `*.tsx`].
-
-    Only one group is supported — that is all the detect schema uses.
-    """
+    """Only one `{a,b,c}` group is supported; that is all the detect schema uses."""
     start = pattern.find("{")
     end = pattern.find("}", start)
     if start == -1 or end == -1:
@@ -72,9 +56,7 @@ def expand_braces(pattern: str) -> list[str]:
 def detect_matches(
     pattern: str, files: list[str], roots: list[str] | None = None
 ) -> bool:
-    """True if any tracked file matches a `detect` glob.
-
-    `**/*.py` means "any .py anywhere" — match it against the full path, the
+    """`**/*.py` means "any .py anywhere" — match it against the full path, the
     `**/`-stripped suffix, and the basename so root-level files count too.
 
     A bare marker glob (`app.json`, `playwright.config.*`) is authored relative
@@ -144,13 +126,10 @@ def resolve_target(
 
 
 def has_target(row: dict[str, Any], target: str) -> bool:
-    """True if `target` resolved for this row, at the repo root or any component."""
     return any(p.rsplit("/", 1)[-1] == target for p in row.get("targets_present") or ())
 
 
-# ---------------------------------------------------------------------------
 # repo inspection
-# ---------------------------------------------------------------------------
 
 
 def git(repo: Path, *args: str) -> str | None:
@@ -181,7 +160,6 @@ def detect_platform(repo: Path, tracked: list[str]) -> tuple[str, str]:
             return "gitlab", "remote"
         if "github.com" in low:
             return "github", "remote"
-    # Remote inconclusive — infer from CI config files.
     has_gitlab = ".gitlab-ci.yml" in tracked or any(
         t.startswith(".gitlab/") for t in tracked
     )
@@ -194,7 +172,6 @@ def detect_platform(repo: Path, tracked: list[str]) -> tuple[str, str]:
 
 
 def detect_structure(tracked: list[str]) -> dict[str, Any]:
-    """Classify single_project | multi_component | ambiguous from manifest layout."""
     manifests = [f for f in tracked if f.rsplit("/", 1)[-1] in PROJECT_MANIFESTS]
     dirs = {f.rsplit("/", 1)[0] if "/" in f else "" for f in manifests}
     root_orchestrator = any(f in ("Makefile", "docker-bake.hcl") for f in tracked)
@@ -225,15 +202,11 @@ def project_roots(structure: dict[str, Any]) -> list[str]:
     return roots
 
 
-# ---------------------------------------------------------------------------
 # incremental-sync memory (.tooling-sync.json)
-# ---------------------------------------------------------------------------
 
 
 def load_state(repo: Path) -> dict[str, Any] | None:
-    """Read the consumer repo's `.tooling-sync.json`, or None if absent/corrupt.
-
-    A corrupt or wrong-schema file is treated as no state (full re-compare) rather
+    """A corrupt or wrong-schema file is treated as no state (full re-compare) rather
     than an error — the skill rewrites it cleanly on the next apply.
     """
     p = repo / STATE_FILE
@@ -249,7 +222,6 @@ def load_state(repo: Path) -> dict[str, Any] | None:
 
 
 def playbook_root() -> Path:
-    """The mw-kit git repo root (PLAYBOOK is its `playbook/` subdir)."""
     return PLAYBOOK.parent
 
 
@@ -258,9 +230,7 @@ def playbook_head() -> str | None:
 
 
 def page_changed_since(commit: str, page: str) -> bool:
-    """True if `playbook/<page>` has commits after `commit` in the mw-kit repo.
-
-    Unknown commit (force-push, gc, never-synced) → assume changed, so a stale or
+    """Unknown commit (force-push, gc, never-synced) → assume changed, so a stale or
     unverifiable record re-surfaces rather than being silently trusted.
     """
     out = git(
@@ -344,9 +314,7 @@ def annotate_state(
     }
 
 
-# ---------------------------------------------------------------------------
 # page scoping
-# ---------------------------------------------------------------------------
 
 
 def scope_pages(
@@ -368,7 +336,6 @@ def scope_pages(
         detect_content = as_list(p.get("detect_content"))
         targets = as_list(p.get("targets"))
 
-        # 1. monorepo pages only apply to multi-component repos
         if scope == "monorepo" and structure["verdict"] == "single_project":
             skipped.append(
                 {
@@ -379,7 +346,6 @@ def scope_pages(
             )
             continue
 
-        # 2. platform restriction
         platform_pending = False
         if pf != "any" and platform not in ("unknown", pf):
             skipped.append(
@@ -389,10 +355,10 @@ def scope_pages(
         if pf != "any" and platform == "unknown":
             platform_pending = True  # can't decide until platform known
 
-        # 3. detect ("—"/empty = always relevant within its scope). A page is
-        #    relevant if any path glob (`detect`) OR any content regex
-        #    (`detect_content`) matches; the latter is how marker-less repo
-        #    classes (plain-YAML k8s) are identified.
+        # Empty detect = always relevant within its scope. Otherwise a page is
+        # relevant if any path glob (`detect`) OR any content regex
+        # (`detect_content`) matches; the latter identifies marker-less repo
+        # classes (plain-YAML k8s).
         matched = None
         if detect or detect_content:
             matched = next(
@@ -471,7 +437,6 @@ def nested_target_warnings(
 
 
 def _resolve_dep_bot(platform: str, configured: set[str]) -> tuple[str, str]:
-    """dependabot vs renovate — gitlab forces renovate; else present, then default."""
     if platform == "gitlab":
         return "renovate", "gitlab (renovate only)"
     if "renovate" in configured and "dependabot" not in configured:
@@ -524,7 +489,6 @@ def _resolve_release(
 def resolve_alternatives(
     in_scope: list[dict[str, Any]], platform: str, structure: dict[str, Any]
 ) -> dict[str, Any]:
-    """Pick dependency, release, and single-project Svelte tooling alternatives."""
     tools = {r["tool"] for r in in_scope}
     configured = {r["tool"] for r in in_scope if r["targets_present"]}
 
@@ -586,7 +550,6 @@ def main() -> int:
     a = ap.parse_args()
     repo = Path(a.repo).resolve()
 
-    # --- pre-flight ---
     toplevel = git(repo, "rev-parse", "--show-toplevel")
     if not toplevel:
         print(
@@ -622,7 +585,6 @@ def main() -> int:
     scoped = scope_pages(pages, repo, tracked, platform, structure)
     alternatives = resolve_alternatives(scoped["in_scope"], platform, structure)
 
-    # drop the losing alternatives out of in_scope into skipped
     in_scope: list[dict[str, Any]] = []
     skipped: list[dict[str, Any]] = list(scoped["skipped"])
     for r in scoped["in_scope"]:
@@ -646,7 +608,6 @@ def main() -> int:
             reason = alternatives[kind]["reason"]
             warnings.append(f"{kind}: chosen '{chosen}' is not in scope ({reason})")
 
-    # incremental-sync memory: recall prior decisions, flag pages changed since
     state = None if a.no_state else load_state(repo)
     state_summary = annotate_state(
         in_scope,

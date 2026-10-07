@@ -1,19 +1,38 @@
 # mw-kit
 
-My tooling preferences for new projects. Narrative docs explaining each choice and *why*.
+My tooling choices for new projects: one page per tool with the reason and the
+canonical config, plus the resolver that the
+[`tooling-sync`](https://github.com/Waxmard/skills) skill runs against a repo.
+
+```text
+playbook/<scope>/<tool>.md ──build_manifest.py──▶ playbook/MANIFEST.md
+           │
+           └──▶ scope.py <repo> ──▶ JSON scope plan ──▶ tooling-sync ──▶ diffs and edits in <repo>
+```
+
+## Run
+
+```sh
+make setup                                    # uv sync
+python3 scripts/scope.py ~/code/some-repo     # JSON: which pages apply, which targets exist
+python3 scripts/scope.py --no-state .         # same, ignoring .tooling-sync.json decisions
+make manifest                                 # regenerate MANIFEST.md after editing frontmatter
+make ci                                       # lint, typecheck, tests
+```
 
 ## Layout
 
-```
-playbook/        # tooling preferences, scoped
-  MANIFEST.md    # generated index: tool → scope, tier, target files, detect globs
-  universal/     # applies to every project
-  python/        # python-specific
-  node/          # node/typescript-specific
-  k8s/           # kubernetes-manifest / gitops repos (content-detected on `kind:`)
-  monorepo/      # monorepo-specific (docker bake, multi-package)
+```text
+playbook/            one page per tool, by scope
+  MANIFEST.md        generated index: tool, scope, tier, targets, detect globs
+  universal/         every project
+  python/ node/      language-specific
+  k8s/               kubernetes manifest repos, detected by `kind:` in YAML
+  monorepo/          docker bake, multi-package layout
 scripts/
-  build_manifest.py  # regenerates playbook/MANIFEST.md from page frontmatter
+  build_manifest.py  regenerates MANIFEST.md from page frontmatter
+  scope.py           the deterministic half of tooling-sync
+tests/               pytest for scope.py
 ```
 
 ## Tooling at a glance
@@ -41,18 +60,21 @@ scripts/
 | Vuln scanning | trivy (fs + image) |
 | Multi-arch builds | docker bake |
 | Agent instructions | `AGENTS.md` (agent-agnostic) as the only instructions file, no `CLAUDE.md` |
+| README | One-sentence opener, flow diagram, commands that run ([playbook](playbook/universal/project-readme.md)) |
 | Per-file size cap | line-limit script (CI gate, optional local hook), default 800 lines |
 | Contribution flow | `CONTRIBUTING.md` — branching, commits, MR/PR + human review |
 | Required reviewers | `CODEOWNERS` — path → owner, gates the human approval |
 | Commit/PR AI guidance | `.git-ai-instructions` — repo user-POV for [git-ai](https://github.com/Waxmard/git-ai) prefixing |
 
-## Skills
+## Page format
 
-The `tooling-sync` skill that consumes this playbook, and `ui-taste`, live in [Waxmard/skills](https://github.com/Waxmard/skills).
-
-## Conventions
-
-- Each tool gets its own page under the right `playbook/<scope>/` folder.
-- Each page opens with YAML frontmatter (`tool`, `scope`, `tier`, `summary`, `targets`, `detect` and/or `detect_content`, optional `platform`) — the machine-readable index source. `detect_content` matches regexes against YAML bodies, for repo classes with no path marker (e.g. k8s keyed on `^kind:`).
-- Each page body: **What**, **Why**, **Config**, **Gotchas**. The `## Config` block is the canonical config to diff a consumer repo against.
-- `playbook/MANIFEST.md` is generated from frontmatter — run `python3 scripts/build_manifest.py` after editing any frontmatter. Don't hand-edit it.
+- Each tool gets one page under `playbook/<scope>/`.
+- Frontmatter: `tool`, `scope`, `tier` (`baseline` or `optional`), `summary`,
+  `targets`, `detect` and/or `detect_content`, and optional `platform`.
+  `detect_content` matches regexes against YAML bodies, for repos with no path
+  marker (k8s keys on `^kind:`). A page with neither applies to every repo in
+  its scope.
+- Body: **What**, **Why**, **Config**, **Gotchas**. `## Config` is what
+  tooling-sync diffs a repo against.
+- `MANIFEST.md` is generated. Run `make manifest` after editing frontmatter;
+  never hand-edit it.
