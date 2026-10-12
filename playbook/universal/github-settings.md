@@ -16,10 +16,9 @@ Settings that live on GitHub, not in the tree: merge buttons, a ruleset on the d
 ## Why
 
 - **Squash + rebase only, PR title as the squash subject.** Main stays linear and every commit subject is the Conventional Commit PR title that release-please reads. Merge commits would add noise subjects release-please ignores.
-- **Delete head branches, offer "Update branch", allow auto-merge.** Auto-merge is what the release-please workflow's `gh pr merge --auto` step turns on.
+- **Delete head branches, offer "Update branch", allow auto-merge.** [releases-github](./releases-github.md)'s `gh pr merge --auto` step fails unless this is on.
 - **Ruleset on `~DEFAULT_BRANCH`.** No deletion, no force-push, linear history, PR required (0 approvals, solo-friendly). The admin role can bypass, so an emergency direct push still works. Rulesets over classic branch protection: one JSON document, idempotent PUT, and they stack with org rulesets.
 - **Actions token read-only by default.** Workflows that need writes declare `permissions:` themselves (release-please does). Actions can't approve PRs.
-- **Dependabot alerts + security-update PRs, secret scanning + push protection.** Free on public repos and independent of [[dependabot]] version-update config.
 
 ## Config
 
@@ -96,7 +95,7 @@ gh api "repos/$R/rules/branches/$(gh api "repos/$R" --jq .default_branch)" --jq 
 
 - **Re-running the ruleset POST creates a duplicate.** The Config block looks the ruleset up by name and PUTs if it exists. Keep that pattern.
 - **`actor_id: 5` is the built-in admin repository role.** `current_user_can_bypass` on `GET repos/$R/rulesets/$ID` should read `always` for the owner.
-- **A ruleset `allowed_merge_methods` must include whatever the release workflow uses.** [[releases-github]] merges with `--rebase`.
+- **A ruleset `allowed_merge_methods` must include whatever the release workflow uses.** [releases-github](./releases-github.md) merges with `--rebase`.
 - **Auto-merge on a PR with nothing pending.** With 0 required approvals and no required checks, a release PR is already mergeable, and `gh pr merge --auto` may fail with "Pull request is in clean status". Add a required check, or drop `--auto` in that repo's release workflow.
-- **Private repos.** Secret scanning and push protection need GitHub Advanced Security there. The `security_and_analysis` PATCH fails, so skip that call.
+- **Private repos.** Secret scanning / push protection need GHAS — skip the `security_and_analysis` PATCH. Code scanning: see [security](./security.md) Gotchas.
 - **Classic branch protection on an existing repo** (`GET repos/$R/branches/<b>/protection` returns 200) stacks with the ruleset. Migrate its required checks into the ruleset, then `gh api -X DELETE repos/$R/branches/<b>/protection`.

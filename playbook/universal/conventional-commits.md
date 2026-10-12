@@ -19,10 +19,8 @@ Types: `feat`, `fix`, `perf`, `refactor`, `docs`, `style`, `test`, `chore`, `bui
 ## Why
 
 - Release tooling (release-please, semantic-release) parses these to compute version bumps and changelog sections.
-- Browsing `git log` becomes a structured changelog by default.
-- Forces 1 commit = 1 logical change.
 
-Stated as a contributor expectation in [[contributing]].
+Stated as a contributor expectation in [contributing](./contributing.md).
 
 ## Examples
 
@@ -31,7 +29,7 @@ feat(auth): add Google OAuth flow
 fix(api): handle null user_id in /me endpoint
 refactor: tighten create_access_token subject type to UUID | str
 ci: remove --legacy-peer-deps from frontend CI installs
-chore(deps): bump biome to 2.4.14
+chore(deps): bump biome
 ```
 
 ## Enforcement

@@ -17,8 +17,7 @@ platform: github
 
 - Driven by commit messages — no manual version bumping.
 - The release PR is reviewable: see exactly what's going out before tagging.
-- Auto-merge supported (label-driven), so simple repos can be fully automated.
-- Google maintains it. Works well with monorepos via packages config.
+- The workflow below auto-merges the release PR (`gh pr merge --auto`); drop that step to keep merges manual.
 
 ## Why not semantic-release
 
@@ -93,7 +92,7 @@ A fine-grained PAT with `contents: write` and `pull-requests: write`. The defaul
 
 ## Bump rules
 
-release-please's bump algorithm is **hardcoded**: breaking → major, `feat` → minor, `fix` → patch, everything else → no release. **It is not configurable per commit type** — `changelog-sections` only controls changelog *display*, not whether a type bumps. Making `refactor`/`build`/`chore` cut a patch requires a custom `VersioningStrategy` class (code, not config), which isn't worth it. If you need "most commit types cut a patch," that's a reason to prefer semantic-release ([[releases-gitlab]] / [[releases-python]]), whose `releaseRules` / `patch_tags` support it directly.
+release-please's bump algorithm is **hardcoded**: breaking → major, `feat` → minor, `fix` → patch, everything else → no release. **It is not configurable per commit type** — `changelog-sections` only controls changelog *display*, not whether a type bumps. Making `refactor`/`build`/`chore` cut a patch requires a custom `VersioningStrategy` class (code, not config), which isn't worth it. If you need "most commit types cut a patch," that's a reason to prefer semantic-release ([releases-gitlab](./releases-gitlab.md) / [releases-python](../python/releases-python.md)), whose `releaseRules` / `patch_tags` support it directly.
 
 The only built-in knobs (`bump-minor-pre-major`, `bump-patch-for-minor-pre-major`) *lower* severity for pre-1.0 repos — the opposite direction.
 
@@ -101,5 +100,4 @@ The only built-in knobs (`bump-minor-pre-major`, `bump-patch-for-minor-pre-major
 
 - `release-type: simple` = manage version in `.release-please-manifest.json`. Use `release-type: python` / `node` to also bump `pyproject.toml`/`package.json`.
 - Version living in another file (a browser extension's `manifest.json`, a Helm `Chart.yaml`)? Keep `simple` and add `"extra-files": [{ "type": "json", "path": "src/manifest.json", "jsonpath": "$.version" }]` to the package config (`type: yaml` for YAML).
-- Hidden sections still influence release-or-not. `chore` alone won't cut a release; needs a `feat`/`fix`.
-- Pair with a CONTRIBUTING note enforcing Conventional Commits — see [[contributing]].
+- Pair with a CONTRIBUTING note enforcing Conventional Commits — see [contributing](./contributing.md).

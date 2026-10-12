@@ -14,15 +14,7 @@ targets: ["lefthook.yml"]
 
 ## Why
 
-- Faster than husky/pre-commit framework (parallel, no Python startup tax).
-- One YAML config for all hooks across languages.
 - **Autofix + restage** built-in via `stage_fixed: true` — formatter/linter fixes get committed automatically, no second-commit shuffle.
-- Per-glob targeting (only run biome on `frontend/**/*.ts`, only ruff on `fastapi/**/*.py`).
-
-## Why not husky / pre-commit
-
-- husky: JS-only, no autofix-restage, no parallel by default.
-- pre-commit (Python framework): slow cold start, language-specific runners reinvent each tool, autofix-restage clunky.
 
 ## Config
 
@@ -57,7 +49,7 @@ Root `package.json`:
 
 ```json
 {
-  "devDependencies": { "lefthook": "^1.0.0" },
+  "devDependencies": { "lefthook": "^2" },
   "scripts": { "prepare": "lefthook install" }
 }
 ```
@@ -72,9 +64,6 @@ running `uv run ruff …` inside it.
 
 ## Gotchas
 
-- `stage_fixed: true` is the whole point. Don't omit it.
-- For tools that don't accept file lists, omit `{staged_files}` and let them scan the project.
-- Use `root:` so commands run from the subproject directory.
 - Keep a `check:staged` npm script for biome that uses `--no-errors-on-unmatched` (lefthook may pass paths outside biome's `includes`).
 - **Glob path semantics — slashless vs slash (verified on lefthook 1.13).** lefthook matches each glob against the file's **repo-relative path**. `root:` only scopes *which* staged files are considered and sets the run cwd — it does **not** rebase the glob. Two consequences:
   - A **slashless** glob matches the **basename at any depth**: `*.{ts,tsx,vue}` catches `App.vue`, `src/App.vue`, and `src/a/b/Deep.vue` alike. This is almost always what you want — pair it with `root:` to scope the subtree and let the tool's own config (biome `includes`, the line-limit `is_source()` filter) handle path precision.

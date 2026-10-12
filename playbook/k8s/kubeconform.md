@@ -3,7 +3,7 @@ tool: kubeconform
 scope: k8s
 tier: baseline
 summary: "Schema-validate K8s manifests in CI against K8s + CRD schemas"
-targets: [".gitlab-ci.yml", ".github/workflows/"]
+targets: [".gitlab-ci.yml"]
 detect_content: ["^kind:\\s"]
 platform: any
 ---
@@ -28,9 +28,6 @@ the resource is real.
   [datreeio CRDs-catalog](https://github.com/datreeio/CRDs-catalog) and Argo CD,
   External Secrets, Gateway API, cert-manager, etc. all validate too — not just core
   kinds.
-- **Self-maintaining file selection.** Validate only files containing `kind:` and the
-  job needs no allow-list — new manifest directories are picked up automatically, and
-  non-manifest YAML (Helm values, alert policies, docs) is skipped.
 
 ## Config
 
@@ -52,7 +49,7 @@ validate-manifests:
     - |
       find . -type f \( -name '*.yaml' -o -name '*.yml' \) -not -path './.git/*' \
         -exec grep -lE '^kind:' {} + \
-        | xargs /kubeconform -strict -summary -ignore-missing-schemas \
+        | xargs -r /kubeconform -strict -summary -ignore-missing-schemas \
             -schema-location default \
             -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
 ```
@@ -60,12 +57,6 @@ validate-manifests:
 Flags that matter: `-strict` (reject unknown fields), `-ignore-missing-schemas` (don't
 fail on a CRD the catalog lacks — see Gotchas), `-summary` (one-line totals),
 `-schema-location default` (the bundled K8s schemas) plus the catalog URL.
-
-### GitHub variant
-
-Same selection + flags in a workflow step. Install the binary
-(`yannh/kubeconform-action` or download the release) and run the same
-`find … | xargs kubeconform …` pipeline.
 
 ### Helm / Kustomize — render first
 
@@ -90,16 +81,4 @@ Argo CD GitOps repo.)
   have no schema; without this flag the job fails on them. With it they're soft-skipped
   (reported, not failed). Check the `Skipped:` count in the summary so you know what
   *isn't* being validated.
-- **Restrict to real manifests, or it errors on every other YAML.** kubeconform on a
-  file with no `apiVersion`/`kind` (a `.gitlab-ci.yml`, a Helm `values.yaml`) reports it
-  as invalid. Selecting by `grep -lE '^kind:'` is the self-maintaining fix — preferred
-  over a hand-kept directory allow-list.
-- **busybox `grep` has no `--include`.** The `-alpine` image ships busybox; use
-  `find … -exec grep -lE` (above), not `grep -r --include`, which silently does nothing
-  there.
-- **Pin the image tag, not `:latest`.** `ghcr.io/yannh/kubeconform:vX.Y.Z-alpine` keeps
-  pipelines reproducible; Renovate's gitlab-ci / Dockerfile managers bump it. See
-  [[renovate]].
-- **Not a policy/security check.** kubeconform validates *schema*, not best practice (no
-  "runAsNonRoot", no resource-limit enforcement). Layer kube-linter / trivy config /
-  conftest on top if you want policy — they're noisier and opt-in.
+- **Not a policy check.** kubeconform validates schema only (no runAsNonRoot, no resource limits). Add kube-linter or conftest for policy.

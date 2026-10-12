@@ -2,7 +2,7 @@
 tool: gitlab-pipeline-dedup
 scope: universal
 tier: baseline
-summary: "GitLab pipeline economy — workflow:rules dedup (one pipeline per change) + auto-cancel of superseded runs"
+summary: "GitLab workflow:rules dedup (one pipeline per change) + auto-cancel of superseded runs"
 targets: [".gitlab-ci.yml"]
 detect: [".gitlab-ci.yml"]
 platform: gitlab
@@ -23,7 +23,7 @@ two kinds — a **branch pipeline** (on push) and an **MR pipeline**
 you need is decided entirely by where your jobs run:
 
 **Deterministic test — does any job `rules` entry reference `merge_request_event`?**
-(`grep -n 'merge_request_event' .gitlab-ci.yml`, scoped to job rules.)
+(`grep -n 'merge_request_event' .gitlab-ci.yml`; hits inside the `workflow:` block don't count.)
 
 - **No** — every job gates on `$CI_COMMIT_BRANCH`. GitLab never creates MR
   pipelines, so duplicates are *impossible*. You need nothing — or the
@@ -48,15 +48,7 @@ want merged-results pipelines, and it carries a precondition.
   assumes your jobs already run on MRs (piece 2 below); a **branch-only pipeline
   has no MR pipeline to duplicate**, so the dedup rule fixes nothing there and
   actively breaks it — see the precondition gotcha.
-- **Build once, ship the tested artifact.** Build the image on the `main` push
-  tagged `:$SHA`, then `crane`-retag it to the released version (`:$SHA → :X.Y.Z`)
-  in the release job — never rebuild at tag time. No tag-triggered pipeline
-  needed, and the published image is byte-identical to what the MR tested (no
-  rebuild drift). Both release tools follow this model; only the way they stop the
-  release commit/tag from spawning a rebuild differs: [[releases-gitlab]] (node
-  semantic-release) skips `chore(release):` titles in `workflow:rules`, while
-  [[releases-python]] / [[releases-monorepo]] (PSR) put `[skip ci]` in the release
-  commit message.
+- **Build once, ship the tested artifact.** Build the image once on the branch push (`:$CI_COMMIT_SHORT_SHA`) and `crane`-retag it in the release job — never rebuild at tag time. All three release pages ([releases-gitlab](./releases-gitlab.md), [releases-python](../python/releases-python.md), [releases-monorepo](../monorepo/releases-monorepo.md)) put `[skip ci]` in the release commit so it doesn't spawn a rebuild.
 
 ## Config
 
@@ -76,40 +68,9 @@ workflow:
     - if: $CI_COMMIT_BRANCH           # exactly one pipeline per branch push
 ```
 
-**This can't break.** It only ever *removes* MR pipelines and *keeps* the branch
-pipeline — and the branch pipeline always has jobs (every repo's jobs gate on
-`$CI_COMMIT_BRANCH` by default), so it can never produce the empty-pipeline error.
-On a repo that never had MR pipelines it's a harmless no-op; if someone later adds
-an MR job rule, it silently prevents the duplicate instead of letting it appear.
 The trade-off: you forgo **merged-results pipelines** (testing the real merge
 result) and other MR-only features. Most repos don't miss them — adopt the
 MR-preferred variant below only when you specifically want them.
-
-**"Every job" includes build/push-image jobs — don't narrow one to `main` out of
-a misplaced instinct that "pushes an artifact" means "gate like a deploy."** That
-silently re-creates the branch/MR split this pattern exists to avoid (now it's one
-job instead of two pipelines) and means feature branches never get build feedback
-until merge. Gate the job the same as everything else (`if: $CI_COMMIT_BRANCH`,
-plus `changes:` if scoping it); instead scope the **tag** so non-main branches
-can't clobber the tag your deploy config actually points at:
-
-```yaml
-build-image:
-  stage: build
-  rules:
-    - if: $CI_COMMIT_BRANCH
-      changes: [Dockerfile, src/**/*]
-  script:
-    - |
-      if [ "$CI_COMMIT_BRANCH" = "$CI_DEFAULT_BRANCH" ]; then TAG=latest; else TAG="$CI_COMMIT_REF_SLUG"; fi
-      docker build -t "$REGISTRY/app:$TAG" . && docker push "$REGISTRY/app:$TAG"
-```
-
-Only a `release`/promotion step that decides "this build is now the thing that's
-live" gates to `main` (see the `release` examples below and [[releases-gitlab]]).
-That's a different axis from "don't rebuild at tag time" (Why, above) — this is
-about which *branches* build, that's about whether *tagging a release* triggers a
-*second* build instead of retagging the one the branch pipeline already produced.
 
 ### Opt-in — MR-preferred (suppress the branch pipeline)
 
@@ -129,14 +90,7 @@ workflow:
     - if: $CI_COMMIT_BRANCH
 ```
 
-⚠️ **Precondition — your jobs must run on `merge_request_event`.** This block
-*suppresses the branch pipeline*, betting the MR pipeline runs the jobs instead. If
-no job opts into `merge_request_event`, the MR pipeline is empty and GitLab fails
-with `Pipeline creation failed. Please try again.` — zero pipelines, worse than the
-duplicate. So the job rules below ship **with** this block, not optionally. When
-retrofitting, add the job rules first, confirm MR pipelines run, *then* add the
-workflow block. If you don't want MR pipelines, use the branch-preferred default
-above instead — never this block alone.
+⚠️ Read the precondition gotcha before using this block.
 
 Test jobs (lint, type-check, unit tests), `build`, and `trivy-image-scan` all run on
 every MR **and** every branch — same gate, so nothing builds untested:
@@ -156,60 +110,13 @@ build:
       when: always
 ```
 
-Only `release` gates to `main`:
-
-```yaml
-semantic-release:
-  stage: release
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main"
-```
-
-In MR pipelines `CI_COMMIT_BRANCH` is empty but `CI_COMMIT_REF_NAME` holds the
-source branch — use `CI_COMMIT_REF_NAME` when deriving an image tag from the
-branch name:
-
-```yaml
-  before_script:
-    - if [ -n "${CI_COMMIT_REF_NAME:-}" ]; then export BRANCH_SANITIZED=$(printf '%s' "$CI_COMMIT_REF_NAME" | tr '/' '-'); fi
-```
-
-### Manually cut release tags (retag, don't rebuild)
-
-For repos that cut release tags by hand (no release tool creating them in a
-release job). The tag pipeline must exist — the `$CI_COMMIT_TAG` workflow rule
-above — and must run only a retag job:
-
-```yaml
-release-images:
-  stage: push
-  image: gcr.io/go-containerregistry/crane:debug
-  interruptible: false
-  needs: []                       # build jobs don't exist in tag pipelines
-  script:
-    - for img in api worker; do crane tag "$REGISTRY/$img:$CI_COMMIT_SHORT_SHA" "$CI_COMMIT_TAG" || exit 1; done
-  rules:
-    - if: $CI_COMMIT_TAG =~ /^\d+\.\d+\.\d+/
-```
-
-Registry auth goes in `before_script`, per registry (`crane auth login …`). For
-Artifact Registry (`*.pkg.dev`), use `gcrane` with the job's own id_token instead
-of a `GCLOUD_TOKEN` handed over from another job — that token expires after an
-hour, so retries fail; see [[releases-monorepo]] §"Gotchas". This
-is the manual-tag form of "Build once, ship the tested artifact" (Why, above): a
-missing `:$CI_COMMIT_SHORT_SHA` image fails the job instead of rebuilding.
+In MR pipelines `CI_COMMIT_BRANCH` is empty; derive image tags from the predefined `$CI_COMMIT_REF_SLUG`.
 
 ## Monorepo (GitLab)
 
 Assumes the **MR-preferred** variant (jobs run on `merge_request_event`) — the
 `changes:`-scoping below hangs off those MR rules. A branch-preferred monorepo
 just adds `changes:` to the `$CI_COMMIT_BRANCH` rules instead.
-
-[[ci-paths]] is GitHub-only (`paths:` on `.github/workflows/`). On GitLab the same
-idea — skip the jobs of the component that didn't change — folds into the job
-`rules` themselves, **combined with** the dedup conditions above. The dedup
-contract is unchanged: every test/build/scan job still runs on an MR **and** any
-branch; it's now also `changes:`-scoped per component.
 
 Define one rule anchor per component and apply it to every job — test jobs as-is,
 build/scan with `when: always`:
@@ -247,7 +154,7 @@ service-a-build:
 Anchors are file-local across GitLab `include`s, so if you split per-component
 files (`include: local:`) each `*-changes` / `*-rules` anchor must live in the
 file that uses it; in a single root pipeline they sit at the top. Only `release`
-stays gated to `main` (see [[releases-monorepo]]) — its per-component scoping is
+stays gated to `main` (see [releases-monorepo](../monorepo/releases-monorepo.md)) — its per-component scoping is
 the semantic-release-monorepo plugin's job, not a `rules:` one.
 
 ## Auto-cancel superseded pipelines
@@ -255,7 +162,7 @@ the semantic-release-monorepo plugin's job, not a `rules:` one.
 Dedup (above) stops *two* pipelines firing for *one* commit. This is the orthogonal
 waste: a pipeline still running when a **newer commit** lands on the same branch is
 now testing dead code — kill it. GitLab's UI calls this "auto-cancel redundant
-pipelines"; since GitLab 16.0 the `workflow:auto_cancel` keyword sets it **in code**
+pipelines"; the `workflow:auto_cancel` keyword sets it **in code**
 and *overrides* the project setting, so you never touch the UI.
 
 ```yaml
@@ -273,9 +180,7 @@ pair: `auto_cancel` decides the policy, `interruptible` marks which jobs it may 
 
 `on_new_commit` values: `conservative` (default — won't cancel a pipeline once any
 *uninterruptible* job has started), **`interruptible`** (cancel the running
-interruptible jobs and let the rest finish — the one you want), `none` (off). Optional
-companion: `on_job_failure: all` cancels the rest of the pipeline the moment any job
-fails (fail-fast), vs `none` to let siblings finish.
+interruptible jobs and let the rest finish — the one you want), `none` (off).
 
 ## Gotchas
 
@@ -304,16 +209,8 @@ fails (fail-fast), vs `none` to let siblings finish.
   jobs to run on MRs, use the **branch-preferred** block instead (Config above) —
   it suppresses MR pipelines rather than branch ones, so it can't starve anything;
   a branch-only pipeline has no duplicates to fix in the first place (its MR
-  pipelines are always empty/uncreated). This is the whole-pipeline version of the
-  `build`-specific asymmetry below.
-- **Duplicates surface only on pushes while an MR is open.** If you push first
-  then open the MR, the overlap window is small and the bug hides — until a bot
-  (renovate/dependabot) starts pushing onto open MRs and doubles every run. Don't
-  judge correctness by "I haven't noticed duplicates."
-- **Testing every branch costs CI on WIP.** Matching `$CI_COMMIT_BRANCH` runs the
-  full test+build on pre-MR feature pushes too. Workflow dedup keeps it to one run
-  per push; if that churn is heavy, reach for `changes:` filters (below) rather
-  than narrowing back to `main`.
+  pipelines are always empty/uncreated).
+- **Testing every branch costs CI on WIP.** Scope with `changes:` rather than narrowing back to `main`.
 - **Don't drop `build`'s `merge_request_event` rule when adding `changes:`.** The
   easy monorepo mistake: gate build on `$CI_COMMIT_BRANCH` + `changes:` only. In
   an MR pipeline `$CI_COMMIT_BRANCH` is empty, so the image then **never builds on
@@ -322,31 +219,11 @@ fails (fail-fast), vs `none` to let siblings finish.
   `merge_request_event` rule, also `changes:`-scoped. This asymmetry hides behind
   a green dedup: no *duplicate* pipelines, but *missing* jobs. See
   [Monorepo (GitLab)](#monorepo-gitlab) for the full per-component anchor.
-- **Monorepos** — [[ci-paths]] covers GitHub (`paths:`); on GitLab add `changes:`
-  filters to the job `rules` instead (see [Monorepo (GitLab)](#monorepo-gitlab)).
-  The workflow dedup block stays identical either way.
-- **`allow_failure: true` inside `rules:` for manual jobs.** In manual cleanup or
-  stop jobs (`when: manual`, e.g. environment teardown), placing `allow_failure: true`
-  at the job top-level is overridden by the `rules:` array entry (which defaults to
-  `allow_failure: false`). This leaves open MR pipelines permanently stuck in `running`
-  status instead of completing with `success`. Place `allow_failure: true` inside the
-  specific `rules:` item:
-  ```yaml
-  cleanup:
-    rules:
-      - if: $CI_MERGE_REQUEST_IID
-        when: manual
-        allow_failure: true
-  ```
-- **DAG unblocking (`needs:`).** Downstream jobs (such as review deployments) should
-  only `needs:` jobs whose artifacts or gating they strictly depend on. Decouple
-  independent security checks (`trivy-image-scan`) so deployments start immediately
-  in parallel with scans instead of waiting in serial.
 - **An `if: $CI_COMMIT_TAG` job rule is dead without a workflow tag rule — and harmful
   with one if the job `needs:` branch-only jobs.** The MR-preferred workflow block
   creates no tag pipelines, so a `$CI_COMMIT_TAG` rule on push jobs silently never
   fires (looks like release tagging, does nothing). Adding the workflow rule then
   breaks pipeline creation if those jobs `needs:` build jobs that only run on
   MR/branch. Give tag pipelines a dedicated retag job with its own `needs` (see
-  [Manually cut release tags](#manually-cut-release-tags-retag-dont-rebuild)) and drop
+  [releases-gitlab](./releases-gitlab.md#manually-cut-release-tags-retag-dont-rebuild)) and drop
   `$CI_COMMIT_TAG` from the branch push jobs.

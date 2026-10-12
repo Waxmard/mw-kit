@@ -2,7 +2,7 @@
 
 ## Pages
 
-- [layout.md](./layout.md) — directory shape + tooling boundaries
+- [releases-monorepo.md](./releases-monorepo.md) — per-component independent releases (semantic-release-monorepo)
 - [makefile.md](./makefile.md) — root orchestrator pattern
 - [docker-bake.md](./docker-bake.md) — multi-platform builds, no redundant pushes
 - [ci-paths.md](./ci-paths.md) — path-filtered workflows

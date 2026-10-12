@@ -15,9 +15,9 @@ platform: gitlab
 
 ## Why on GitLab
 
-release-please is GitHub-flavored (uses Actions, GitHub PR auto-merge labels). semantic-release runs anywhere; GitLab plugin handles releases + MR comments cleanly.
+release-please is GitHub-flavored (uses Actions, GitHub PR auto-merge labels). GitLab plugin handles releases + MR comments cleanly.
 
-**Python repos: use [[releases-python]] (python-semantic-release) instead** — same conventional-commits flow without pulling node into a Python pipeline. This page is for node/other repos on GitLab. Never apply both.
+**Python repos: use [releases-python](../python/releases-python.md) (python-semantic-release) instead** — same conventional-commits flow without pulling node into a Python pipeline. This page is for node/other repos on GitLab. Never apply both.
 
 ## Config
 
@@ -60,7 +60,7 @@ release-please is GitHub-flavored (uses Actions, GitHub PR auto-merge labels). s
     ["@semantic-release/changelog", { "changelogFile": "CHANGELOG.md" }],
     ["@semantic-release/git", {
       "assets": ["CHANGELOG.md", "package.json"],
-      "message": "chore(release): ${nextRelease.version}\n\n${nextRelease.notes}"
+      "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
     }],
     "@semantic-release/gitlab"
   ]
@@ -97,7 +97,7 @@ That's why `{ "breaking": true, "release": "major" }` is listed **first**: a `fe
 
 `"preset": "conventionalcommits"` on **both** `commit-analyzer` and `release-notes-generator` is required — without it semantic-release uses the **angular** preset, whose header regex doesn't recognize the `!` breaking marker, so `feat!:` is treated as a non-breaking `feat` (only a `BREAKING CHANGE:` footer would bump major). The preset ships in a separate package: add `conventional-changelog-conventionalcommits` as a devDep (and to the pipeline `npx -p …` list, as above).
 
-**Pin that preset to `^9` — do not let it float to v10.** `@semantic-release/release-notes-generator@14` (the latest, bundled by `semantic-release@25`) is built on the old conventional-changelog generation (`conventional-changelog-writer@8`, `conventional-commits-parser@6`). `conventional-changelog-conventionalcommits@10` is a ground-up rewrite onto the new `@conventional-changelog/*` packages (`@conventional-changelog/template`) and is **silently incompatible** with `writer@8`: every commit is dropped during rendering, so *every* release — `feat`/`fix` included — produces a **header-only changelog with no body**. There is currently no `release-notes-generator` that supports v10. Pin `"conventional-changelog-conventionalcommits": "^9.3.1"` and add a Renovate guard so it can't be bumped:
+Pin `conventional-changelog-conventionalcommits` to `^9` and Renovate-guard it below 10 (JSON below): v10 is silently incompatible with `release-notes-generator@14` — every release gets a header-only changelog. Below v8 the preset's options are silently dropped and `feat!` cuts no release. If a package.json exists, declare it as a direct devDependency so a transitive v7 can't win; check with `npm ls conventional-changelog-conventionalcommits`.
 
 ```json
 {
@@ -106,22 +106,35 @@ That's why `{ "breaking": true, "release": "major" }` is listed **first**: a `fe
 }
 ```
 
-**The `^9` floor matters as much as the `<10` ceiling — and it is why the preset must be a *direct* devDep, not an inherited one.** `commit-analyzer@13` and `release-notes-generator@14` both end with `return { ...loadedConfig.parser, ...parserOpts }` — they read the **`.parser` / `.writer`** keys, which the preset only started exposing in **v8**. v7 and earlier expose the old `.parserOpts` / `.writerOpts` names, so the spread yields `undefined` and **every preset option is silently discarded**; the parser falls back to its built-in defaults, which have no `breakingHeaderPattern` at all. Verified on a clean install of `semantic-release@25.0.3`:
-
-| preset version | `feat!: x` | `feat: x` | `chore: x` |
-| --- | --- | --- | --- |
-| `7.0.2` | **no release** | minor | patch |
-| `9.3.1` | major | minor | patch |
-
-Note the failure is *worse* than the angular fallback: angular at least parses `feat!` as a minor, while a v7 preset parses it as nothing at all. Nothing logs a warning — `preset` resolves, returns an object, and the options evaporate. This is the trap when the package arrives **transitively** (e.g. `@commitlint/config-conventional` pulls its own copy): a lockfile can say `9.3.1` while a stale `node_modules` still has `7.0.2`, and the two disagree about whether `feat!` cuts a release. Declare it in `devDependencies` yourself so the range is yours to control.
-
-**`presetConfig.types` on the notes-generator is mandatory whenever `releaseRules` releases on types beyond `feat`/`fix`/`perf`.** The conventionalcommits preset's *default* type table hides `refactor`/`build`/`ci`/`chore`/`style` — so a release driven solely by one of those bumps the version but writes a **header-only changelog entry with no body**. The fix is to spell out a `presetConfig.types` list that un-hides every type you release on (config above). Keep `presetConfig.types` aligned with `releaseRules`: every type that cuts a release needs a visible `section` here, or its release lands blank.
+Every type `releaseRules` releases on needs a visible `section` in `presetConfig.types`, or that release's changelog entry is empty.
 
 ## Gotchas
 
-- **`feat!` needs the `conventionalcommits` preset** (see above) — under the default angular preset the `!` is ignored and the breaking change ships as a plain minor.
-- **`feat!` silently cutting *no* release means the preset resolved below v8.** Not a config bug — declaring `preset` has no effect on v7 and earlier (key rename, see Preset). Check the installed version, not the lockfile: `npm ls conventional-changelog-conventionalcommits`. A stale `node_modules` reproduces this locally while CI is fine, and vice versa.
-- Tag-on-push by default (no review PR). For a review workflow, use `dryRun` on MRs and let main pushes tag.
 - The `@semantic-release/git` plugin commits the changelog back — make sure the bot user can push to `main` (protected branch exception).
 - **`chore` now releases**, so dependency bumps (`chore(deps): ...`) cut a patch on their own — desired here, but it means more frequent tags than the stock config.
-- **Empty changelog bodies = the preset floated to v10.** If releases suddenly start cutting versions with header-only changelog entries (no `### Features`/`### Bug Fixes`), check `conventional-changelog-conventionalcommits` — a v10 bump breaks rendering for the whole `semantic-release@25`/`writer@8` stack. Pin `^9` (see Preset). The breakage is silent: the version still bumps and the release still tags, only the notes go blank.
+
+## Manually cut release tags (retag, don't rebuild)
+
+For repos that cut release tags by hand (no release tool creating them in a
+release job). The tag pipeline must exist — the `$CI_COMMIT_TAG` workflow rule in
+[gitlab-pipeline-dedup](./gitlab-pipeline-dedup.md) — and must run only a retag job:
+
+```yaml
+release-images:
+  stage: push
+  image: gcr.io/go-containerregistry/crane:debug
+  interruptible: false
+  needs: []                       # build jobs don't exist in tag pipelines
+  script:
+    - for img in api worker; do crane tag "$REGISTRY/$img:$CI_COMMIT_SHORT_SHA" "$CI_COMMIT_TAG" || exit 1; done
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^\d+\.\d+\.\d+/
+```
+
+Registry auth goes in `before_script`, per registry (`crane auth login …`). For
+Artifact Registry (`*.pkg.dev`), use `gcrane` with the job's own id_token instead
+of a `GCLOUD_TOKEN` handed over from another job — that token expires after an
+hour, so retries fail; see [releases-monorepo](../monorepo/releases-monorepo.md) §"Gotchas". This
+is the manual-tag form of "Build once, ship the tested artifact"
+([gitlab-pipeline-dedup](./gitlab-pipeline-dedup.md) Why): a
+missing `:$CI_COMMIT_SHORT_SHA` image fails the job instead of rebuilding.

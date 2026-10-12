@@ -25,7 +25,6 @@ its root, this page applies; if it has multiple subprojects, use `ci-paths` inst
   thing. CI calls the same command instead of re-listing steps that drift. That command
   is `make ci` when the repo has a Makefile, and an aggregate script (`npm run ci`)
   when it doesn't — this page does not require a Makefile.
-- Caching keyed on the lockfile keeps runs fast without going stale.
 
 ## Config
 
@@ -50,26 +49,16 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: astral-sh/setup-uv@v7
+      - uses: astral-sh/setup-uv@v10
         with:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
 
-      - run: uv sync
+      - run: uv sync --locked
 
       # Lint + typecheck + tests (mirrors `make ci`)
       - run: make ci
 ```
-
-**One entrypoint, not re-listed steps.** CI must run the same command you run
-locally, so the two can't drift. Which command depends on the repo:
-
-- **Has a `Makefile`** → `make ci`, with the Makefile owning the steps (see
-  [makefile](../monorepo/makefile.md)). Preferred when the repo already has one.
-- **No Makefile** → an aggregate script: `npm run ci`, `uv run ci`, or
-  `npm run lint && npm test` behind one name. What matters is that CI calls a single
-  named entrypoint instead of spelling out the steps itself — and that the script lives
-  in the repo, so a contributor runs the identical thing.
 
 [makefile](../monorepo/makefile.md) is `monorepo`-scoped and `optional`; this page is
 `universal` and `baseline`, so a single-project repo with no Makefile is a normal,
@@ -92,8 +81,6 @@ Swap the toolchain setup; the skeleton is identical:
 `npm run ci` is the aggregate-script form — swap in `make ci` if the repo has a
 Makefile. Use the repo's `mise.toml` as the Node version source. If the repo does not
 use mise, use `actions/setup-node@v7` with its existing version file instead.
-Verify current stable Action majors before copying either example; Dependabot
-maintains them after setup.
 
 ## Auto-cancel superseded runs
 

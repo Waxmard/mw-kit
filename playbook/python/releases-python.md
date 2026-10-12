@@ -16,7 +16,7 @@ platform: gitlab
 
 ## Why over node semantic-release
 
-[[releases-gitlab]] works, but drags `node:24` + five npm plugins into a Python repo just to cut a tag. PSR is one pip install, keeps the version where Python tooling expects it (`[project].version`), and configures in `pyproject.toml` next to ruff/mypy. **Python repo on GitLab → use this page instead of [[releases-gitlab]]; never both.** A multi-component monorepo → [[releases-monorepo]] instead: PSR computes one version per repo and can't path-scope the bump to a single component.
+PSR is one pip install — no node toolchain, version stays in `[project].version`. **Python repo on GitLab → use this page instead of [releases-gitlab](../universal/releases-gitlab.md); never both.**
 
 ## Config
 
@@ -32,8 +32,6 @@ version_toml = ["pyproject.toml:project.version"]
 tag_format = "{version}"
 commit_message = "chore(release): {version} [skip ci]"
 commit_parser = "conventional"
-changelog_file = "CHANGELOG.md"
-upload_to_vcs_release = true
 
 [tool.semantic_release.commit_parser_options]
 patch_tags = ["fix", "perf", "refactor", "build", "chore", "ci", "style"]
@@ -41,6 +39,12 @@ patch_tags = ["fix", "perf", "refactor", "build", "chore", "ci", "style"]
 [tool.semantic_release.changelog]
 mode = "update"
 insertion_flag = "<!-- version list -->"
+
+[tool.semantic_release.changelog.default_templates]
+changelog_file = "CHANGELOG.md"
+
+[tool.semantic_release.publish]
+upload_to_vcs_release = true
 
 [tool.semantic_release.remote]
 type = "gitlab"
@@ -51,8 +55,6 @@ match = "main"
 ```
 
 `patch_tags` **replaces** the parser default (`["fix", "perf"]`) — list every patch-bumping type, hence `fix`/`perf` are repeated. `minor_tags` stays default (`["feat"]`); `allowed_tags` already covers all these types, so no extra config. `docs`/`test` stay non-releasing by omission.
-
-A pip-only repo (no packaging) still works: a tool-config-only `pyproject.toml` just needs the minimal `[project]` table for `version_toml` to point at — it doesn't force a build backend or change installs.
 
 ## Pipeline
 
@@ -86,9 +88,8 @@ Project access token with `api` + `write_repository` scope, saved as masked `SEM
 
 - **`GIT_DEPTH: "0"` is required** — PSR needs full history + tags to find the previous release; a shallow clone silently computes the wrong bump.
 - **`[skip ci]` in `commit_message` is load-bearing** — without it the release commit triggers another pipeline (and on a careless setup, a release loop).
-- **Image tags ≠ release tags — don't build images on the release tag.** `[skip ci]` on the release commit suppresses the tag pipeline, so a tag-triggered image build never fires. Build the image on `main` with a `$CI_COMMIT_SHORT_SHA` tag, then `crane`-retag it to the released version inside (or right after) the release job. See [[releases-monorepo]] for the `crane tag` snippet.
+- **Image tags ≠ release tags — don't build images on the release tag.** `[skip ci]` on the release commit suppresses the tag pipeline, so a tag-triggered image build never fires. Build the image on `main` with a `$CI_COMMIT_SHORT_SHA` tag, then `crane`-retag it to the released version inside (or right after) the release job. See [releases-monorepo](../monorepo/releases-monorepo.md) for the `crane tag` snippet.
 - **`tag_format = "{version}"` means bare tags** (`1.4.0`, no `v` prefix). Fine, but pick once — changing the format later breaks previous-tag detection.
 - **First run:** start `version = "0.0.0"`; changelog `mode = "update"` auto-initializes a missing `CHANGELOG.md`, then requires the `<!-- version list -->` insertion flag to stay in the file.
-- **`chore(deps)` now releases.** With `chore` in `patch_tags`, Renovate bumps ([[renovate]]) each cut a patch instead of accumulating — more frequent tags than the stock config. Drop `chore` from `patch_tags` to revert to accumulate-until-`feat`/`fix`.
-- **Coexists with CI image versioning** (e.g. a `determine-version` component tagging images): PSR versions the repo/changelog; image tags can stay on the pipeline's own scheme. Don't try to unify them in one step.
-- Requires [[conventional-commits]] adherence — a `Fix stuff` commit is invisible to the version calculator.
+- **`chore(deps)` now releases.** With `chore` in `patch_tags`, Renovate bumps ([renovate](../universal/renovate.md)) each cut a patch instead of accumulating — more frequent tags than the stock config. Drop `chore` from `patch_tags` to revert to accumulate-until-`feat`/`fix`.
+- Requires [conventional-commits](../universal/conventional-commits.md) adherence — a `Fix stuff` commit is invisible to the version calculator.

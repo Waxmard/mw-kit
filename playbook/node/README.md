@@ -7,4 +7,3 @@
 - [playwright.md](./playwright.md) — optional built-app browser checks
 - [package-json.md](./package-json.md) — scripts, deps conventions
 - [typescript.md](./typescript.md) — tsconfig defaults
-- [expo.md](./expo.md) — Expo / React Native specifics

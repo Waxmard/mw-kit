@@ -11,14 +11,7 @@ detect: ["**/*.py"]
 
 ## What
 
-[ruff](https://docs.astral.sh/ruff/) — single-tool lint + format for Python. Replaces flake8 + isort + pyupgrade + black + bandit (partial) + more.
-
-## Why
-
-- One tool, one config, one cache.
-- Rust-fast — pre-commit becomes invisible.
-- Format is black-compatible (drop-in).
-- Rule selection is explicit (you opt in to families).
+[ruff](https://docs.astral.sh/ruff/) — single-tool lint + format for Python. Replaces flake8 + isort + pyupgrade + black + bandit (partial).
 
 ## Config
 
@@ -26,7 +19,6 @@ Canonical `[tool.ruff]` block — the full preferred config to diff a repo again
 
 ```toml
 [tool.ruff]
-line-length = 88
 target-version = "py314"
 
 [tool.ruff.lint]
@@ -34,7 +26,7 @@ select = ["E", "F", "I", "B", "UP", "SIM", "RUF", "PL", "S"]
 ignore = [
     "PLR0911",  # too-many-return-statements
     "PLR0913",  # too-many-arguments (noisy with FastAPI Depends)
-    "PLR2004",  # magic-value-comparison (HTTP codes in tests)
+    "PLR2004",  # magic-value-comparison (HTTP status codes)
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -67,22 +59,14 @@ extend-immutable-calls = [
 | `UP` | pyupgrade | Use modern syntax (no `.format()`, etc.) |
 | `SIM` | simplify | `if x: return True else: return False` → `return bool(x)` |
 | `RUF` | ruff-specific | Misc bugs + style |
-| `PL` | pylint | Refactor + bugs; keep PLE (errors) + PLW (warnings), prune PLR* |
+| `PL` | pylint | pylint; PLR0911/PLR0913/PLR2004 ignored in Config, rest kept |
 | `S` | bandit | Security: hardcoded passwords, subprocess shell=True, etc. |
 
 **Skipped on purpose**: `D` (docstrings) — too noisy, comments are a per-project call; `ANN` (annotations) — mypy already enforces.
 
-### Per-file overrides
-
-`tests/**` exempts the bandit assert/password rules (`S101`/`S105`/`S106`) and scoped-import rule (`PLC0415`) — asserts and hardcoded test passwords are fine in tests, and fixtures legitimately import inside functions.
-
 ### FastAPI-specific
 
 `flake8-bugbear.extend-immutable-calls` lists the FastAPI dependency markers. Without it, every `Depends(get_db)` in a default argument trips `B008` (function-call-in-default-argument).
-
-### Import sorting
-
-`isort.combine-as-imports = true` collapses `from x import (a, b)` style imports cleanly.
 
 ## Commands
 
@@ -93,26 +77,9 @@ uv run ruff format app/        # format (black-compat)
 uv run ruff format --check app/  # check-only (CI)
 ```
 
-## Lefthook
-
-```yaml
-ruff-lint:
-  root: fastapi/
-  glob: "**/*.py"
-  run: uv run ruff check --fix {staged_files}
-  stage_fixed: true
-
-ruff-format:
-  root: fastapi/
-  glob: "**/*.py"
-  run: uv run ruff format {staged_files}
-  stage_fixed: true
-```
+Hook: see [lefthook](../universal/lefthook.md).
 
 ## Gotchas
 
 - Run lint **before** format, both with `stage_fixed: true` — format may rewrite lint-fixed code, both autofix layers compose cleanly.
-- Don't enable `D` blanket. Pick specific docstring rules if needed.
-- `PLR*` (refactor) is subjective. Default: ignore the high-cyclomatic ones (PLR0911, PLR0913), keep PLE/PLW.
-- `S101` (asserts) trips tests — always exempt `tests/**`.
-- **`target-version` must match the lowest runtime, not the newest.** At `py314`, `ruff format` rewrites `except (A, B):` to the PEP 758 form `except A, B:`, which is a `SyntaxError` on Python < 3.14. Code that runs inside another project's interpreter (plugins, skill scripts loaded via `importlib`) must target *that* project's `requires-python`.
+- **`target-version` must match the lowest runtime, not the newest.** Code loaded by another project's interpreter (plugins, scripts loaded via `importlib`) must target *that* project's `requires-python`.

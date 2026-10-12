@@ -23,8 +23,6 @@ read it natively, so there is no `CLAUDE.md` — not a copy, not a symlink.
 - **A `CLAUDE.md` hides `AGENTS.md` from Claude Code.** Its default mode
   (`claude-md-or-agents-md`) loads `AGENTS.md` only when the project has no
   `CLAUDE.md` of its own. A stale or divergent `CLAUDE.md` silently wins.
-- **Baseline, not optional.** Almost every repo benefits from agent instructions;
-  a repo with none is the gap this page exists to flag.
 
 ## Config
 
@@ -82,9 +80,3 @@ shared instructions still load.
 - **The fallback is setting-dependent.** Claude Code's `/config` row "Project
   instructions" can be set to `claude-md`, which ignores `AGENTS.md`. The default
   reads it; if an agent seems to ignore the file, check that row first.
-- **Generating both files is drift, not a second valid answer.** A template that
-  renders `CLAUDE.md` and `AGENTS.md` as two real files pays for a generator script,
-  a `make` target, a CI staleness gate, and a pre-commit hook, all to keep two copies
-  of one document in step. Collapse it to `AGENTS.md` and delete the machinery that
-  existed only to duplicate it. Keep a doc generator only for shared prose across
-  genuinely *different* documents, and take the agent guides out of it even then.

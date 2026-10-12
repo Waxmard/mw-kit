@@ -11,7 +11,7 @@ detect: ["tsconfig.json", "**/*.{ts,tsx}"]
 
 ## What
 
-Strict TypeScript, no compile output (Vite/Expo/Metro handle bundling). `tsc --noEmit` is purely a type checker.
+Strict TypeScript, no compile output (Vite/Expo/Metro handle bundling).
 
 ## tsconfig.json baseline
 
@@ -39,20 +39,10 @@ For Expo, extend their base instead:
 }
 ```
 
-## Scripts
-
-```json
-{
-  "scripts": {
-    "typecheck": "tsc --noEmit"
-  }
-}
-```
-
 ## CI
 
 ```yaml
-- run: npx tsc --noEmit
+- run: npm run typecheck
 ```
 
 ## Gotchas
@@ -61,4 +51,3 @@ For Expo, extend their base instead:
   of `tsc --noEmit`; see [Svelte tooling](svelte.md).
 - `skipLibCheck: true` — third-party `.d.ts` files often have errors. Skip or you'll never get green.
 - `isolatedModules: true` — required for Vite/Metro/swc; flags incompatible syntax early.
-- Don't ship `.d.ts` from app code unless publishing a library.

@@ -28,21 +28,13 @@ Standard names across all projects:
 }
 ```
 
-- `lint` / `lint:fix` — lint only
-- `format` / `format:check` — format only
-- `check` / `check:fix` — combined (prefer this)
-- `check:staged` — lefthook-friendly variant
-- `typecheck` — TypeScript only (no biome overlap)
+Prefer `check` / `check:fix` (lint + format + import sort); `check:staged` is for lefthook.
 
 For Svelte apps, use the [Svelte tooling scripts](svelte.md) in place of the
 Biome and `tsc` examples above.
 
 ## Dependencies
 
-- Resolve current stable versions from the registry before scaffolding, skipping any
-  published within the `min-release-age` window (below) — `npm install` rejects them
-  with `ETARGET`. Template and playbook versions may lag; check the lockfile as well
-  as manifest ranges.
 - Verify peer dependency ranges before major upgrades. Keep the latest compatible
   release when the framework's tools exclude the newest major, and document the
   constraint in the consumer repo. Never bypass peers to claim everything is latest.
@@ -51,7 +43,7 @@ Biome and `tsc` examples above.
 - Pin biome exact (`"@biomejs/biome": "X.Y.Z"`, resolved to latest compatible stable)
   — minor releases change rules.
 - Other devDeps caret OK.
-- App deps: caret for libs you trust to follow semver, exact for ones that don't (Expo, React Native).
+- App deps: caret. Expo-managed packages: let `npx expo install` choose (see Expo below).
 
 ## Supply-chain delay
 
@@ -75,21 +67,26 @@ If the repo isn't a JS project but needs lefthook installed:
 {
   "name": "myrepo-dev",
   "private": true,
-  "devDependencies": { "lefthook": "^1.0.0" },
+  "devDependencies": { "lefthook": "^2" },
   "scripts": { "prepare": "lefthook install" }
 }
 ```
 
 `prepare` runs on `npm install` → hooks installed automatically.
 
+## Expo
+
+- Add Expo-aware libs with `npx expo install <pkg>`, not `npm install` — it picks versions compatible with the SDK (React, React Native, `expo-dev-client` included). Don't pin those independently.
+- `expo run:ios` builds the dev client and launches it; `expo start` runs Metro only and needs an existing build.
+
 ## Overrides
 
-For peer-dep conflicts (postcss in Expo etc.):
+For peer-dep conflicts:
 
 ```json
 {
   "overrides": {
-    "postcss": "^8.5.10"
+    "<pkg>": "^N"
   }
 }
 ```

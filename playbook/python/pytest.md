@@ -16,8 +16,9 @@ detect: ["**/*.py"]
 ## Config
 
 ```toml
+[dependency-groups]
 dev = [
-    "pytest>=7",
+    "pytest>=8",
     "pytest-asyncio>=0.21",
     "pytest-cov>=7",
     "httpx>=0.24",
@@ -44,6 +45,11 @@ exclude_lines = [
     "if __name__ == .__main__.:",
     "if TYPE_CHECKING:",
 ]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["."]
 ```
 
 ### Omit list
@@ -63,14 +69,7 @@ uv run pytest -k "test_name"                        # filter
 uv run pytest --cov=app --cov-report=term-missing   # with coverage
 ```
 
-## CI
-
-```yaml
-- run: uv run pytest --cov=app --cov-report=term-missing
-```
-
 ## Gotchas
 
-- `pytest-asyncio` mode: prefer `mode = "auto"` so `async def test_*` works without `@pytest.mark.asyncio` on every test.
+- `asyncio_mode = "auto"` (set above): `async def test_*` runs without `@pytest.mark.asyncio`.
 - Use `aiosqlite` as test DB to skip Postgres in unit tests. Integration tests can hit real Postgres.
-- Set `S101`/`S105`/`S106` ruff ignores for `tests/**` — assertions and test passwords are fine.

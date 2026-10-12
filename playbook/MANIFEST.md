@@ -20,9 +20,8 @@ Machine-readable index of every playbook page. Source of truth = each page's YAM
 | `contributing` | baseline | CONTRIBUTING.md: branching, commits, MR/PR + review flow | `CONTRIBUTING.md` | — | any | [universal/contributing.md](universal/contributing.md) |
 | `conventional-commits` | baseline | Commit message format feeding release tooling | — | — | any | [universal/conventional-commits.md](universal/conventional-commits.md) |
 | `dependabot` | baseline | GitHub-native dependency update PRs | `.github/dependabot.yml` | — | `github` | [universal/dependabot.md](universal/dependabot.md) |
-| `git-ai-instructions` | baseline | Repo-local commit/PR guidance for git-ai, framed by user POV | `.git-ai-instructions` | `.git-ai-instructions` | any | [universal/git-ai-instructions.md](universal/git-ai-instructions.md) |
 | `github-settings` | baseline | Repo settings, default-branch ruleset, Actions token, Dependabot alerts via gh api | — | — | `github` | [universal/github-settings.md](universal/github-settings.md) |
-| `gitlab-pipeline-dedup` | baseline | GitLab pipeline economy — workflow:rules dedup (one pipeline per change) + auto-cancel of superseded runs | `.gitlab-ci.yml` | `.gitlab-ci.yml` | `gitlab` | [universal/gitlab-pipeline-dedup.md](universal/gitlab-pipeline-dedup.md) |
+| `gitlab-pipeline-dedup` | baseline | GitLab workflow:rules dedup (one pipeline per change) + auto-cancel of superseded runs | `.gitlab-ci.yml` | `.gitlab-ci.yml` | `gitlab` | [universal/gitlab-pipeline-dedup.md](universal/gitlab-pipeline-dedup.md) |
 | `lefthook` | baseline | Git hooks with autofix + restage (stage_fixed) | `lefthook.yml` | — | any | [universal/lefthook.md](universal/lefthook.md) |
 | `line-limit` | optional | Per-file line cap as a deliberate sprawl proxy — CI-gated script, optional local hook | `scripts/check-line-limit.sh` | — | any | [universal/line-limit.md](universal/line-limit.md) |
 | `mise` | optional | Pinned per-project tool versions — best for node/polyglot; uv covers pure-python | `mise.toml` | `package.json`, `go.mod`, `**/*.go` | any | [universal/mise.md](universal/mise.md) |
@@ -37,7 +36,6 @@ Machine-readable index of every playbook page. Source of truth = each page's YAM
 | Tool | Tier | Summary | Targets | Detect | Platform | Page |
 |---|---|---|---|---|---|---|
 | `mypy` | baseline | Static type checker, strict mode | `pyproject.toml` | `**/*.py` | any | [python/mypy.md](python/mypy.md) |
-| `pydantic` | baseline | Data validation + settings via pydantic v2 / pydantic-settings | `pyproject.toml` | `**/*.py` | any | [python/pydantic.md](python/pydantic.md) |
 | `pytest` | baseline | pytest + pytest-cov config and coverage gating | `pyproject.toml` | `**/*.py` | any | [python/pytest.md](python/pytest.md) |
 | `releases-python` | baseline | python-semantic-release: tag + changelog for Python repos on GitLab (no node) | `pyproject.toml`, `.gitlab-ci.yml` | `pyproject.toml`, `**/*.py` | `gitlab` | [python/releases-python.md](python/releases-python.md) |
 | `ruff` | baseline | Lint + format (replaces flake8 + isort + black + bandit-partial) | `pyproject.toml` | `**/*.py` | any | [python/ruff.md](python/ruff.md) |
@@ -48,9 +46,8 @@ Machine-readable index of every playbook page. Source of truth = each page's YAM
 | Tool | Tier | Summary | Targets | Detect | Platform | Page |
 |---|---|---|---|---|---|---|
 | `biome` | baseline | JS/TS lint + format + import sort (replaces eslint + prettier) | `biome.json`, `package.json` | `package.json`, `**/*.{ts,tsx,js,jsx}` | any | [node/biome.md](node/biome.md) |
-| `expo` | optional | Expo SDK conventions for React Native apps | `package.json`, `app.json`, `app.config.ts` | `app.json`, `app.config.ts`, `app.config.js` | any | [node/expo.md](node/expo.md) |
 | `package-json` | baseline | Standard scripts, dependency pinning, and release-age policy | `package.json`, `.npmrc` | `package.json` | any | [node/package-json.md](node/package-json.md) |
-| `playwright` | optional | Built-app browser checks for desktop and mobile web flows | `playwright.config.ts`, `package.json`, `.github/workflows/ci.yml` | `playwright.config.*`, `svelte.config.js`, `vite.config.ts` | any | [node/playwright.md](node/playwright.md) |
+| `playwright` | optional | Built-app browser checks for desktop and mobile web flows | `playwright.config.ts`, `package.json`, `.github/workflows/ci.yml` | `playwright.config.*` | any | [node/playwright.md](node/playwright.md) |
 | `svelte` | baseline | Svelte lint, format, and compiler-aware type checking | `eslint.config.js`, `prettier.config.js`, `tsconfig.json`, `package.json` | `**/*.svelte`, `svelte.config.js`, `svelte.config.ts` | any | [node/svelte.md](node/svelte.md) |
 | `typescript` | baseline | Strict tsconfig, noEmit type-checking | `tsconfig.json` | `tsconfig.json`, `**/*.{ts,tsx}` | any | [node/typescript.md](node/typescript.md) |
 
@@ -58,7 +55,7 @@ Machine-readable index of every playbook page. Source of truth = each page's YAM
 
 | Tool | Tier | Summary | Targets | Detect | Platform | Page |
 |---|---|---|---|---|---|---|
-| `kubeconform` | baseline | Schema-validate K8s manifests in CI against K8s + CRD schemas | `.gitlab-ci.yml`, `.github/workflows/` | `content:^kind:\s` | `any` | [k8s/kubeconform.md](k8s/kubeconform.md) |
+| `kubeconform` | baseline | Schema-validate K8s manifests in CI against K8s + CRD schemas | `.gitlab-ci.yml` | `content:^kind:\s` | `any` | [k8s/kubeconform.md](k8s/kubeconform.md) |
 | `yamllint` | baseline | Lint all YAML for syntax/style, tuned for kubectl-style manifests | `.yamllint` | `content:^kind:\s` | `any` | [k8s/yamllint.md](k8s/yamllint.md) |
 
 ## monorepo
@@ -67,6 +64,5 @@ Machine-readable index of every playbook page. Source of truth = each page's YAM
 |---|---|---|---|---|---|---|
 | `ci-paths` | baseline | Path-filtered per-subproject CI workflows | `.github/workflows/` | — | `github` | [monorepo/ci-paths.md](monorepo/ci-paths.md) |
 | `docker-bake` | optional | Declarative multi-platform builds + skip-redundant-push CI | `docker-bake.hcl` | `**/Dockerfile*`, `docker-bake.hcl` | any | [monorepo/docker-bake.md](monorepo/docker-bake.md) |
-| `layout` | optional | Polyglot monorepo directory shape + tooling boundaries | — | — | any | [monorepo/layout.md](monorepo/layout.md) |
 | `makefile` | optional | Root Makefile orchestrator delegating to subprojects | `Makefile` | — | any | [monorepo/makefile.md](monorepo/makefile.md) |
 | `releases-monorepo` | baseline | Per-component independent releases via semantic-release-monorepo (path-scoped bumps, component-scoped tags) | `.releaserc.json`, `package.json`, `.gitlab-ci.yml` | — | `gitlab` | [monorepo/releases-monorepo.md](monorepo/releases-monorepo.md) |

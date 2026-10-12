@@ -44,7 +44,6 @@ tests/               pytest for scope.py
 | Python lint/format | [ruff](https://docs.astral.sh/ruff/) |
 | Python typecheck | [mypy](https://mypy.readthedocs.io/) strict |
 | Python deps | [uv](https://docs.astral.sh/uv/) |
-| Python validation/settings | [pydantic](https://docs.pydantic.dev/) v2 + pydantic-settings |
 | JS/TS lint/format | [biome](https://biomejs.dev/) |
 | Svelte lint/format/typecheck | ESLint + Prettier + `svelte-check` ([playbook](playbook/node/svelte.md)) |
 | YAML lint (k8s) | [yamllint](https://www.yamllint.com/) (kubectl-style config) |
@@ -64,7 +63,6 @@ tests/               pytest for scope.py
 | Per-file size cap | line-limit script (CI gate, optional local hook), default 800 lines |
 | Contribution flow | `CONTRIBUTING.md` — branching, commits, MR/PR + human review |
 | Required reviewers | `CODEOWNERS` — path → owner, gates the human approval |
-| Commit/PR AI guidance | `.git-ai-instructions` — repo user-POV for [git-ai](https://github.com/Waxmard/git-ai) prefixing |
 
 ## Page format
 

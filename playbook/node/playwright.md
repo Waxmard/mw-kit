@@ -4,7 +4,7 @@ scope: node
 tier: optional
 summary: "Built-app browser checks for desktop and mobile web flows"
 targets: ["playwright.config.ts", "package.json", ".github/workflows/ci.yml"]
-detect: ["playwright.config.*", "svelte.config.js", "vite.config.ts"]
+detect: ["playwright.config.*"]
 ---
 
 # Playwright browser checks
@@ -18,8 +18,7 @@ Keep unit tests for parsing and other logic that does not need a browser.
 ## Why
 
 A built-app check catches routing, hydration, and Back/Forward failures that
-unit tests cannot. Desktop and mobile viewports exercise the same user flows
-without duplicating a large test suite.
+unit tests cannot.
 
 ## Config
 
@@ -55,8 +54,7 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-For GitHub Actions, keep the existing `make ci` step and run browser checks
-after it builds the app:
+For GitHub Actions, after the existing `make ci` step:
 
 ```yaml
       - uses: actions/cache@v4
@@ -65,6 +63,7 @@ after it builds the app:
           key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-playwright-
+      - run: npm run build
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - uses: actions/upload-artifact@v7
@@ -77,9 +76,5 @@ after it builds the app:
 
 ## Gotchas
 
-- Run against the built app. A development server can hide production routing
-  and hydration failures.
 - Keep the browser matrix small. Add another engine only for a concrete browser
   risk or a supported platform requirement.
-- Preserve traces on failure so CI failures can be diagnosed without rerunning
-  the entire suite.

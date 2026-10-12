@@ -22,23 +22,18 @@ per component. The monorepo plugin rewrites commit analysis to only consider
 commits whose changed files fall under the component's directory
 (`git log --name-only` scoping).
 
-## Why not [[releases-python]] / [[releases-gitlab]]
+## Why not [releases-python](../python/releases-python.md) / [releases-gitlab](../universal/releases-gitlab.md)
 
 Both PSR and node `semantic-release` compute **one version per repo**. They read
 commit *messages* in a range (since the last matching tag), not changed *paths*.
 So in a monorepo:
 
-- A `feat(service-b): …` commit still inflates a `service-a` bump — wrong.
 - PSR has **no native path-scoped commit analysis** (its maintainers recommend
   one package per repo). GitLab `rules: changes:` can gate *whether* a release
   job runs, but once it runs the tool over-counts the range.
 
-`semantic-release-monorepo` is the mature fix: it's the only widely-used plugin
-that filters the bump by changed files. PSR has no equivalent — so a monorepo on
-GitLab uses node `semantic-release` here even for a pure-Python component.
-
-**Rule:** single package on GitLab → [[releases-python]] (Python) or
-[[releases-gitlab]] (other). Multi-component repo → this page, per component.
+**Rule:** single package on GitLab → [releases-python](../python/releases-python.md) (Python) or
+[releases-gitlab](../universal/releases-gitlab.md) (other). Multi-component repo → this page, per component.
 
 ## Config
 
@@ -117,22 +112,7 @@ name + path (the component is e.g. a Python app, not a JS package):
 }
 ```
 
-- `releaseRules` are **first-match-wins**; a custom rule shadows the analyzer
-  defaults for any commit it matches (it does not merge). `breaking`→major is
-  listed first so a `feat!` can't be downgraded by a later `type` rule; the
-  housekeeping types (`refactor`/`build`/`chore`/`ci`/`style`) add patch bumps,
-  and `feat`/`fix`/`perf` fall through to defaults. See [[releases-gitlab]]
-  §"Bump rules".
-- `"preset": "conventionalcommits"` (on analyzer **and** notes-generator, plus
-  the `conventional-changelog-conventionalcommits` install below) is required for
-  the `!` breaking marker to parse — the default angular preset ignores it, so
-  `feat!` ships as a plain minor. See [[releases-gitlab]] §"Preset".
-- **Pin `conventional-changelog-conventionalcommits@9`** (install line above) and
-  Renovate-guard it to `<10`. v10 is the new `@conventional-changelog/*`
-  generation, silently incompatible with `release-notes-generator@14`/`writer@8`:
-  it drops every commit at render time, so all releases get header-only
-  changelogs (no body) while still bumping and tagging. See [[releases-gitlab]]
-  §"Preset" / §"Gotchas".
+- `releaseRules`, `preset`, `presetConfig.types`, and the `^9` preset pin follow [releases-gitlab](../universal/releases-gitlab.md) (Bump rules / Preset) exactly.
 - `prepareCmd` writes the computed version back into the component's manifest
   (Python keeps `version = "0.0.0"` as a placeholder; the git tag is truth).
 - `publishCmd` retags the already-built image (see CI below) — `gcrane` only runs
@@ -155,7 +135,6 @@ gcp-auth:
   rules: [{ when: never }]
 
 variables:
-  DOCKER_BUILDKIT: "1"
   REGISTRY: REGION-docker.pkg.dev/PROJECT/REPO
 stages: [test, build, scan, release, maintenance]
 ```
@@ -190,16 +169,16 @@ changed:
 ```
 
 The image build is one `docker buildx bake <component>` target (one per
-component, see [[docker-bake]]).
+component, see [docker-bake](./docker-bake.md)).
 
 The test/build/scan job `rules` (the dedup × per-component `changes:` pattern)
-live in [[gitlab-pipeline-dedup]] §"Monorepo (GitLab)". Gate `build` on
+live in [gitlab-pipeline-dedup](../universal/gitlab-pipeline-dedup.md) §"Monorepo (GitLab)". Gate `build` on
 `merge_request_event` **and** `$CI_COMMIT_BRANCH` (both `changes:`-scoped), never
 `$CI_COMMIT_BRANCH` alone — otherwise the image never builds on MRs.
 
 ## Commit convention
 
-Releases need [[conventional-commits]], plus two monorepo rules:
+Two monorepo commit rules:
 
 1. **Scope every commit with the component dir** — `fix(service-a): …`.
 2. **Keep commits atomic — one component each.** The plugin decides *whether* a
@@ -210,24 +189,16 @@ Releases need [[conventional-commits]], plus two monorepo rules:
 
 - **`package.json` shim is required** even for non-JS components — the plugin
   (and `semantic-release` core) read it on load. Keep it `private`, no deps; CI
-  installs the toolchain with `npm install --no-save`, so [[renovate]] ignores it.
-- **No `version` BuildTools component / tag-pipeline build.** The release commit
+  installs the toolchain with `npm install --no-save`, so [renovate](../universal/renovate.md) ignores it.
+- **No build on the tag pipeline.** The release commit
   carries `[skip ci]`, which on GitLab suppresses the tag pipeline — so you
   *can't* build images on the tag. Build on `main` with `$SHORT_SHA`, then
   `gcrane`-retag to the version inside the release job. Same pattern works for a
   single repo (`releases-python` + gcrane).
-- **`chore`→patch means [[renovate]] releases on every bump.** A patch per
+- **`chore`→patch means [renovate](../universal/renovate.md) releases on every bump.** A patch per
   `chore(deps): …`. To accumulate instead, add
   `{ "type": "chore", "scope": "deps", "release": false }` ahead of the `chore`
   rule.
-- **`presetConfig.types` is mandatory on the notes-generator** (config above).
-  The conventionalcommits preset *hides* `refactor`/`build`/`ci`/`chore`/`style`
-  by default, so a release driven only by one of those — e.g. a `refactor`-only
-  component bump — writes a **header-only changelog entry with no body**.
-  Spelling out `presetConfig.types` un-hides them; keep that list aligned with
-  `releaseRules` or those releases land blank.
-- **One version *per component*, not per repo.** Independent cadences are the
-  point; don't try to unify them into a single repo version.
 - **Tokens:** `GITLAB_TOKEN` (api + write_repository, bot allowed on protected
   `main`) for `@semantic-release/gitlab`. Artifact Registry auth is minted in the
   release job itself: the gcp-auth component injects a `GCP_JOB_JWT` id_token
@@ -243,6 +214,4 @@ Releases need [[conventional-commits]], plus two monorepo rules:
   Unauthenticated request`. Add `-v` to see the real `Google env error`. Both
   `GOOGLE_APPLICATION_CREDENTIALS` and `credential_source.file` inside
   `GAC_JSON` are relative to `$CI_PROJECT_DIR`, hence the `cd` in `publishCmd`.
-- Adding a component = copy both files (swap name / `tagFormat` / image path),
-  add a [[docker-bake]] target, add an `include: local` line, mirror the
-  component `.gitlab-ci.yml`.
+- New component: copy both files, add a docker-bake target and an `include: local` line.

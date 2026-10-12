@@ -17,8 +17,8 @@ one written description of how a change goes from a branch to production.
 ## Why
 
 - One written flow beats tribal knowledge — new contributors (and future you) read one file.
-- Release tooling reads every commit ([[conventional-commits]] → [[releases-github]] /
-  [[releases-gitlab]]), so commit hygiene is load-bearing, not cosmetic. The guide is
+- Release tooling reads every commit ([conventional-commits](./conventional-commits.md) → [releases-github](./releases-github.md) /
+  [releases-gitlab](./releases-gitlab.md)), so commit hygiene is load-bearing, not cosmetic. The guide is
   where that expectation is stated.
 - **Bot-before-human review** keeps people off issues a bot already caught — they review
   already-clean code instead of re-treading machine comments.
@@ -47,8 +47,7 @@ The best start is **from the ticket**: open the issue and use *Create merge requ
 
 ## Commit Messages
 We follow [Conventional Commits](https://www.conventionalcommits.org/): `<type>(<scope>): <subject>`.
-`feat:` → minor, `fix:` → patch, `!`/`BREAKING CHANGE:` → major. `docs`/`chore`/`refactor`/`test`
-are used as normal. These types drive automated versioning (see Deploys & Releases).
+See [conventional-commits](./conventional-commits.md) for types. These types drive automated versioning (see Deploys & Releases).
 
 ## Merge Requests / Pull Requests
 Always open one — even for small changes.
@@ -68,16 +67,13 @@ required to merge.
 On every push to `main`, release automation reads the conventional commits since the last
 tag, bumps the version, updates `CHANGELOG.md`, and tags the release.
 {{release-please (GitHub) / semantic-release (GitLab) / python-semantic-release}}.
-This is why commit hygiene matters: every commit on `main` is read by the release tooling.
 ```
 
 ## Gotchas
 
 - **Prose is not a literal diff target.** Unlike a structured config, tooling-sync verifies
   this page's *sections are present*, not that wording matches. Keep the section headings.
-- **Keep the `{{placeholders}}`** in the source skeleton — they signal "fill this in" rather
-  than implying every consumer repo should read identically.
 - **Squash discipline is the whole game** for release accuracy: if the squashed commit title
   isn't conventional, the changelog and version bump are wrong regardless of the branch commits.
-- Pick the matching release page: [[releases-github]], [[releases-gitlab]], Python repos →
-  [[releases-python]], monorepos → [[releases-monorepo]].
+- Pick the matching release page: [releases-github](./releases-github.md), [releases-gitlab](./releases-gitlab.md), Python repos →
+  [releases-python](../python/releases-python.md), monorepos → [releases-monorepo](../monorepo/releases-monorepo.md).

@@ -28,7 +28,7 @@ help:
 setup:
 	npm install
 	cd frontend && npm install
-	cd fastapi && uv sync --extra dev --group dev
+	cd fastapi && uv sync
 
 # ----- Aggregate -----
 .PHONY: lint fix typecheck test ci

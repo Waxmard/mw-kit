@@ -16,7 +16,5 @@ templates/overlays contain `kind:`) — see the "render first" note in
 
 ## See also
 
-- [universal/git-ai-instructions.md](../universal/git-ai-instructions.md) — a GitOps repo
-  flips commit-type heuristics (every change is a deploy); its worked example covers this.
 - [universal/renovate.md](../universal/renovate.md) — tracks Helm chart versions, image
   tags, and the kubeconform CI image.

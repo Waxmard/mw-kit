@@ -15,8 +15,6 @@ detect: ["**/Dockerfile*", "docker-bake.hcl"]
 
 ## Why
 
-- Build matrix in code, not bash.
-- Parallel builds across targets.
 - Multi-arch (amd64 + arm64) in one command.
 - Shared base layers across services in a monorepo (one cache).
 - `--push` per-target controllable.
@@ -29,7 +27,7 @@ Goal: every push to main builds + pushes service images, **but skip pushes if so
 
 ```hcl
 variable "REGISTRY" {
-  default = "ghcr.io/waxmard"
+  default = "ghcr.io/OWNER"
 }
 
 variable "TAG" {
@@ -41,7 +39,7 @@ group "default" {
 }
 
 group "all" {
-  targets = ["backend", "frontend"]
+  targets = ["backend", "frontend-web"]
 }
 
 target "backend" {
@@ -69,6 +67,8 @@ target "local" {
 
 Strategy: compute a content hash of each service's source tree. Tag image with that hash. Check registry — skip push if tag exists.
 
+Set `env: REGISTRY: ghcr.io/<owner>` on the job.
+
 ```yaml
 - name: Compute backend source hash
   id: hash
@@ -79,7 +79,7 @@ Strategy: compute a content hash of each service's source tree. Tag image with t
 - name: Check if image already exists
   id: check
   run: |
-    if docker manifest inspect ghcr.io/waxmard/backend:${{ steps.hash.outputs.tag }} >/dev/null 2>&1; then
+    if docker manifest inspect ${{ env.REGISTRY }}/backend:${{ steps.hash.outputs.tag }} >/dev/null 2>&1; then
       echo "exists=true" >> $GITHUB_OUTPUT
     else
       echo "exists=false" >> $GITHUB_OUTPUT
@@ -94,8 +94,8 @@ Strategy: compute a content hash of each service's source tree. Tag image with t
   if: steps.check.outputs.exists == 'true'
   run: |
     docker buildx imagetools create \
-      -t ghcr.io/waxmard/backend:latest \
-      ghcr.io/waxmard/backend:${{ steps.hash.outputs.tag }}
+      -t ${{ env.REGISTRY }}/backend:latest \
+      ${{ env.REGISTRY }}/backend:${{ steps.hash.outputs.tag }}
 ```
 
 ### Key idea
@@ -111,9 +111,6 @@ Strategy: compute a content hash of each service's source tree. Tag image with t
 build-local:
 	docker buildx bake local
 
-build-multi:
-	docker buildx bake backend
-
 push:
 	@if [ -z "$(REGISTRY)" ]; then echo "Set REGISTRY"; exit 1; fi
 	REGISTRY=$(REGISTRY) docker buildx bake --push
@@ -128,5 +125,4 @@ setup-buildx:
 - `git ls-tree -r HEAD <path>` includes file modes + sha hashes, so it changes only on real content change — better than `git rev-parse HEAD:<path>` for selective hashing.
 - The hash must include the Dockerfile and any build-context files outside the service dir (e.g. shared `requirements/` or `.dockerignore`).
 - `docker manifest inspect` returns 0 only if all platforms exist. If you add a new platform later, all old hashes are "missing" → rebuild.
-- Use `--cache-from` / `--cache-to` GH Actions cache backend for additional speedup beyond skip-on-hash.
 - **Multi-arch on single-arch runners:** building ARM64 on x86 CI runners requires QEMU user-space emulation (3–5x slower during package installs and layer exports). If your deployment target (Cloud Run, standard x86 GKE nodes) runs exclusively on AMD64, drop the ARM64 platform target from CI and build only for `linux/amd64`.

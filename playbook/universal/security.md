@@ -14,14 +14,12 @@ platform: github
 Three scanners running on every PR + weekly cron, results uploaded as SARIF to GitHub Code Scanning:
 
 1. **semgrep** — SAST against curated rule packs.
-2. **trivy fs** — vuln scan of dependencies + IaC + secrets in the filesystem.
+2. **trivy fs** — vuln + secret scan of dependencies and the filesystem.
 3. **trivy image** — vuln scan of built container images.
 
 ## Why
 
 - SARIF integration → findings appear inline on PRs and in the Security tab.
-- Semgrep catches code-pattern bugs (injection, unsafe deserialization). Trivy catches CVEs.
-- Image scan catches base-image vulns the source scan misses.
 - Cron run catches new CVEs disclosed against unchanged code.
 
 ## Workflow
@@ -68,7 +66,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: aquasecurity/trivy-action@v0.36.0
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         env:
           TRIVY_INCLUDE_DEV_DEPS: 'true'
         with:
@@ -87,11 +85,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - run: docker build -t app-backend:ci ./fastapi
-      - uses: aquasecurity/trivy-action@v0.36.0
+      - run: docker build -t app:ci .
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: image
-          image-ref: app-backend:ci
+          image-ref: app:ci
           format: sarif
           output: trivy-image.sarif
           severity: CRITICAL,HIGH,MEDIUM
@@ -103,21 +101,9 @@ jobs:
           category: trivy-image
 ```
 
-## Rule selection
-
-Cherry-pick semgrep packs per language. Don't enable everything — noise kills triage. Default set:
-
-- `p/python`, `p/typescript`, or `p/javascript` (language baseline; `p/javascript` for plain-JS repos with no TS)
-- `p/react` if frontend
-- `p/security-audit` (cross-language)
-- `p/secrets` (credentials in code)
-- `p/owasp-top-ten`
-- `p/dockerfile` if you ship images
-
-**Skipped on purpose**: `p/default` — too noisy and overlaps everything else.
-
 ## Gotchas
 
+- Keep only the semgrep packs matching the repo's languages (`p/react` for frontends, `p/dockerfile` if you ship images). Skipped on purpose: `p/default` — noisy, overlaps the rest.
 - `ignore-unfixed: true` on trivy — there's nothing you can do about an unfixed CVE except wait, so don't gate PRs on it.
 - `TRIVY_INCLUDE_DEV_DEPS: 'true'` keeps npm/yarn/Gradle application dependencies
   visible when they live under development dependency classifications. Without it,
@@ -125,6 +111,6 @@ Cherry-pick semgrep packs per language. Don't enable everything — noise kills 
 - `severity: CRITICAL,HIGH,MEDIUM` — drop MEDIUM if signal-to-noise hurts.
 - Semgrep container pin (`semgrep/semgrep:X.Y.Z`) gives reproducible scans — pin to a real version, don't run `:latest`. Renovate bumps it.
 - `if: always()` on SARIF upload so a scan failure still uploads partial results.
-- `--exclude-rule=…github-actions-mutable-action-tag` — semgrep otherwise blocks on every `uses: …@vN` tag, including this workflow's own. Major-tag pins are deliberate policy here (Dependabot bumps them); SHA pinning isn't worth the churn.
+- `--exclude-rule=…github-actions-mutable-action-tag` — semgrep otherwise blocks on every `uses: …@vN` tag, including this workflow's own. Major-tag pins are deliberate policy here (Dependabot bumps them); SHA pinning isn't worth the churn — except `trivy-action`, which is SHA-pinned because its tags were force-pushed to malware on 2026-03-19 (GHSA-69fq-xp46-6x23). Dependabot still bumps the SHA + version comment.
 - `actions: read` is required by `upload-sarif` on **private** repos (it reads the workflow run); without it the upload fails with `Resource not accessible by integration`.
 - **Code scanning needs a public repo or GitHub Advanced Security.** On a private repo without GHAS, every upload fails with `Code scanning is not enabled`. Either make the repo public, or drop the `upload-sarif` steps and gate on exit codes: `semgrep ci` (no `--sarif`) already exits 1 on blocking findings; give trivy `format: table` + `exit-code: '1'`. Findings then live in job logs, not the Security tab.

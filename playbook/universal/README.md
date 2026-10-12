@@ -16,7 +16,6 @@ Tooling decisions applicable to every project regardless of language.
 - [gitlab-pipeline-dedup.md](./gitlab-pipeline-dedup.md) — workflow:rules dedup + build-on-MR job rules (GitLab)
 - [security.md](./security.md) — semgrep (SAST) + trivy (fs + image)
 - [conventional-commits.md](./conventional-commits.md) — commit message format
-- [git-ai-instructions.md](./git-ai-instructions.md) — repo-local commit/PR guidance for git-ai, framed by user POV
 - [contributing.md](./contributing.md) — CONTRIBUTING.md: branching, commits, MR/PR + review flow
 - [project-readme.md](./project-readme.md) — README.md: one-sentence opener, flow diagram, runnable commands, layout table
 - [codeowners.md](./codeowners.md) — required reviewers auto-assigned per path

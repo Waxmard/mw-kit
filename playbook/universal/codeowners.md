@@ -15,8 +15,7 @@ with branch protection on, their approval is **required to merge**.
 
 ## Why
 
-- Enforces the "one human approval" rule from [[contributing]] in a file, not in memory.
-- Pairs with bot-first review: the bot reviews everything, CODEOWNERS routes the human pass.
+- Enforces the "one human approval" rule from [contributing](./contributing.md) in a file, not in memory.
 
 ## Config
 

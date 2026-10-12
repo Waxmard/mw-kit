@@ -12,16 +12,11 @@ targets: ["scripts/check-line-limit.sh"]
 
 A small portable-bash script fails the build when any hand-written source file
 exceeds a per-file line cap (**default 800**). **CI is the gate** — a full-tree
-scan that can't be bypassed. A local pre-commit hook is *optional* fast feedback,
-not enforcement (any git hook is skippable with `--no-verify`).
-
-It's a deliberate, blunt proxy for **module sprawl** — one file quietly
-accumulating too many unrelated responsibilities.
+scan that can't be bypassed.
 
 ## Why
 
 - Forces decomposition before a file becomes a 1,500-line grab-bag nobody wants to touch.
-- The cap is a forcing function: when CI goes red you split the file into focused modules — the cheap moment to do it, not six months later.
 - Language-agnostic and dependency-free: one threshold across shell, Python, Go, TS, Makefiles, config. Just `wc -l` + git, so it works in repos with no linter at all.
 
 ## Why line count
@@ -31,7 +26,6 @@ Sprawl has no clean lint rule — cohesion metrics (LCOM/`cohesion`, Radon MI, D
 ## When to use it / when not
 
 - **Use** on repos you actively maintain and want to keep modular. Deliberate and opinionated — hence `optional` tier, not baseline.
-- The threshold is a preference, **tune per repo** (default 800; a doc-heavy or generated-heavy repo may want higher, a tight library lower).
 - **Exclude** what shouldn't be governed: generated files, vendored code, test fixtures, prompt text, lockfiles. The check only looks at *hand-written source*.
 
 ## The script
@@ -54,7 +48,6 @@ LIMIT="${LINE_LIMIT:-800}"
 # Folders this check never governs, even when the file matches the source set.
 # Substring match, so 'src/data/' skips everything beneath it.
 EXCLUDE_DIRS=(
-  'node_modules/'   # vendored
   '/migrations/'    # generated
   '/fixtures/'      # test data
 )
@@ -75,16 +68,11 @@ is_source() {
   return 0
 }
 
-# The full governed set, for the no-argument (CI) scan.
-collect_default() {
-  git ls-files
-}
-
 files=()
 if [[ $# -gt 0 ]]; then
   for f in "$@"; do is_source "$f" && [[ -f "$f" ]] && files+=("$f"); done
 else
-  while IFS= read -r f; do is_source "$f" && [[ -f "$f" ]] && files+=("$f"); done < <(collect_default)
+  while IFS= read -r f; do is_source "$f" && [[ -f "$f" ]] && files+=("$f"); done < <(git ls-files)
 fi
 
 status=0
@@ -111,21 +99,18 @@ and `is_source()`, the hand-written source set (dirs + extensions). Keep the
 exclusions in the list rather than folding them into the `case`: a `case`-branch
 exclusion is invisible at a glance, and `${EXCLUDE_DIRS[@]+...}` is what keeps the
 script safe under `set -u` on bash 3.2 (macOS) when the array is empty.
-`collect_default` uses `git ls-files` so untracked junk is never counted.
 
 ## CI — the gate
 
-This is the real enforcement: a full-tree scan that catches a pre-existing
-over-limit file even if the current change didn't touch it, and can't be skipped
-the way a local hook can.
+CI is the gate: a full-tree scan that also catches pre-existing over-limit files.
 
 **GitHub** — `.github/workflows/line-limit.yml`:
 
 ```yaml
 name: Line limit
 on:
-  push: { branches: [main, dev] }
-  pull_request: { branches: [main, dev] }
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
 jobs:
   line-limit:
     runs-on: ubuntu-latest
@@ -161,10 +146,7 @@ reaches CI. Any hook runner can call the script on staged files. If you use
 pre-commit:
   commands:
     line-limit:
-      # Slashless glob → matches these extensions at any depth; is_source() in
-      # the script does the real path filtering. Avoid a `src/**/*.ext` path
-      # glob — it silently misses files directly under src/. See the lefthook
-      # page's glob-semantics gotcha.
+      # slashless glob; is_source() does path filtering (see lefthook.md Gotchas)
       glob: "*.{ts,tsx,vue,py,sh}"
       run: bash scripts/check-line-limit.sh {staged_files}
 ```
@@ -189,7 +171,4 @@ If `make install`-style symlinking enumerates lib files explicitly, switch it to
 ## Gotchas
 
 - **Tune the threshold deliberately** — too low forces artificial splits that hurt cohesion (a blunt cap can fragment a genuinely cohesive module). When you raise the limit for a repo, log *why*.
-- **It's a sprawl proxy, not a complexity check** — for internal complexity (long/branchy functions) lean on ruff `C901`/`PLR091x` and biome complexity rules instead; this script is orthogonal to those.
-- **Exclude generated + fixtures**, or the check fights generated output, big test fixtures, and vendored code.
 - A hard cap is a guardrail, not a design principle — split along real seams (cohesive function clusters), not at the arbitrary line where the counter trips.
-- A local pre-commit hook only sees *staged* files and is skippable; CI scans the whole tree and isn't — CI is the gate, the hook is just early warning.
