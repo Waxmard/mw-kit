@@ -40,7 +40,7 @@ jobs:
         working-directory: fastapi
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@vX.Y.Z # pin to latest stable; dependabot bumps it
         with:
           enable-cache: true
           cache-dependency-glob: "fastapi/uv.lock"

@@ -92,7 +92,7 @@ or installs the project. Most services are apps — skip the ceremony.
 ## CI
 
 ```yaml
-- uses: astral-sh/setup-uv@v10
+- uses: astral-sh/setup-uv@vX.Y.Z # pin to latest stable; dependabot bumps it
   with:
     enable-cache: true
     cache-dependency-glob: "uv.lock"
