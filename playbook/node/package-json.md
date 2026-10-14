@@ -23,7 +23,8 @@ Standard names across all projects:
     "check": "biome check src/",
     "check:fix": "biome check --write src/",
     "check:staged": "biome check --write --no-errors-on-unmatched",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "ci": "npm run check && npm run typecheck && npm test"
   }
 }
 ```
@@ -58,6 +59,19 @@ min-release-age=7
 from resolution. Security fixes blocked by this window fail loudly; temporarily add
 the package to `min-release-age-exclude[]` when a verified urgent fix cannot wait.
 Requires npm 11.10 or newer.
+
+In `package.json`:
+
+```json
+{
+  "allowScripts": {
+    "fsevents": false,
+    "lefthook": true
+  }
+}
+```
+
+`allowScripts` blocks arbitrary install lifecycle scripts from dependencies while permitting known local tooling (`lefthook`).
 
 ## Root package.json (monorepo dev tooling)
 

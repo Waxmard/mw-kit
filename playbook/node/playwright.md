@@ -30,9 +30,12 @@ import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   testDir: './e2e',
+  fullyParallel: true,
+  workers: process.env.CI ? 4 : undefined,
   use: {
     baseURL: 'http://127.0.0.1:4173',
     trace: 'retain-on-failure',
+    reducedMotion: 'reduce',
   },
   projects: [
     { name: 'desktop', use: { browserName: 'chromium', viewport: { width: 1440, height: 900 } } },
@@ -46,7 +49,7 @@ export default defineConfig({
 });
 ```
 
-Add `"test:e2e": "playwright test"` to `package.json`. Build before running it:
+Add `"test:e2e": "playwright test"` (and optionally `"test:e2e:smoke": "playwright test --grep @smoke"` for fast smoke gating) to `package.json`. Build before running it:
 
 ```sh
 npm run build

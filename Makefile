@@ -1,10 +1,10 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help setup fmt lint typecheck test ci manifest
+.PHONY: help setup fmt lint typecheck test line-limit ci manifest
 
 help:
 	@echo "Setup:    setup           install dev deps (uv)"
-	@echo "Quality:  fmt | lint | typecheck | test | ci"
+	@echo "Quality:  fmt | lint | typecheck | test | line-limit | ci"
 	@echo "Playbook: manifest        regenerate playbook/MANIFEST.md"
 
 # ----- Setup -----
@@ -26,8 +26,11 @@ typecheck:
 test:
 	uv run pytest
 
+line-limit:
+	@bash scripts/check-line-limit.sh
+
 # Aggregate gate (what CI runs)
-ci: lint typecheck test
+ci: lint typecheck test line-limit
 
 # ----- Playbook -----
 manifest:

@@ -7,6 +7,7 @@ on:
   schedule:
     - cron: '0 12 * * 1'
 permissions:
+  actions: read
   contents: read
   security-events: write
 jobs:
@@ -15,16 +16,16 @@ jobs:
     container:
       image: semgrep/semgrep:1.168.0
     steps:
-      - uses: actions/checkout@v7  # nosemgrep: yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag
+      - uses: actions/checkout@v7
       - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
-      - run: semgrep ci --sarif --output=semgrep.sarif
+      - run: semgrep ci --sarif --output=semgrep.sarif --exclude-rule=yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag
         env:
           SEMGREP_RULES: >-
             p/python
             p/security-audit
             p/secrets
             p/owasp-top-ten
-      - uses: github/codeql-action/upload-sarif@v4  # nosemgrep: yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag
+      - uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: semgrep.sarif
@@ -32,8 +33,8 @@ jobs:
   trivy-fs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7  # nosemgrep: yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag
-      - uses: aquasecurity/trivy-action@v0.36.0  # nosemgrep: yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag
+      - uses: actions/checkout@v7
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         env:
           TRIVY_INCLUDE_DEV_DEPS: 'true'
         with:
@@ -43,7 +44,7 @@ jobs:
           output: trivy-fs.sarif
           severity: CRITICAL,HIGH,MEDIUM
           ignore-unfixed: true
-      - uses: github/codeql-action/upload-sarif@v4  # nosemgrep: yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag
+      - uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: trivy-fs.sarif

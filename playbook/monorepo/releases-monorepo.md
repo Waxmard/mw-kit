@@ -215,3 +215,11 @@ Two monorepo commit rules:
   `GOOGLE_APPLICATION_CREDENTIALS` and `credential_source.file` inside
   `GAC_JSON` are relative to `$CI_PROJECT_DIR`, hence the `cd` in `publishCmd`.
 - New component: copy both files, add a docker-bake target and an `include: local` line.
+
+## Unified repo-wide release (alternative)
+
+For monorepos whose components deploy in lockstep under a single version number, use a single root `.releaserc.json` ([releases-gitlab](../universal/releases-gitlab.md)) instead of per-component releases:
+
+- `@semantic-release/exec` `prepareCmd` updates every component's manifest (`npm version --prefix frontend --no-git-tag-version --allow-same-version ${nextRelease.version}` and `sed -i 's/^version = ".*"/version = "${nextRelease.version}"/' backend/pyproject.toml`).
+- `publishCmd` retags all component images with `gcrane tag`.
+- `@semantic-release/git` commits all updated manifests (`frontend/package.json`, `backend/pyproject.toml`, `CHANGELOG.md`) in one release commit.

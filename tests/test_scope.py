@@ -199,11 +199,6 @@ def test_resolve_alternatives_drops_losers():
     assert out["releases"]["chosen"] == "releases-github"
 
 
-def test_has_target_matches_nested_path():
-    row = {"targets_present": ["web/.releaserc.json"]}
-    assert scope.has_target(row, ".releaserc.json") is True
-
-
 def test_resolve_alternatives_sees_nested_releaserc():
     # a nested .releaserc.json still means "semantic-release already configured"
     rows = [
@@ -511,3 +506,120 @@ def test_annotate_state_orphans_empty_without_known_tools():
     state = {"playbook_commit": "c", "tools": {"gone": {"decision": "synced"}}}
     summary = scope.annotate_state(rows, state, "c", changed_fn=lambda c, p: False)
     assert summary["orphaned_tools"] == []
+
+
+def test_detect_content_skips_template_yaml_files(tmp_path: Path):
+    (tmp_path / "cloud-run-service.template.yaml").write_text("kind: Service\n")
+    (tmp_path / "svc.tpl.yml").write_text("kind: Service\n")
+    tracked = ["cloud-run-service.template.yaml", "svc.tpl.yml"]
+    assert scope.detect_content_matches([r"^kind:\s"], tmp_path, tracked) is None
+
+
+def test_scope_pages_ignores_standalone_scripts_py_without_pyproject(tmp_path: Path):
+    pages = [
+        _page("ruff", "python", detect=["**/*.py"], targets=["pyproject.toml"]),
+    ]
+    out_no_py = scope.scope_pages(
+        pages,
+        tmp_path,
+        ["scripts/validate.py", "deploy.yaml"],
+        "gitlab",
+        {"verdict": "single_project"},
+    )
+    assert {r["tool"] for r in out_no_py["in_scope"]} == set()
+
+    (tmp_path / "pyproject.toml").write_text("x")
+    out_with_py = scope.scope_pages(
+        pages,
+        tmp_path,
+        ["scripts/validate.py", "pyproject.toml"],
+        "gitlab",
+        {"verdict": "single_project"},
+    )
+    assert {r["tool"] for r in out_with_py["in_scope"]} == {"ruff"}
+
+
+def test_scope_pages_monorepo_root_tools_only_resolve_at_repo_root(tmp_path: Path):
+    pages = [
+        _page("makefile", "monorepo", targets=["Makefile"]),
+        _page("releases-monorepo", "monorepo", targets=[".releaserc.json"]),
+    ]
+    (tmp_path / "backend").mkdir()
+    (tmp_path / "backend" / "Makefile").write_text("all:\n")
+    (tmp_path / "backend" / ".releaserc.json").write_text("{}")
+    tracked = [
+        "backend/pyproject.toml",
+        "backend/Makefile",
+        "backend/.releaserc.json",
+        "frontend/package.json",
+    ]
+    structure = {
+        "verdict": "multi_component",
+        "component_dirs": ["backend", "frontend"],
+    }
+    out = scope.scope_pages(pages, tmp_path, tracked, "gitlab", structure)
+    rows = {r["tool"]: r for r in out["in_scope"]}
+    assert rows["makefile"]["targets_present"] == []
+    assert rows["makefile"]["targets_missing"] == ["Makefile"]
+    assert rows["releases-monorepo"]["targets_present"] == ["backend/.releaserc.json"]
+
+
+def test_release_gitlab_monorepo_with_root_releaserc_keeps_releases_gitlab():
+    structure = {"verdict": "multi_component"}
+    root_only = [
+        {
+            "tool": "releases-gitlab",
+            "scope": "universal",
+            "targets_present": [".releaserc.json"],
+        },
+        {
+            "tool": "releases-monorepo",
+            "scope": "monorepo",
+            "targets_present": [],
+        },
+    ]
+    out_root = scope.resolve_alternatives(root_only, "gitlab", structure)
+    assert out_root["releases"]["chosen"] == "releases-gitlab"
+    assert "releases-monorepo" in out_root["dropped"]
+
+    component_scoped = [
+        {
+            "tool": "releases-gitlab",
+            "scope": "universal",
+            "targets_present": ["backend/.releaserc.json"],
+        },
+        {
+            "tool": "releases-monorepo",
+            "scope": "monorepo",
+            "targets_present": ["backend/.releaserc.json"],
+        },
+    ]
+    out_comp = scope.resolve_alternatives(component_scoped, "gitlab", structure)
+    assert out_comp["releases"]["chosen"] == "releases-monorepo"
+
+    unconfigured = [
+        {
+            "tool": "releases-gitlab",
+            "scope": "universal",
+            "targets_present": [],
+        },
+        {
+            "tool": "releases-monorepo",
+            "scope": "monorepo",
+            "targets_present": [],
+        },
+    ]
+    out_none = scope.resolve_alternatives(unconfigured, "gitlab", structure)
+    assert out_none["releases"]["chosen"] == "releases-monorepo"
+
+
+def test_detect_platform_falls_back_to_glab_config(tmp_path: Path, monkeypatch):
+    def fake_git(repo: Path, *args: str) -> str | None:
+        if args == ("remote", "get-url", "origin"):
+            return "git@git.example.internal:team/service.git"
+        if args == ("config", "--get-regexp", r"^remote\..*\.glab-resolved$"):
+            return "remote.origin.glab-resolved base"
+        return None
+
+    monkeypatch.setattr(scope, "git", fake_git)
+    assert scope.detect_platform(tmp_path, ["README.md"]) == ("gitlab", "glab-config")

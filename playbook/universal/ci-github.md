@@ -43,13 +43,16 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+permissions:
+  contents: read
+
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
 
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@vX.Y.Z # pin to latest stable; dependabot bumps it
         with:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
@@ -121,7 +124,7 @@ committed. Same pattern works for any deterministic generator.
 ## Gotchas
 
 - **Pin major versions** of actions (`@v6`, `@v7`), not floating `@main`. Dependabot
-  bumps them (see [dependabot](./dependabot.md)).
+  bumps them (see [dependabot](./dependabot.md)). Exception: `astral-sh/setup-uv` dropped floating major tags in v8 for immutable releases and requires a full `@vX.Y.Z` tag.
 - **`cache-dependency-glob` must point at the lockfile** (`uv.lock` / `package-lock.json`),
   not the manifest — the lock is what determines the resolved tree.
 - **Don't duplicate command lists** between `ci.yml` and the command it calls. One

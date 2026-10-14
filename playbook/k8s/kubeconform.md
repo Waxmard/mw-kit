@@ -71,6 +71,45 @@ kustomize build . | kubeconform -strict -ignore-missing-schemas -schema-location
 (The `grep '^kind:'` selection above is for repos of already-plain manifests, like an
 Argo CD GitOps repo.)
 
+For Kustomize overlay repos in GitLab CI, split into a two-stage pipeline so rendered overlays are archived and inspected directly:
+
+```yaml
+render-manifests:
+  stage: render
+  image:
+    name: registry.k8s.io/kustomize/kustomize:vX.Y.Z # pin to latest stable; renovate bumps it
+    entrypoint: [""]
+  script:
+    - mkdir -p rendered
+    - |
+      for f in $(find . -name kustomization.yaml -not -path './base/*'); do
+        dir=$(dirname "$f")
+        name=$(echo "$dir" | tr '/' '_' | sed 's/^\._//')
+        kustomize build --load-restrictor LoadRestrictionsNone "$dir" > "rendered/${name}.yaml"
+      done
+  artifacts:
+    paths: [rendered/]
+
+validate-manifests:
+  stage: lint
+  needs: ["render-manifests"]
+  image:
+    name: ghcr.io/yannh/kubeconform:vX.Y.Z-alpine # pin to latest stable; renovate bumps it
+    entrypoint: [""]
+  script:
+    - /kubeconform -strict -summary -ignore-missing-schemas -schema-location default -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' rendered/*.yaml
+```
+
+### Image tag existence check
+
+Extract `image:` references from rendered manifests and verify each digest exists in the registry with `crane digest` so missing tags fail the MR before Argo CD hits `ImagePullBackOff`:
+
+```bash
+grep -hE '^\s*image:\s*' rendered/*.yaml | awk '{print $2}' | tr -d '"'"'" | sort -u | while read -r img; do
+  crane digest "$img" >/dev/null
+done
+```
+
 ## Gotchas
 
 - **The binary lives at `/kubeconform`, not on `PATH`.** The official image's entrypoint

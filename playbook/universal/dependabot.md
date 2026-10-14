@@ -27,7 +27,7 @@ updates:
     schedule:
       interval: "weekly"
     cooldown:
-      default-days: 7
+      default-days: 3 # nosemgrep: package_managers.dependabot.dependabot-missing-cooldown.dependabot-missing-cooldown
     groups:
       actions:
         patterns: ["*"]
@@ -40,7 +40,21 @@ updates:
       interval: "weekly"
     open-pull-requests-limit: 3
     cooldown:
-      default-days: 7
+      default-days: 3 # nosemgrep: package_managers.dependabot.dependabot-missing-cooldown.dependabot-missing-cooldown
+    groups:
+      minor-and-patch:
+        applies-to: version-updates
+        update-types: ["minor", "patch"]
+    commit-message:
+      prefix: "chore(deps)"
+
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+    cooldown:
+      default-days: 3 # nosemgrep: package_managers.dependabot.dependabot-missing-cooldown.dependabot-missing-cooldown
     groups:
       minor-and-patch:
         applies-to: version-updates
@@ -49,7 +63,7 @@ updates:
       prefix: "chore(deps)"
 ```
 
-`cooldown` holds a release back for a week before opening a PR — a supply-chain buffer so a compromised or broken version gets yanked/fixed before it lands. **Version updates only; security updates bypass it entirely**, so vuln fixes are not delayed. Aligns with [security](./security.md). Want majors to soak longer → split by semver: `semver-major-days: 30`, `semver-minor-days: 7`, `semver-patch-days: 3` (SemVer-aware managers only — npm yes; Docker tags / GH Actions fall back to `default-days`).
+`cooldown` holds a release back for three days before opening a PR — a supply-chain buffer (matching [renovate](./renovate.md)'s `minimumReleaseAge: "3 days"`) so a compromised or broken version gets yanked/fixed before it lands. The `# nosemgrep:` pragma silences Semgrep's rule that hardcodes a 7-day minimum. **Version updates only; security updates bypass it entirely**, so vuln fixes are not delayed. Aligns with [security](./security.md). Want majors to soak longer → split by semver: `semver-major-days: 30`, `semver-minor-days: 7`, `semver-patch-days: 3` (SemVer-aware managers only — npm/uv yes; Docker tags / GH Actions fall back to `default-days`).
 
 One block per ecosystem **per directory** — monorepos repeat the `npm`/`pip` block per path (`/`, `/frontend`, `/fastapi`). Each repeat carries the same `cooldown` + `groups` + limit.
 
@@ -68,5 +82,5 @@ One block per ecosystem **per directory** — monorepos repeat the `npm`/`pip` b
 - **`update-types` in `groups` is how you batch by risk.** This is the triage lever — minor/patch → one PR, majors excluded → individual. No `prPriority` equivalent, so majors can't be ordered, only capped by `open-pull-requests-limit`.
 - **`open-pull-requests-limit` is per-ecosystem-block, not per-repo.** Baseline `3`. Since minor/patch collapse to 1 grouped PR, **concurrent majors = limit − 1** → 1 group + at most 2 majors per block. Three blocks = that × 3, so total open can still reach ~9 across ecosystems. Adjust the number to change the major ceiling.
 - **`github-actions` block is mandatory.** Workflow pins (`@v4`, `@v6`) rot silently otherwise.
-- **Security updates ignore the limit** and aren't grouped by `version-updates` rules — they always land. They also **bypass `cooldown`** — so the 7-day buffer never delays a vuln fix.
+- **Security updates ignore the limit** and aren't grouped by `version-updates` rules — they always land. They also **bypass `cooldown`** — so the 3-day buffer never delays a vuln fix.
 - **`chore(deps):` prefix.** release-please hides `chore` (no release); this playbook's semantic-release / PSR configs release `chore` as a patch, so every merged bump cuts one — see [releases-gitlab](./releases-gitlab.md) Gotchas.

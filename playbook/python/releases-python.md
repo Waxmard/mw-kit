@@ -93,3 +93,4 @@ Project access token with `api` + `write_repository` scope, saved as masked `SEM
 - **First run:** start `version = "0.0.0"`; changelog `mode = "update"` auto-initializes a missing `CHANGELOG.md`, then requires the `<!-- version list -->` insertion flag to stay in the file.
 - **`chore(deps)` now releases.** With `chore` in `patch_tags`, Renovate bumps ([renovate](../universal/renovate.md)) each cut a patch instead of accumulating — more frequent tags than the stock config. Drop `chore` from `patch_tags` to revert to accumulate-until-`feat`/`fix`.
 - Requires [conventional-commits](../universal/conventional-commits.md) adherence — a `Fix stuff` commit is invisible to the version calculator.
+- **`GitPython<3.1.60` pin for `python-semantic-release <= 10.6.1`.** GitPython 3.1.60 removed `Actor.name_email_regex`, which crashes PSR `<= 10.6.1` at import/parse time; pin `"GitPython<3.1.60"` alongside PSR until upgrading past 10.6.1.

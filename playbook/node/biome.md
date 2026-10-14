@@ -4,7 +4,7 @@ scope: node
 tier: baseline
 summary: "JS/TS lint + format + import sort (replaces eslint + prettier)"
 targets: ["biome.json", "package.json"]
-detect: ["package.json", "**/*.{ts,tsx,js,jsx}"]
+detect: ["biome.json", "biome.jsonc", "**/*.{ts,tsx,js,jsx,mjs,cjs,vue}"]
 ---
 
 # biome
@@ -23,7 +23,12 @@ Pin `@biomejs/biome` exact in devDependencies (see [package-json](package-json.m
 
 ```json
 {
-  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "$schema": "https://biomejs.dev/schemas/X.Y.Z/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
   "files": {
     "includes": ["src/**/*.{ts,tsx,js,jsx,json}"]
   },
@@ -78,3 +83,4 @@ Hook: see [lefthook](../universal/lefthook.md).
 ## Gotchas
 
 - Keep `files.includes` and the CLI paths (`src/`) aligned.
+- Custom AST rules use GritQL plugins (`"plugins": ["./biome-plugins/<rule>.grit"]` at top level or inside `"overrides"`) to ban project-specific APIs without ESLint.

@@ -26,24 +26,34 @@ own component.
 
 Install the latest compatible versions of `eslint`, `@eslint/js`,
 `typescript-eslint`, `eslint-plugin-svelte`, `eslint-config-prettier`,
-`prettier`, `prettier-plugin-svelte`, `svelte-check`, and `typescript`.
+`prettier`, `prettier-plugin-svelte`, `svelte-check`, `globals`, and `typescript`.
 Add `prettier-plugin-tailwindcss` when the app uses Tailwind CSS.
 
 `eslint.config.js`:
 
 ```js
+import { fileURLToPath } from 'node:url';
 import js from '@eslint/js';
 import prettier from 'eslint-config-prettier';
 import svelte from 'eslint-plugin-svelte';
-import { defineConfig } from 'eslint/config';
+import { defineConfig, includeIgnoreFile } from 'eslint/config';
+import globals from 'globals';
 import ts from 'typescript-eslint';
 
+const gitignorePath = fileURLToPath(new URL('./.gitignore', import.meta.url));
+
 export default defineConfig(
+  includeIgnoreFile(gitignorePath),
   js.configs.recommended,
   ts.configs.recommended,
   svelte.configs.recommended,
   prettier,
   svelte.configs.prettier,
+  {
+    languageOptions: {
+      globals: { ...globals.browser, ...globals.node },
+    },
+  },
   {
     files: ['**/*.svelte', '**/*.svelte.ts', '**/*.svelte.js'],
     languageOptions: {
