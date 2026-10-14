@@ -11,6 +11,10 @@ pre-commit:
       run: uv run ruff format {staged_files}
       stage_fixed: true
 
+    line-limit:
+      glob: "*.{py,sh}"
+      run: bash scripts/check-line-limit.sh {staged_files}
+
     # Frontmatter is the source of truth for MANIFEST.md — regenerate + restage
     # it automatically whenever a playbook page changes, so the index can't drift.
     manifest:

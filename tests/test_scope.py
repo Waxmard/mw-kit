@@ -199,11 +199,6 @@ def test_resolve_alternatives_drops_losers():
     assert out["releases"]["chosen"] == "releases-github"
 
 
-def test_has_target_matches_nested_path():
-    row = {"targets_present": ["web/.releaserc.json"]}
-    assert scope.has_target(row, ".releaserc.json") is True
-
-
 def test_resolve_alternatives_sees_nested_releaserc():
     # a nested .releaserc.json still means "semantic-release already configured"
     rows = [

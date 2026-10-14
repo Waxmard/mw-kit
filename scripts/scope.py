@@ -131,10 +131,6 @@ def resolve_target(
     return out
 
 
-def has_target(row: dict[str, Any], target: str) -> bool:
-    return any(p.rsplit("/", 1)[-1] == target for p in row.get("targets_present") or ())
-
-
 # repo inspection
 
 
@@ -525,24 +521,19 @@ def resolve_alternatives(
     configured = {r["tool"] for r in in_scope if r["targets_present"]}
 
     dep, dep_reason = _resolve_dep_bot(platform, configured)
-    has_root_releaserc = any(
-        r["tool"] == "releases-gitlab"
-        and ".releaserc.json" in (r.get("targets_present") or ())
+    rc = {
+        p
         for r in in_scope
-    )
-    has_component_releaserc = any(
-        r["tool"] in ("releases-gitlab", "releases-monorepo")
-        and any(
-            p.endswith("/.releaserc.json") for p in (r.get("targets_present") or ())
-        )
-        for r in in_scope
-    )
+        if r["tool"] in ("releases-gitlab", "releases-monorepo")
+        for p in (r.get("targets_present") or ())
+        if p == ".releaserc.json" or p.endswith("/.releaserc.json")
+    }
     releases = _resolve_release(
         platform,
         multi=structure["verdict"] == "multi_component",
         is_py=any(r["scope"] == "python" for r in in_scope),
-        semrel_configured=has_root_releaserc or has_component_releaserc,
-        root_semrel_configured=has_root_releaserc and not has_component_releaserc,
+        semrel_configured=bool(rc),
+        root_semrel_configured=rc == {".releaserc.json"},
     )
 
     dropped: list[str] = []
