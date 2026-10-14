@@ -76,12 +76,8 @@ jobs:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
 
       - name: Auto-merge release PR
-        run: |
-          PR_NUMBER=$(gh pr list --repo "${{ github.repository }}" \
-            --label "autorelease: pending" --json number --jq '.[0].number')
-          if [ -n "$PR_NUMBER" ]; then
-            gh pr merge --rebase --auto --repo "${{ github.repository }}" "$PR_NUMBER"
-          fi
+        if: steps.release.outputs.prs_created == 'true'
+        run: gh pr merge --rebase --auto --repo "${{ github.repository }}" "${{ fromJSON(steps.release.outputs.pr).number }}"
         env:
           GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
 ```
@@ -99,5 +95,6 @@ The only built-in knobs (`bump-minor-pre-major`, `bump-patch-for-minor-pre-major
 ## Gotchas
 
 - `release-type: simple` = manage version in `.release-please-manifest.json`. Use `release-type: python` / `node` to also bump `pyproject.toml`/`package.json`.
-- Version living in another file (a browser extension's `manifest.json`, a Helm `Chart.yaml`)? Keep `simple` and add `"extra-files": [{ "type": "json", "path": "src/manifest.json", "jsonpath": "$.version" }]` to the package config (`type: yaml` for YAML).
+- Version living in another file (a browser extension's `manifest.json`, a Helm `Chart.yaml`, or `pyproject.toml`)? Keep `simple` and add `"extra-files": [{ "type": "json", "path": "src/manifest.json", "jsonpath": "$.version" }]` to the package config (`type: yaml` for YAML, or `{ "type": "toml", "path": "pyproject.toml", "jsonpath": "$.project.version" }` for TOML).
+- **Default branch not `main`:** `release-please-action` defaults `target-branch` to the repo's default branch. Set `target-branch: main` under `with:` if development happens on `dev` and releases cut from `main`.
 - Pair with a CONTRIBUTING note enforcing Conventional Commits — see [contributing](./contributing.md).

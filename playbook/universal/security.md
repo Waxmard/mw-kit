@@ -2,9 +2,8 @@
 tool: security
 scope: universal
 tier: baseline
-summary: "semgrep (SAST) + trivy fs/image, SARIF to GitHub Code Scanning"
-targets: [".github/workflows/security.yml"]
-platform: github
+summary: "semgrep (SAST) + trivy fs/image scanning in CI"
+targets: [".github/workflows/security.yml", ".gitlab-ci.yml"]
 ---
 
 # Security Scanning
@@ -100,6 +99,46 @@ jobs:
           sarif_file: trivy-image.sarif
           category: trivy-image
 ```
+
+## GitLab variant
+
+In `.gitlab-ci.yml`, run the scanners as `test`-stage jobs on MRs and the default branch:
+
+```yaml
+semgrep-sast:
+  stage: test
+  image: semgrep/semgrep:X.Y.Z # pin to latest stable; renovate bumps it
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  script:
+    - semgrep scan --error --config p/python --config p/security-audit --config p/secrets --config p/owasp-top-ten .
+
+trivy-fs:
+  stage: test
+  image:
+    name: ghcr.io/aquasecurity/trivy:X.Y.Z # pin to latest stable; renovate bumps it
+    entrypoint: [""]
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  script:
+    - trivy fs --scanners vuln,misconfig,secret --exit-code 1 --severity CRITICAL,HIGH --ignore-unfixed --ignorefile .trivyignore.yaml .
+
+trivy-image:
+  stage: test
+  image:
+    name: ghcr.io/aquasecurity/trivy:X.Y.Z # pin to latest stable; renovate bumps it
+    entrypoint: [""]
+  needs: ["build-image"]
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  script:
+    - trivy image --scanners vuln --exit-code 1 --severity CRITICAL,HIGH --ignore-unfixed --ignorefile .trivyignore.yaml "$IMAGE_TAG"
+```
+
+Use `.trivyignore.yaml` with `expired_at` dates (e.g. `id: CVE-YYYY-NNNN` + `expired_at: 2026-06-01`) so temporary suppressions re-alert automatically if unaddressed.
 
 ## Gotchas
 

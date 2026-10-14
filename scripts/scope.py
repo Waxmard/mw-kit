@@ -31,6 +31,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from build_manifest import PLAYBOOK, as_list, load_pages
 
 PROJECT_MANIFESTS = ["pyproject.toml", "package.json", "go.mod"]
+TEMPLATE_YAML_SUFFIXES = (
+    ".template.yaml",
+    ".template.yml",
+    ".tpl.yaml",
+    ".tpl.yml",
+)
 
 # Per-project incremental-sync memory. Committed at the consumer repo root; the
 # skill writes it after the user decides, this script reads it to skip tools whose
@@ -91,7 +97,7 @@ def detect_content_matches(
         return None
     compiled = [(pat, re.compile(pat, re.MULTILINE)) for pat in patterns]
     for f in tracked:
-        if not f.endswith((".yaml", ".yml")):
+        if not f.endswith((".yaml", ".yml")) or f.endswith(TEMPLATE_YAML_SUFFIXES):
             continue
         try:
             text = (repo / f).read_text(errors="ignore")
@@ -168,6 +174,8 @@ def detect_platform(repo: Path, tracked: list[str]) -> tuple[str, str]:
         return "gitlab", "ci-file"
     if has_github and not has_gitlab:
         return "github", "ci-file"
+    if git(repo, "config", "--get-regexp", r"^remote\..*\.glab-resolved$"):
+        return "gitlab", "glab-config"
     return "unknown", "no-remote" if not url else "remote"
 
 
@@ -327,6 +335,16 @@ def scope_pages(
     in_scope: list[dict[str, Any]] = []
     skipped: list[dict[str, Any]] = []
     roots = project_roots(structure)
+    has_pyproject = any(
+        f == "pyproject.toml" or f.endswith("/pyproject.toml") for f in tracked
+    )
+    py_tracked = (
+        tracked
+        if has_pyproject
+        else [
+            f for f in tracked if not f.startswith("scripts/") and "/scripts/" not in f
+        ]
+    )
     for p in pages:
         tool = p.get("tool", "")
         page = p["_page"]
@@ -361,8 +379,10 @@ def scope_pages(
         # classes (plain-YAML k8s).
         matched = None
         if detect or detect_content:
+            files_for_detect = py_tracked if scope == "python" else tracked
             matched = next(
-                (d for d in detect if detect_matches(d, tracked, roots)), None
+                (d for d in detect if detect_matches(d, files_for_detect, roots)),
+                None,
             )
             if matched is None:
                 matched = detect_content_matches(detect_content, repo, tracked)
@@ -383,8 +403,11 @@ def scope_pages(
 
         present: list[str] = []
         missing: list[str] = []
+        target_roots = (
+            [""] if (scope == "monorepo" and tool != "releases-monorepo") else roots
+        )
         for t in targets:
-            hits = resolve_target(t, repo, roots)
+            hits = resolve_target(t, repo, target_roots)
             if hits:
                 present.extend(h for h in hits if h not in present)
             else:
@@ -447,7 +470,11 @@ def _resolve_dep_bot(platform: str, configured: set[str]) -> tuple[str, str]:
 
 
 def _resolve_release(
-    platform: str, multi: bool, is_py: bool, semrel_configured: bool = False
+    platform: str,
+    multi: bool,
+    is_py: bool,
+    semrel_configured: bool = False,
+    root_semrel_configured: bool = False,
 ) -> dict[str, Any]:
     """Pick the release tool, but only one with a page for the platform.
 
@@ -455,6 +482,11 @@ def _resolve_release(
     monorepos natively via config, so on a github multi-component repo we stay
     on releases-github and flag the caveat in `note`.
     """
+    if multi and platform == "gitlab" and root_semrel_configured:
+        return {
+            "chosen": "releases-gitlab",
+            "reason": "root semantic-release already configured (.releaserc.json)",
+        }
     if multi and platform == "gitlab":
         return {
             "chosen": "releases-monorepo",
@@ -493,14 +525,24 @@ def resolve_alternatives(
     configured = {r["tool"] for r in in_scope if r["targets_present"]}
 
     dep, dep_reason = _resolve_dep_bot(platform, configured)
+    has_root_releaserc = any(
+        r["tool"] == "releases-gitlab"
+        and ".releaserc.json" in (r.get("targets_present") or ())
+        for r in in_scope
+    )
+    has_component_releaserc = any(
+        r["tool"] in ("releases-gitlab", "releases-monorepo")
+        and any(
+            p.endswith("/.releaserc.json") for p in (r.get("targets_present") or ())
+        )
+        for r in in_scope
+    )
     releases = _resolve_release(
         platform,
         multi=structure["verdict"] == "multi_component",
         is_py=any(r["scope"] == "python" for r in in_scope),
-        semrel_configured=any(
-            r["tool"] == "releases-gitlab" and has_target(r, ".releaserc.json")
-            for r in in_scope
-        ),
+        semrel_configured=has_root_releaserc or has_component_releaserc,
+        root_semrel_configured=has_root_releaserc and not has_component_releaserc,
     )
 
     dropped: list[str] = []

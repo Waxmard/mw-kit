@@ -1,2 +1,3 @@
 # Last matching rule wins. Order specific paths after the catch-all.
 *                       @Waxmard
+/.github/CODEOWNERS     @Waxmard

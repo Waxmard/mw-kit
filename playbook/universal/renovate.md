@@ -74,7 +74,7 @@ Use when the next major has a known breaking change you've deferred. Remove the 
 
 ```json
 {
-  "matchDepTypes": ["devDependencies"],
+  "matchDepTypes": ["devDependencies", "dependency-groups"],
   "matchUpdateTypes": ["patch", "minor"],
   "automerge": true
 }

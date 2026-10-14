@@ -29,7 +29,7 @@ Machine-readable index of every playbook page. Source of truth = each page's YAM
 | `releases-github` | baseline | release-please: PR-driven versioning + changelog on GitHub | `release-please-config.json`, `.release-please-manifest.json`, `.github/workflows/release-please.yml` | — | `github` | [universal/releases-github.md](universal/releases-github.md) |
 | `releases-gitlab` | baseline | semantic-release: tag + changelog on GitLab | `.releaserc.json`, `.gitlab-ci.yml` | — | `gitlab` | [universal/releases-gitlab.md](universal/releases-gitlab.md) |
 | `renovate` | baseline | Platform-agnostic dependency update bot (required on GitLab) | `renovate.json` | — | any | [universal/renovate.md](universal/renovate.md) |
-| `security` | baseline | semgrep (SAST) + trivy fs/image, SARIF to GitHub Code Scanning | `.github/workflows/security.yml` | — | `github` | [universal/security.md](universal/security.md) |
+| `security` | baseline | semgrep (SAST) + trivy fs/image scanning in CI | `.github/workflows/security.yml`, `.gitlab-ci.yml` | — | any | [universal/security.md](universal/security.md) |
 
 ## python
 
@@ -45,7 +45,7 @@ Machine-readable index of every playbook page. Source of truth = each page's YAM
 
 | Tool | Tier | Summary | Targets | Detect | Platform | Page |
 |---|---|---|---|---|---|---|
-| `biome` | baseline | JS/TS lint + format + import sort (replaces eslint + prettier) | `biome.json`, `package.json` | `package.json`, `**/*.{ts,tsx,js,jsx}` | any | [node/biome.md](node/biome.md) |
+| `biome` | baseline | JS/TS lint + format + import sort (replaces eslint + prettier) | `biome.json`, `package.json` | `biome.json`, `biome.jsonc`, `**/*.{ts,tsx,js,jsx,mjs,cjs,vue}` | any | [node/biome.md](node/biome.md) |
 | `package-json` | baseline | Standard scripts, dependency pinning, and release-age policy | `package.json`, `.npmrc` | `package.json` | any | [node/package-json.md](node/package-json.md) |
 | `playwright` | optional | Built-app browser checks for desktop and mobile web flows | `playwright.config.ts`, `package.json`, `.github/workflows/ci.yml` | `playwright.config.*` | any | [node/playwright.md](node/playwright.md) |
 | `svelte` | baseline | Svelte lint, format, and compiler-aware type checking | `eslint.config.js`, `prettier.config.js`, `tsconfig.json`, `package.json` | `**/*.svelte`, `svelte.config.js`, `svelte.config.ts` | any | [node/svelte.md](node/svelte.md) |

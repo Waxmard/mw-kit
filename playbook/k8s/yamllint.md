@@ -32,6 +32,7 @@ without it yamllint's default floods on every Kubernetes manifest (see Gotchas):
 ```yaml
 # Relaxed yamllint config for Kubernetes / Argo CD manifests.
 extends: default
+ignore-from-file: .gitignore
 
 rules:
   document-start: disable # k8s manifests routinely omit the leading ---
@@ -57,7 +58,7 @@ pre-commit:
       run: yamllint {staged_files}
 ```
 
-Needs yamllint on PATH (`uv tool install yamllint` or `brew install yamllint`).
+Needs yamllint on PATH (`uv tool install yamllint`, `uvx yamllint -c .yamllint`, or `brew install yamllint`).
 
 ### CI job (GitLab)
 
@@ -72,7 +73,7 @@ yaml-lint:
     - yamllint .
 ```
 
-On GitHub, run `pip install yamllint && yamllint .` in a workflow step.
+Zero-install alternatives: `uvx yamllint -c .yamllint .` or container image `cytopia/yamllint:1`. On GitHub, run `pip install yamllint && yamllint .` in a workflow step.
 
 ## Gotchas
 

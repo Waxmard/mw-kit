@@ -61,7 +61,8 @@ dependencies = ["fastapi[standard]>=0.128"]
 [dependency-groups]
 dev = ["pytest>=8", "mypy>=1.18", "ruff>=0.15"]
 
-# no [build-system] — flat app/ layout, run as a module
+[tool.uv]
+package = false              # explicit non-package (virtual) project
 ```
 
 - **No `[build-system]`** → uv treats the project as a *virtual* (non-package)
@@ -74,8 +75,10 @@ dev = ["pytest>=8", "mypy>=1.18", "ruff>=0.15"]
 
   ```dockerfile
   WORKDIR /app
+  ENV UV_COMPILE_BYTECODE=1 UV_PYTHON_DOWNLOADS=never
   COPY pyproject.toml uv.lock ./
-  RUN uv sync --frozen --no-dev --no-install-project
+  RUN --mount=type=cache,target=/root/.cache/uv \
+      uv sync --frozen --no-dev --no-install-project
   COPY app/ ./app/
   ENTRYPOINT ["/app/.venv/bin/python", "-m", "app.main"]
   ```
@@ -107,3 +110,4 @@ or installs the project. Most services are apps — skip the ceremony.
   - **Published library** (others `pip install` it): keep the floor **broad** (`>=3.13` or lower). A high floor makes uv/pip *refuse to install* for anyone on an older interpreter — only raise it when you actually need a newer feature.
   Either way, the floor is independent of the version you dev on (the [mise](../universal/mise.md) pin) — keep that on the newest stable regardless.
 - `uv run` activates the venv per-command; don't `source .venv/bin/activate` manually.
+- Minimal/Chainguard Python images set `ENTRYPOINT ["/usr/bin/python"]`, so setting `ENTRYPOINT` (not `CMD`) to `/app/.venv/bin/...` is required to use the virtualenv's packages.
