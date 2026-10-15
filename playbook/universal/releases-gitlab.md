@@ -112,6 +112,33 @@ Every type `releaseRules` releases on needs a visible `section` in `presetConfig
 
 - The `@semantic-release/git` plugin commits the changelog back — make sure the bot user can push to `main` (protected branch exception).
 - **`chore` now releases**, so dependency bumps (`chore(deps): ...`) cut a patch on their own — desired here, but it means more frequent tags than the stock config.
+- **`@semantic-release/exec` commands are lodash templates.** `${...}` is evaluated as a template variable before the shell sees it, so `${GITLAB_TOKEN}` fails with `ReferenceError: GITLAB_TOKEN is not defined`. Write env vars as bare `$VAR`, and keep `${...}` for `nextRelease.*`.
+
+## Dev → main flow: back-sync dev
+
+For repos where work lands on `dev` and `dev` → `main` MRs cut releases. The release commit (`chore(release): X.Y.Z [skip ci]`) exists only on `main`, so the next `dev` → `main` MR can't fast-forward and `dev` never sees the bumped versions or `CHANGELOG.md`. Add `@semantic-release/exec` with a `successCmd` that fast-forwards `dev` to the release commit:
+
+```json
+["@semantic-release/exec", {
+  "successCmd": "git push \"https://gitlab-ci-token:$GITLAB_TOKEN@$CI_SERVER_HOST/$CI_PROJECT_PATH.git\" HEAD:refs/heads/dev || echo 'WARN: dev moved ahead during release; merge main into dev manually'"
+}]
+```
+
+Add `@semantic-release/exec` to the pipeline `npx -p …` list. The push only fast-forwards, so if `dev` got new commits during the release it is rejected and the job just warns. The release commit carries `[skip ci]`, so the `dev` push doesn't start a pipeline.
+
+Project settings to go with it:
+
+- **Merge method: fast-forward** (Settings → Merge requests). Keeps `dev` and `main` on identical SHAs.
+- **Squash on `main`: Do not allow** (Settings → Repository → Branch rules → `main`). Leave `All branches` on Encourage for feature → `dev` MRs. A squashed `dev` → `main` merge would collapse every commit into one and lose the per-commit bumps and changelog entries.
+- **Untick "Enable 'Delete source branch' option by default"** (Settings → Merge requests), or untick it on each `dev` → `main` MR, so the merge never removes `dev`.
+- **Token role: Maintainer.** The token pushes to protected `main` and `dev`.
+
+Gotchas:
+
+- **No tag yet means the first release is `1.0.0`.** Tag the current `main` first (`git tag 0.1.0 origin/main && git push origin 0.1.0`) to stay on `0.x`.
+- **`[skip ci]` anywhere in the tip commit message skips the pipeline**, including a commit body that only quotes it. If the tip of `dev` mentions `[skip ci]`, run the pipeline by hand (`glab ci run -b dev`) or push another commit before opening the `dev` → `main` MR.
+- **If `successCmd` fails, the release is already out.** The tag, images, and GitLab Release exist and only the job is red. Don't retry: semantic-release finds nothing new to release and skips `successCmd`. Run `git merge --ff-only origin/main` on `dev` and push it before committing anything else to `dev`.
+- GitHub equivalent: [releases-github](./releases-github.md#dev--main-flow-back-sync-dev).
 
 ## Manually cut release tags (retag, don't rebuild)
 

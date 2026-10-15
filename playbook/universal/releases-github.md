@@ -96,5 +96,52 @@ The only built-in knobs (`bump-minor-pre-major`, `bump-patch-for-minor-pre-major
 
 - `release-type: simple` = manage version in `.release-please-manifest.json`. Use `release-type: python` / `node` to also bump `pyproject.toml`/`package.json`.
 - Version living in another file (a browser extension's `manifest.json`, a Helm `Chart.yaml`, or `pyproject.toml`)? Keep `simple` and add `"extra-files": [{ "type": "json", "path": "src/manifest.json", "jsonpath": "$.version" }]` to the package config (`type: yaml` for YAML, or `{ "type": "toml", "path": "pyproject.toml", "jsonpath": "$.project.version" }` for TOML).
-- **Default branch not `main`:** `release-please-action` defaults `target-branch` to the repo's default branch. Set `target-branch: main` under `with:` if development happens on `dev` and releases cut from `main`.
+- **Default branch not `main`:** `release-please-action` defaults `target-branch` to the repo's default branch. Set `target-branch: main` under `with:` if development happens on `dev` and releases cut from `main`. For the full dev → main flow, including back-syncing `dev` after a release, see [Dev → main flow](#dev--main-flow-back-sync-dev) below.
 - Pair with a CONTRIBUTING note enforcing Conventional Commits — see [contributing](./contributing.md).
+
+## Dev → main flow: back-sync dev
+
+For repos where work lands on `dev` (the default branch) and releases cut from `main`. The release PR merges into `main` only, so `dev` never gets the version bump or `CHANGELOG.md`, and the next `dev` → `main` promotion is no longer a fast-forward. Add a back-sync step to the release-please workflow so it fast-forwards `dev` to `main` once a release is created:
+
+```yaml
+      - uses: googleapis/release-please-action@v5
+        id: release
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          target-branch: main
+
+      # ...auto-merge step unchanged...
+
+      - uses: actions/checkout@v7
+        if: steps.release.outputs.release_created == 'true'
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+
+      - name: Back-sync dev
+        if: steps.release.outputs.release_created == 'true'
+        run: git push origin HEAD:dev || echo "::warning::dev moved ahead during release; merge main into dev manually"
+```
+
+`release_created` is the root-component output (path `.`). In a manifest monorepo, use `releases_created`. The push only fast-forwards: if `dev` got new commits during the release, it is rejected and the step just warns.
+
+**Promote `dev` → `main` by fast-forward push, not the merge button.** Every GitHub merge button rewrites SHAs, rebase merge included. After one button merge, `dev` and `main` diverge and every later back-sync is rejected. Open the `dev` → `main` PR for review and CI if you want one, then land it with:
+
+```bash
+git fetch origin && git push origin origin/dev:main
+```
+
+GitHub marks the PR as merged once its commits are on `main`. The release PR itself still merges with the button (`--rebase`). It is based on `main`, so `main` ends up as `dev` plus one release commit, which `dev` can fast-forward to.
+
+Settings to go with it (see [github-settings](./github-settings.md)):
+
+- **Ruleset covers both branches.** With `dev` as the default branch, `~DEFAULT_BRANCH` only matches `dev`. Set the ruleset's `conditions.ref_name.include` to `["~DEFAULT_BRANCH", "refs/heads/main"]`.
+- **Admin bypass stays on** (`actor_id: 5`, `bypass_mode: always`). Both the `dev:main` push and the back-sync push go around the `pull_request` rule, so the person promoting and the `RELEASE_PLEASE_TOKEN` owner must be repo admins.
+
+Gotchas:
+
+- **The `dev:main` push also skips required status checks.** Check that the latest `dev` run is green before pushing.
+- **The back-sync push starts `dev` CI.** It's pushed with a PAT, not `GITHUB_TOKEN`, so `on: push` workflows for `dev` run on the release commit. That's harmless; it's the same tree `main` already tested.
+- **If the back-sync step fails, the release is already out.** The tag and GitHub Release exist. Run `git fetch origin && git push origin origin/main:dev` before committing anything else to `dev`.
+- GitLab equivalent: [releases-gitlab](./releases-gitlab.md#dev--main-flow-back-sync-dev).
