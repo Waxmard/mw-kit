@@ -84,14 +84,14 @@ Each component dir holds two files.
     [
       "@semantic-release/exec",
       {
-        "prepareCmd": "sed -i 's/^version = \".*\"/version = \"${nextRelease.version}\"/' pyproject.toml",
+        "prepareCmd": "sed -i 's/^version = \".*\"/version = \"${nextRelease.version}\"/' pyproject.toml && N=$(sed -n 's/^name = \"\\(.*\\)\"/\\1/p' pyproject.toml | head -n 1) && sed -i \"/^name = \\\"$N\\\"\\$/{n;s/^version = \\\".*\\\"/version = \\\"${nextRelease.version}\\\"/}\" uv.lock",
         "publishCmd": "cd \"$CI_PROJECT_DIR\" && gcrane tag $REGISTRY/<component>:$COMMIT_HASH ${nextRelease.version} && gcrane tag $REGISTRY/<component>:$COMMIT_HASH latest"
       }
     ],
     [
       "@semantic-release/git",
       {
-        "assets": ["pyproject.toml", "CHANGELOG.md"],
+        "assets": ["pyproject.toml", "uv.lock", "CHANGELOG.md"],
         "message": "chore(release): <component>-v${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
       }
     ],
@@ -115,6 +115,11 @@ name + path (the component is e.g. a Python app, not a JS package):
 - `releaseRules`, `preset`, `presetConfig.types`, and the `^9` preset pin follow [releases-gitlab](../universal/releases-gitlab.md) (Bump rules / Preset) exactly.
 - `prepareCmd` writes the computed version back into the component's manifest
   (Python keeps `version = "0.0.0"` as a placeholder; the git tag is truth).
+- It also bumps the component's own entry in `uv.lock`. [ci-gitlab](../universal/ci-gitlab.md)
+  runs `uv sync --locked`, which fails on the next pipeline once `pyproject.toml` and the
+  lock's root `version` disagree. The name is read from `pyproject.toml` because forks rename
+  it. The shell variable is `$N`, never `${N}`: semantic-release expands `${…}` as a template
+  before the shell runs. `sed` instead of `uv lock` because `node:24-alpine` has no `uv`.
 - `publishCmd` retags the already-built image (see CI below) — `gcrane` only runs
   when a release actually happens. It `cd`s back to the repo root because the
   credential paths are relative to it (see Gotchas).
@@ -209,6 +214,18 @@ Two monorepo commit rules:
   next day, fails with `401 UNAUTHORIZED: authentication failed` (not a 403 —
   IAM is fine). `crane auth login` doesn't validate, so the error surfaces only
   at the push.
+- **No `needs: gcp-auth` on the release job.** The component injects the id_token and
+  `GAC_JSON` into every job, and the `before_script` above writes fresh `.gcloud/` files
+  from them. The gcp-auth job's artifacts add a dependency and creds that expire about an
+  hour after that job ran. Reviewers (human or bot) who reason "explicit `needs:` drops
+  artifacts" will flag the omission; it's deliberate.
+- **Gitignore `.gcloud/`.** The credential files land in `$CI_PROJECT_DIR/.gcloud/`.
+  `@semantic-release/git` stages only `assets`, but the ignore rule keeps them out of any
+  broader `git add`.
+- **No `when: always` on the release rule.** [gitlab-pipeline-dedup](../universal/gitlab-pipeline-dedup.md)
+  puts `when: always` on build/scan jobs. Copied onto the release rule, together with the
+  `optional: true` needs, it releases (and pushes the tag) after a failed build, so
+  `gcrane tag` retags an image that was never pushed.
 - **`gcrane` fails silently.** If the env credentials don't resolve (wrong cwd,
   missing file) it falls back to anonymous and you only see `DENIED:
   Unauthenticated request`. Add `-v` to see the real `Google env error`. Both
@@ -220,6 +237,6 @@ Two monorepo commit rules:
 
 For monorepos whose components deploy in lockstep under a single version number, use a single root `.releaserc.json` ([releases-gitlab](../universal/releases-gitlab.md)) instead of per-component releases:
 
-- `@semantic-release/exec` `prepareCmd` updates every component's manifest (`npm version --prefix frontend --no-git-tag-version --allow-same-version ${nextRelease.version}` and `sed -i 's/^version = ".*"/version = "${nextRelease.version}"/' backend/pyproject.toml`).
+- `@semantic-release/exec` `prepareCmd` updates every component's manifest (`npm version --prefix frontend --no-git-tag-version --allow-same-version ${nextRelease.version}` and `sed -i 's/^version = ".*"/version = "${nextRelease.version}"/' backend/pyproject.toml`). It also updates each Python component's `uv.lock` root entry with the per-component `sed` above, paths prefixed (`backend/pyproject.toml`, `backend/uv.lock`), plus any other file that carries the version (e.g. an A2A agent card's `version:`).
 - `publishCmd` retags all component images with `gcrane tag`.
-- `@semantic-release/git` commits all updated manifests (`frontend/package.json`, `backend/pyproject.toml`, `CHANGELOG.md`) in one release commit.
+- `@semantic-release/git` commits every updated file (`frontend/package.json`, `frontend/package-lock.json`, `backend/pyproject.toml`, `backend/uv.lock`, `CHANGELOG.md`, plus any extra version files) in one release commit.

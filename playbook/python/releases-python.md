@@ -91,6 +91,18 @@ Project access token with `api` + `write_repository` scope, saved as masked `SEM
 - **Image tags ≠ release tags — don't build images on the release tag.** `[skip ci]` on the release commit suppresses the tag pipeline, so a tag-triggered image build never fires. Build the image on `main` with a `$CI_COMMIT_SHORT_SHA` tag, then `crane`-retag it to the released version inside (or right after) the release job. See [releases-monorepo](../monorepo/releases-monorepo.md) for the `crane tag` snippet.
 - **`tag_format = "{version}"` means bare tags** (`1.4.0`, no `v` prefix). Fine, but pick once — changing the format later breaks previous-tag detection.
 - **First run:** start `version = "0.0.0"`; changelog `mode = "update"` auto-initializes a missing `CHANGELOG.md`, then requires the `<!-- version list -->` insertion flag to stay in the file.
+- **uv repos: PSR doesn't touch `uv.lock`.** `version_toml` bumps `pyproject.toml` only, so
+  the lock's root `version` drifts and the next `uv sync --locked` fails. Add to
+  `[tool.semantic_release]`:
+  ```toml
+  build_command = """
+  uv lock --upgrade-package "$PACKAGE_NAME"
+  git add uv.lock
+  """
+  ```
+  PSR sets `$PACKAGE_NAME` and runs `build_command` before its release commit, so the job
+  image needs `uv` (the `uv run semantic-release version` variant above). See PSR's
+  [uv integration guide](https://python-semantic-release.readthedocs.io/en/latest/configuration/configuration-guides/uv_integration.html).
 - **`chore(deps)` now releases.** With `chore` in `patch_tags`, Renovate bumps ([renovate](../universal/renovate.md)) each cut a patch instead of accumulating — more frequent tags than the stock config. Drop `chore` from `patch_tags` to revert to accumulate-until-`feat`/`fix`.
 - Requires [conventional-commits](../universal/conventional-commits.md) adherence — a `Fix stuff` commit is invisible to the version calculator.
 - **`GitPython<3.1.60` pin for `python-semantic-release <= 10.6.1`.** GitPython 3.1.60 removed `Actor.name_email_regex`, which crashes PSR `<= 10.6.1` at import/parse time; pin `"GitPython<3.1.60"` alongside PSR until upgrading past 10.6.1.
