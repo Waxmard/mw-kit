@@ -31,9 +31,6 @@ Standard names across all projects:
 
 Prefer `check` / `check:fix` (lint + format + import sort); `check:staged` is for lefthook.
 
-For Svelte apps, use the [Svelte tooling scripts](svelte.md) in place of the
-Biome and `tsc` examples above.
-
 ## Dependencies
 
 - Verify peer dependency ranges before major upgrades. Keep the latest compatible

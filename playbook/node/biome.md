@@ -17,6 +17,10 @@ detect: ["biome.json", "biome.jsonc", "**/*.{ts,tsx,js,jsx,mjs,cjs,vue}"]
 
 - One binary, one config (`biome.json`), one cache.
 
+## Accepted alternative
+
+ESLint + Prettier: a repo that already lints with `eslint.config.*` and formats with Prettier (`.prettierrc*`) keeps them; don't migrate it to biome. New repos start on biome.
+
 ## Config
 
 Pin `@biomejs/biome` exact in devDependencies (see [package-json](package-json.md)).

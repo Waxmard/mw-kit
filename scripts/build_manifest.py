@@ -90,7 +90,6 @@ def load_pages(*, warn: bool = False) -> list[dict[str, Any]]:
                 )
             continue
         rel = md.relative_to(PLAYBOOK).as_posix()
-        fm["_path"] = rel
         fm["_page"] = rel
         pages.append(fm)
     return pages
@@ -141,7 +140,7 @@ def main() -> int:
                     targets=fmt_list(p.get("targets")),
                     detect=fmt_list(combined_detect(p)),
                     platform=f"`{p['platform']}`" if p.get("platform") else "any",
-                    path=p["_path"],
+                    path=p["_page"],
                 )
             )
         out.append("")

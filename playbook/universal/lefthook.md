@@ -16,6 +16,10 @@ targets: ["lefthook.yml"]
 
 - **Autofix + restage** built-in via `stage_fixed: true` — formatter/linter fixes get committed automatically, no second-commit shuffle.
 
+## Accepted alternative
+
+[pre-commit](https://pre-commit.com/): a repo that already runs hooks from `.pre-commit-config.yaml` keeps it; don't migrate it to lefthook. New repos start on lefthook.
+
 ## Config
 
 `lefthook.yml` at repo root:

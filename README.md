@@ -45,7 +45,6 @@ tests/               pytest for scope.py
 | Python typecheck | [mypy](https://mypy.readthedocs.io/) strict |
 | Python deps | [uv](https://docs.astral.sh/uv/) |
 | JS/TS lint/format | [biome](https://biomejs.dev/) |
-| Svelte lint/format/typecheck | ESLint + Prettier + `svelte-check` ([playbook](playbook/node/svelte.md)) |
 | YAML lint (k8s) | [yamllint](https://www.yamllint.com/) (kubectl-style config) |
 | K8s manifest validation | [kubeconform](https://github.com/yannh/kubeconform) (schema + CRD catalog, CI) |
 | Releases (GitHub) | [release-please](https://github.com/googleapis/release-please) |
@@ -58,6 +57,7 @@ tests/               pytest for scope.py
 | SAST | semgrep |
 | Vuln scanning | trivy (fs + image) |
 | Multi-arch builds | docker bake |
+| Container images | Chainguard digest-pinned base, uv venv stage, non-root ([playbook](playbook/universal/dockerfile.md)) |
 | Agent instructions | `AGENTS.md` (agent-agnostic) as the only instructions file, no `CLAUDE.md` |
 | README | One-sentence opener, flow diagram, commands that run ([playbook](playbook/universal/project-readme.md)) |
 | Per-file size cap | line-limit script (CI gate, optional local hook), default 800 lines |

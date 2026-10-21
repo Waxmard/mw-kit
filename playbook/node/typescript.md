@@ -47,7 +47,5 @@ For Expo, extend their base instead:
 
 ## Gotchas
 
-- For Svelte apps, use `svelte-check` with the generated SvelteKit tsconfig instead
-  of `tsc --noEmit`; see [Svelte tooling](svelte.md).
 - `skipLibCheck: true` — third-party `.d.ts` files often have errors. Skip or you'll never get green.
 - `isolatedModules: true` — required for Vite/Metro/swc; flags incompatible syntax early.

@@ -17,7 +17,7 @@ detect: ["**/*.py"]
 
 ```toml
 [tool.mypy]
-python_version = "3.14"
+python_version = "3.X"  # newest stable Python; match requires-python
 strict = true
 ignore_missing_imports = true
 ```
@@ -48,4 +48,4 @@ In GitLab CI, cache `.mypy_cache/` keyed by branch slug with a fallback to the d
 ## Gotchas
 
 - Don't typecheck tests by default — too many assertion ergonomics. If you want to: separate config target.
-- Pin `python_version` to match the `requires-python` floor in [uv](./uv.md) — newest stable for a service (`3.14`), the broad floor for a published library — *not* the version you dev on. Targeting a newer version than you support lets version-only syntax slip past the checker and break users on the floor.
+- Pin `python_version` to match the `requires-python` floor in [uv](./uv.md) — newest stable for a service, the broad floor for a published library — *not* the version you dev on. Targeting a newer version than you support lets version-only syntax slip past the checker and break users on the floor.

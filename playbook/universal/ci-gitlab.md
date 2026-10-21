@@ -38,7 +38,7 @@ both: this gives you jobs, that stops them running twice.
 stages: [test]
 
 default:
-  image: ghcr.io/astral-sh/uv:python3.14-bookworm-slim
+  image: ghcr.io/astral-sh/uv:python3.X-trixie-slim  # newest stable Python
   interruptible: true              # a newer commit cancels these (deploys opt out, see below)
 
 # One pipeline per change, and a newer commit cancels the in-flight old one — see
@@ -116,7 +116,7 @@ Swap the image + setup anchor; the stage/rules structure is identical:
 ```yaml
 default:
   interruptible: true
-  image: node:24
+  image: node:NN  # current Node Active LTS
 
 .npm:
   before_script:
@@ -155,7 +155,7 @@ test:
   identical multi-gigabyte cache archive on finish. Set `policy: pull` on the base
   anchor (`.uv`, `.npm`) and override with `policy: pull-push` exclusively on the
   `test` job.
-- **Pin the image** (`uv:python3.14-...`, `node:24`), not `:latest` — reproducible
+- **Pin the image** (`uv:python3.X-trixie-slim`, `node:NN`) with the real current version, not `:latest` — reproducible
   pipelines, intentional bumps (renovate handles them — see [renovate](./renovate.md)).
 - **Adding a `release` stage?** Don't rebuild — see
   [releases-python](../python/releases-python.md) / [releases-gitlab](./releases-gitlab.md)

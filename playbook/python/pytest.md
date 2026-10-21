@@ -18,11 +18,11 @@ detect: ["**/*.py"]
 ```toml
 [dependency-groups]
 dev = [
-    "pytest>=8",
-    "pytest-asyncio>=0.21",
-    "pytest-cov>=7",
-    "httpx>=0.24",
-    "aiosqlite>=0.19",
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "httpx",
+    "aiosqlite",
 ]
 
 [tool.coverage.run]

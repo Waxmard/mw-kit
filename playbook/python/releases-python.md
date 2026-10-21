@@ -63,7 +63,7 @@ match = "main"
 ```yaml
 semantic-release:
   stage: release
-  image: python:3.14-slim
+  image: python:3.X-slim  # newest stable Python
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
   variables:

@@ -3,7 +3,7 @@
 `scope.py` is the deterministic pre-flight + scope half of the `tooling-sync`
 skill: given a consumer repo path it validates the repo, detects platform +
 project structure, globs each page's `detect` patterns, resolves the baseline
-alternatives (dependency bot, release tool, Svelte tooling), and resolves each
+alternatives (dependency bot, release tool), and resolves each
 page's `targets` and `detect` patterns against the repo root **and every
 component dir**, so a monorepo target comes back as a real component-prefixed
 path (`fastapi/pyproject.toml`) — emitting a JSON plan the skill consumes. It

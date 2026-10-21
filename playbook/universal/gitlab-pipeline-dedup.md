@@ -92,7 +92,7 @@ workflow:
 
 ⚠️ Read the precondition gotcha before using this block.
 
-Test jobs (lint, type-check, unit tests), `build`, and `trivy-image-scan` all run on
+Test jobs (lint, type-check, unit tests), `build`, and `trivy-image` all run on
 every MR **and** every branch — same gate, so nothing builds untested:
 
 ```yaml

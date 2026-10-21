@@ -20,6 +20,7 @@ Machine-readable index of every playbook page. Source of truth = each page's YAM
 | `contributing` | baseline | CONTRIBUTING.md: branching, commits, MR/PR + review flow | `CONTRIBUTING.md` | — | any | [universal/contributing.md](universal/contributing.md) |
 | `conventional-commits` | baseline | Commit message format feeding release tooling | — | — | any | [universal/conventional-commits.md](universal/conventional-commits.md) |
 | `dependabot` | baseline | GitHub-native dependency update PRs | `.github/dependabot.yml` | — | `github` | [universal/dependabot.md](universal/dependabot.md) |
+| `dockerfile` | baseline | Dockerfile + .dockerignore: digest-pinned Chainguard base, uv venv stage, non-root, build-time import check | `Dockerfile`, `.dockerignore` | `Dockerfile`, `**/Dockerfile*` | any | [universal/dockerfile.md](universal/dockerfile.md) |
 | `github-settings` | baseline | Repo settings, default-branch ruleset, Actions token, Dependabot alerts via gh api | — | — | `github` | [universal/github-settings.md](universal/github-settings.md) |
 | `gitlab-pipeline-dedup` | baseline | GitLab workflow:rules dedup (one pipeline per change) + auto-cancel of superseded runs | `.gitlab-ci.yml` | `.gitlab-ci.yml` | `gitlab` | [universal/gitlab-pipeline-dedup.md](universal/gitlab-pipeline-dedup.md) |
 | `lefthook` | baseline | Git hooks with autofix + restage (stage_fixed) | `lefthook.yml` | — | any | [universal/lefthook.md](universal/lefthook.md) |
@@ -48,7 +49,6 @@ Machine-readable index of every playbook page. Source of truth = each page's YAM
 | `biome` | baseline | JS/TS lint + format + import sort (replaces eslint + prettier) | `biome.json`, `package.json` | `biome.json`, `biome.jsonc`, `**/*.{ts,tsx,js,jsx,mjs,cjs,vue}` | any | [node/biome.md](node/biome.md) |
 | `package-json` | baseline | Standard scripts, dependency pinning, and release-age policy | `package.json`, `.npmrc` | `package.json` | any | [node/package-json.md](node/package-json.md) |
 | `playwright` | optional | Built-app browser checks for desktop and mobile web flows | `playwright.config.ts`, `package.json`, `.github/workflows/ci.yml` | `playwright.config.*` | any | [node/playwright.md](node/playwright.md) |
-| `svelte` | baseline | Svelte lint, format, and compiler-aware type checking | `eslint.config.js`, `prettier.config.js`, `tsconfig.json`, `package.json` | `**/*.svelte`, `svelte.config.js`, `svelte.config.ts` | any | [node/svelte.md](node/svelte.md) |
 | `typescript` | baseline | Strict tsconfig, noEmit type-checking | `tsconfig.json` | `tsconfig.json`, `**/*.{ts,tsx}` | any | [node/typescript.md](node/typescript.md) |
 
 ## k8s
@@ -64,5 +64,4 @@ Machine-readable index of every playbook page. Source of truth = each page's YAM
 |---|---|---|---|---|---|---|
 | `ci-paths` | baseline | Path-filtered per-subproject CI workflows | `.github/workflows/` | — | `github` | [monorepo/ci-paths.md](monorepo/ci-paths.md) |
 | `docker-bake` | optional | Declarative multi-platform builds + skip-redundant-push CI | `docker-bake.hcl` | `**/Dockerfile*`, `docker-bake.hcl` | any | [monorepo/docker-bake.md](monorepo/docker-bake.md) |
-| `makefile` | optional | Root Makefile orchestrator delegating to subprojects | `Makefile` | — | any | [monorepo/makefile.md](monorepo/makefile.md) |
 | `releases-monorepo` | baseline | Per-component independent releases via semantic-release-monorepo (path-scoped bumps, component-scoped tags) | `.releaserc.json`, `package.json`, `.gitlab-ci.yml` | — | `gitlab` | [monorepo/releases-monorepo.md](monorepo/releases-monorepo.md) |

@@ -238,14 +238,6 @@ def test_nested_target_warnings_quiet_when_basename_already_resolved():
     assert scope.nested_target_warnings(rows, [".github/CODEOWNERS"]) == []
 
 
-def test_svelte_replaces_biome_only_for_single_project():
-    rows = [_row("biome", "node"), _row("svelte", "node")]
-    single = scope.resolve_alternatives(rows, "github", {"verdict": "single_project"})
-    multi = scope.resolve_alternatives(rows, "github", {"verdict": "multi_component"})
-    assert "biome" in single["dropped"]
-    assert "biome" not in multi["dropped"]
-
-
 # --- scope_pages end-to-end ----------------------------------------------
 
 
@@ -541,15 +533,15 @@ def test_scope_pages_ignores_standalone_scripts_py_without_pyproject(tmp_path: P
 
 def test_scope_pages_monorepo_root_tools_only_resolve_at_repo_root(tmp_path: Path):
     pages = [
-        _page("makefile", "monorepo", targets=["Makefile"]),
+        _page("docker-bake", "monorepo", targets=["docker-bake.hcl"]),
         _page("releases-monorepo", "monorepo", targets=[".releaserc.json"]),
     ]
     (tmp_path / "backend").mkdir()
-    (tmp_path / "backend" / "Makefile").write_text("all:\n")
+    (tmp_path / "backend" / "docker-bake.hcl").write_text("")
     (tmp_path / "backend" / ".releaserc.json").write_text("{}")
     tracked = [
         "backend/pyproject.toml",
-        "backend/Makefile",
+        "backend/docker-bake.hcl",
         "backend/.releaserc.json",
         "frontend/package.json",
     ]
@@ -559,8 +551,8 @@ def test_scope_pages_monorepo_root_tools_only_resolve_at_repo_root(tmp_path: Pat
     }
     out = scope.scope_pages(pages, tmp_path, tracked, "gitlab", structure)
     rows = {r["tool"]: r for r in out["in_scope"]}
-    assert rows["makefile"]["targets_present"] == []
-    assert rows["makefile"]["targets_missing"] == ["Makefile"]
+    assert rows["docker-bake"]["targets_present"] == []
+    assert rows["docker-bake"]["targets_missing"] == ["docker-bake.hcl"]
     assert rows["releases-monorepo"]["targets_present"] == ["backend/.releaserc.json"]
 
 

@@ -2,7 +2,7 @@
 name = "mw-kit"
 version = "0.0.0"
 description = "Personal tooling playbook + the tooling-sync skill's scope resolver"
-# LOCAL OVERRIDE of the playbook's "pin newest stable (3.14)" rule: scripts/ is
+# LOCAL OVERRIDE of the playbook's "pin newest stable Python" rule: scripts/ is
 # invoked by the tooling-sync skill via bare `python3` on arbitrary machines
 # (stock macOS ships 3.9.6), so the support floor is broad like a published
 # library, not a deployed app. ruff target-version pins the real 3.9 floor; mypy

@@ -27,20 +27,16 @@ Platform-agnostic dep update bot. Opens MRs/PRs to bump outdated deps across npm
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
-  "prConcurrentLimit": 3,
+  "prConcurrentLimit": 5,
   "minimumReleaseAge": "3 days",
   "internalChecksFilter": "strict",
   "packageRules": [
-    {
-      "matchUpdateTypes": ["minor", "patch"],
-      "groupName": "minor & patch deps"
-    },
     { "matchUpdateTypes": ["major"], "prPriority": -5 }
   ]
 }
 ```
 
-Baseline does the triage work: minor/patch → one grouped MR (any count, 1 slot); majors → individual, never grouped. Since the group eats only 1 of the 3 slots, **at most 2 majors stay open at once** (`prConcurrentLimit − 1`). `prPriority: -5` ensures the group MR opens ahead of majors when slots are full. Everything below is **per-repo opt-in**.
+Baseline: one MR/PR per dependency upgrade, at most 5 open at once across the repo. Minor and patch MRs/PRs share the default priority; `prPriority: -5` makes majors wait until no minor/patch upgrade is pending, so when slots are full the non-major upgrades open first. Updates beyond the cap wait as rate-limited on the dependency dashboard. `config:recommended` still groups packages released together (`group:monorepos`, `group:recommended`, e.g. all `@angular/*`), which counts as one upgrade. Everything below is **per-repo opt-in**.
 
 `minimumReleaseAge: "3 days"` holds a release back for three days before opening any MR — a supply-chain buffer so a compromised or broken version gets yanked/fixed before it can land. `internalChecksFilter: "strict"` suppresses the pending-stability MRs while they age (no half-baked branches). **Vulnerability remediation bypasses the age automatically**, so security fixes are not delayed. Aligns with [security](./security.md).
 
@@ -110,7 +106,7 @@ Install the [Renovate GitHub App](https://github.com/apps/renovate) on the org. 
 
 ## Gotchas
 
-- **`prConcurrentLimit` is global, not per-update-type.** It's enforced per-repo across all branches at once — you **cannot** cap "majors to 1–2 concurrent" with it. To make majors trickle while minors flow, use `prPriority` (deprioritize majors) + grouping (collapse minors), not a per-type limit that doesn't exist. The trick: grouping collapses all minor/patch into 1 slot, so **concurrent majors = `prConcurrentLimit − 1`**.
+- **`prConcurrentLimit` is global, not per-update-type.** It caps all open Renovate MRs/PRs in the repo; there is no per-type limit. `prPriority` decides which pending upgrades take a free slot, so majors (`-5`) trickle in behind minor/patch. A `groupName` rule (Patterns below) collapses its members into one slot.
 - Leave `prHourlyLimit` unset (default 0 = off).
 - **Don't re-impose the age on vulns.** `minimumReleaseAge` is bypassed by Renovate's vulnerability remediation by default — leave it that way. Adding a custom `vulnerabilityAlerts` block that re-applies the age delays security fixes by three days. Don't.
 - **Major-pin without a calendar reminder rots.** When you write `"allowedVersions": "^2"`, leave a comment or issue saying when to revisit — otherwise you sit on stale majors forever.

@@ -21,3 +21,4 @@ Tooling decisions applicable to every project regardless of language.
 - [codeowners.md](./codeowners.md) — required reviewers auto-assigned per path
 - [dependabot.md](./dependabot.md) — automated dep updates (GitHub only — GH Actions + npm + pip)
 - [renovate.md](./renovate.md) — automated dep updates (GitLab + GitHub, broader ecosystem coverage)
+- [dockerfile.md](./dockerfile.md) — Dockerfile + .dockerignore: digest-pinned Chainguard base, uv venv stage, non-root, build-time import check

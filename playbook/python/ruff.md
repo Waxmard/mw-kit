@@ -19,7 +19,7 @@ Canonical `[tool.ruff]` block — the full preferred config to diff a repo again
 
 ```toml
 [tool.ruff]
-target-version = "py314"
+target-version = "py3X"  # newest stable Python; match requires-python
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM", "RUF", "PL", "S"]

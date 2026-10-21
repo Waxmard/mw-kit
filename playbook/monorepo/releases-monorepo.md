@@ -119,7 +119,7 @@ name + path (the component is e.g. a Python app, not a JS package):
   runs `uv sync --locked`, which fails on the next pipeline once `pyproject.toml` and the
   lock's root `version` disagree. The name is read from `pyproject.toml` because forks rename
   it. The shell variable is `$N`, never `${N}`: semantic-release expands `${…}` as a template
-  before the shell runs. `sed` instead of `uv lock` because `node:24-alpine` has no `uv`.
+  before the shell runs. `sed` instead of `uv lock` because `node:NN-alpine` has no `uv`.
 - `publishCmd` retags the already-built image (see CI below) — `gcrane` only runs
   when a release actually happens. It `cd`s back to the repo root because the
   credential paths are relative to it (see Gotchas).
@@ -152,7 +152,7 @@ changed:
 ```yaml
 <component>-semantic-release:
   stage: release
-  image: node:24-alpine
+  image: node:NN-alpine  # current Node Active LTS
   variables: { GIT_DEPTH: "0" }
   needs:
     - { job: <component>-build, optional: true }

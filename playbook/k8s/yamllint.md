@@ -65,7 +65,7 @@ Needs yamllint on PATH (`uv tool install yamllint`, `uvx yamllint -c .yamllint`,
 ```yaml
 yaml-lint:
   stage: lint
-  image: python:3.14-slim
+  image: python:3.X-slim  # newest stable Python
   rules:
     - changes: ["**/*.yaml", "**/*.yml", ".yamllint"]
   script:

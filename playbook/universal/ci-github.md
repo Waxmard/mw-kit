@@ -63,9 +63,8 @@ jobs:
       - run: make ci
 ```
 
-[makefile](../monorepo/makefile.md) is `monorepo`-scoped and `optional`; this page is
-`universal` and `baseline`, so a single-project repo with no Makefile is a normal,
-supported case — use the aggregate-script form.
+A single-project repo with no Makefile is a normal, supported case — use the
+aggregate-script form.
 
 Add a matrix (`strategy.matrix.python-version`) only if you actually support multiple
 runtimes — otherwise it's wasted minutes.

@@ -32,7 +32,7 @@ carries a dev toolchain managed by uv: ruff + mypy (strict) + pytest. Run via
 `make` / `uv run`; `make setup` (= `uv sync`) installs it.
 
 **Local override — Python floor:** `requires-python = ">=3.9"` and
-`ruff target-version = "py39"`, *not* the playbook's canonical `3.14`. Reason:
+`ruff target-version = "py39"`, *not* the playbook's newest-stable policy. Reason:
 `scripts/scope.py` is invoked by the `tooling-sync` skill via bare `python3` on
 arbitrary machines (stock macOS ships 3.9.6), so the support floor is broad like a
 published library, not a deployed app. mypy targets `3.10` only because mypy 2.x
@@ -54,18 +54,22 @@ Every `playbook/<scope>/<tool>.md` page has two halves, and both matter:
    with no path marker, e.g. plain-YAML k8s keyed on `^kind:`), optional `platform`
    (`github` | `gitlab`).
 2. **Body** — sections `## What`, `## Why`, `## Config`, `## Gotchas` (pages add
-   `## Commands`, `## Lefthook`, etc. as needed). The `## Config` block is the
+   `## Commands`, `## Lefthook`, etc. as needed). `## Accepted alternative` names a
+   tool a repo may already run instead; `tooling-sync` leaves such a repo on it, and
+   new repos start on the page's tool. The `## Config` block is the
    **canonical config**: the literal snippet that `tooling-sync` diffs a repo's
    actual config against. Keep it copy-pasteable and current.
 
-**Never hardcode exact patch versions** of tools/images/packages in config
-snippets — they rot. Use a `vX.Y.Z` / `X.Y.Z` placeholder + a
-`# pin to latest stable; renovate bumps it` comment. Renovate/dependabot owns
-freshness in consumer repos, so the playbook never needs a real number.
-*Exceptions, which stay concrete:* version-ref pins that must resolve to run and
-are bot-managed (GitHub Action `uses:@v6`, GitLab CI component `@x.y.z`), and
-deliberate **policy versions** the repo maintains in lockstep (`python:3.14`,
-`node:24`, `requires-python`).
+**Never hardcode versions** of runtimes, tools, images or packages in playbook
+snippets; they rot. Tools/packages: use a `vX.Y.Z` / `X.Y.Z` placeholder plus a
+`# pin to latest stable; renovate bumps it` comment. Runtimes: Python is `3.X`
+(`# newest stable Python`) and Node is `NN` (`# current Node Active LTS`),
+resolved to the real current version when tooling-sync applies the page.
+Dependency lists in snippets name packages without version floors. *The one
+exception stays concrete:* version-ref pins that must resolve to run and are
+bot-managed (GitHub Action `uses:@v7`, GitLab CI component `@x.y.z`). The kit's own
+files (`.github/workflows/ci.yml`, `pyproject.toml`) are real config, not snippets,
+so they pin real versions.
 
 `scope` is one of five, mirrored by the directory: `universal/` (every project),
 `python/`, `node/`, `k8s/` (Kubernetes-manifest / GitOps repos), `monorepo/`.

@@ -36,11 +36,11 @@ uv tool install ruff           # install global tool (pipx-style)
 ```toml
 [project]
 name = "my-app"
-requires-python = ">=3.14"   # newest stable; only broaden for a published library
-dependencies = ["fastapi>=0.128"]
+requires-python = ">=3.X"   # newest stable Python; only broaden for a published library
+dependencies = ["fastapi"]
 
 [dependency-groups]
-dev = ["pytest>=8", "pytest-cov>=7", "mypy>=1.18", "ruff>=0.15"]
+dev = ["pytest", "pytest-cov", "mypy", "ruff"]
 ```
 
 Dev tooling goes in `[dependency-groups]` (PEP 735); `uv sync` installs the `dev` group by default. `[project.optional-dependencies]` is only for user-facing extras.
@@ -55,11 +55,11 @@ you run it as a module, not `import` it. For those, omit packaging entirely:
 [project]
 name = "my-service"
 version = "0.0.0"
-requires-python = ">=3.14"   # you own the runtime → pin to newest stable
-dependencies = ["fastapi[standard]>=0.128"]
+requires-python = ">=3.X"   # you own the runtime → newest stable Python
+dependencies = ["fastapi[standard]"]
 
 [dependency-groups]
-dev = ["pytest>=8", "mypy>=1.18", "ruff>=0.15"]
+dev = ["pytest", "mypy", "ruff"]
 
 [tool.uv]
 package = false              # explicit non-package (virtual) project
@@ -83,6 +83,7 @@ package = false              # explicit non-package (virtual) project
   ENTRYPOINT ["/app/.venv/bin/python", "-m", "app.main"]
   ```
 
+- Full image conventions (base, non-root, import check): [dockerfile](../universal/dockerfile.md).
 - pytest finds the flat package via `pythonpath = ["."]`; coverage targets
   `source = ["app"]`.
 
@@ -106,8 +107,8 @@ or installs the project. Most services are apps — skip the ceremony.
 
 - Commit `uv.lock`.
 - **Prefer newest, by default.** `requires-python` is your **support floor** — the oldest interpreter you promise to run on, pinned minor not patch. Pick it by who installs your code:
-  - **Service / app** (you deploy it, you own the runtime): pin to the **newest stable** (`>=3.14` as of mid-2026). Nothing external constrains you, so ride the latest — newer interpreters are faster and let you use current syntax. Bump it as new stables land.
-  - **Published library** (others `pip install` it): keep the floor **broad** (`>=3.13` or lower). A high floor makes uv/pip *refuse to install* for anyone on an older interpreter — only raise it when you actually need a newer feature.
+  - **Service / app** (you deploy it, you own the runtime): pin to the **newest stable** (check [python.org/downloads](https://www.python.org/downloads/) when applying). Nothing external constrains you, so ride the latest — newer interpreters are faster and let you use current syntax. Bump it as new stables land.
+  - **Published library** (others `pip install` it): keep the floor **broad** (two or more minors below newest). A high floor makes uv/pip *refuse to install* for anyone on an older interpreter — only raise it when you actually need a newer feature.
   Either way, the floor is independent of the version you dev on (the [mise](../universal/mise.md) pin) — keep that on the newest stable regardless.
 - `uv run` activates the venv per-command; don't `source .venv/bin/activate` manually.
 - Minimal/Chainguard Python images set `ENTRYPOINT ["/usr/bin/python"]`, so setting `ENTRYPOINT` (not `CMD`) to `/app/.venv/bin/...` is required to use the virtualenv's packages.

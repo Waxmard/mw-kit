@@ -138,7 +138,7 @@ trivy-image:
     - trivy image --scanners vuln --exit-code 1 --severity CRITICAL,HIGH --ignore-unfixed --ignorefile .trivyignore.yaml "$IMAGE_TAG"
 ```
 
-Use `.trivyignore.yaml` with `expired_at` dates (e.g. `id: CVE-YYYY-NNNN` + `expired_at: 2026-06-01`) so temporary suppressions re-alert automatically if unaddressed.
+Use `.trivyignore.yaml` with `expired_at` dates (e.g. `id: CVE-YYYY-NNNN` + `expired_at: YYYY-MM-DD`) so temporary suppressions re-alert automatically if unaddressed.
 
 ## Gotchas
 

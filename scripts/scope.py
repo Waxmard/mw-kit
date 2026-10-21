@@ -28,7 +28,7 @@ from typing import Any
 # PLAYBOOK / load_pages live next door in build_manifest.py — reuse them so
 # the two scripts can never disagree on how playbook pages are read.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from build_manifest import PLAYBOOK, as_list, load_pages
+from build_manifest import PLAYBOOK, ROOT, as_list, load_pages
 
 PROJECT_MANIFESTS = ["pyproject.toml", "package.json", "go.mod"]
 TEMPLATE_YAML_SUFFIXES = (
@@ -178,7 +178,6 @@ def detect_platform(repo: Path, tracked: list[str]) -> tuple[str, str]:
 def detect_structure(tracked: list[str]) -> dict[str, Any]:
     manifests = [f for f in tracked if f.rsplit("/", 1)[-1] in PROJECT_MANIFESTS]
     dirs = {f.rsplit("/", 1)[0] if "/" in f else "" for f in manifests}
-    root_orchestrator = any(f in ("Makefile", "docker-bake.hcl") for f in tracked)
 
     if len(dirs) >= 2:
         verdict, ambiguous = "multi_component", False
@@ -192,18 +191,8 @@ def detect_structure(tracked: list[str]) -> dict[str, Any]:
         "verdict": verdict,
         "ambiguous": ambiguous,
         "manifests": sorted(manifests),
-        "root_orchestrator": root_orchestrator,
         "component_dirs": sorted(d for d in dirs if d),
     }
-
-
-def project_roots(structure: dict[str, Any]) -> list[str]:
-    """Repo root ("") plus every component dir — where a project's markers live."""
-    roots = [""]
-    for d in structure.get("component_dirs") or []:
-        if d and d not in roots:
-            roots.append(d)
-    return roots
 
 
 # incremental-sync memory (.tooling-sync.json)
@@ -225,12 +214,8 @@ def load_state(repo: Path) -> dict[str, Any] | None:
     return data
 
 
-def playbook_root() -> Path:
-    return PLAYBOOK.parent
-
-
 def playbook_head() -> str | None:
-    return git(playbook_root(), "rev-parse", "HEAD")
+    return git(ROOT, "rev-parse", "HEAD")
 
 
 def page_changed_since(commit: str, page: str) -> bool:
@@ -238,7 +223,7 @@ def page_changed_since(commit: str, page: str) -> bool:
     unverifiable record re-surfaces rather than being silently trusted.
     """
     out = git(
-        playbook_root(),
+        ROOT,
         "log",
         "--oneline",
         f"{commit}..HEAD",
@@ -330,7 +315,7 @@ def scope_pages(
 ) -> dict[str, Any]:
     in_scope: list[dict[str, Any]] = []
     skipped: list[dict[str, Any]] = []
-    roots = project_roots(structure)
+    roots: list[str] = structure.get("component_dirs") or []
     has_pyproject = any(
         f == "pyproject.toml" or f.endswith("/pyproject.toml") for f in tracked
     )
@@ -400,7 +385,7 @@ def scope_pages(
         present: list[str] = []
         missing: list[str] = []
         target_roots = (
-            [""] if (scope == "monorepo" and tool != "releases-monorepo") else roots
+            [] if (scope == "monorepo" and tool != "releases-monorepo") else roots
         )
         for t in targets:
             hits = resolve_target(t, repo, target_roots)
@@ -545,13 +530,6 @@ def resolve_alternatives(
     }
     chosen = {dep, releases["chosen"]}
     dropped = sorted(alt for alt in alternatives if alt in tools and alt not in chosen)
-    if (
-        structure["verdict"] == "single_project"
-        and "svelte" in tools
-        and "biome" in tools
-    ):
-        dropped.append("biome")
-        dropped.sort()
 
     return {
         "dep_updates": {"chosen": dep, "reason": dep_reason},
