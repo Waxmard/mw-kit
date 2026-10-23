@@ -78,6 +78,35 @@ Use when the next major has a known breaking change you've deferred. Remove the 
 
 Never automerge production deps. Never automerge `major`.
 
+**GitLab CI components (`include: component:`)** — Renovate's built-in `gitlabci` manager cannot resolve `$CI_SERVER_FQDN` on `include: component:` lines and logs a package lookup failure. Repos that include internal components add a top-level `customManagers` regex rule that queries the GitLab host's tags directly and a `packageRules` entry that disables the broken native lookup:
+
+```json
+"customManagers": [
+  {
+    "customType": "regex",
+    "description": "Update GitLab CI components referenced via include: component: ...@X.Y.Z",
+    "managerFilePatterns": ["/\\.gitlab-ci\\.ya?ml$/"],
+    "matchStrings": [
+      "component: \"?(?:\\$CI_SERVER_FQDN|gitlab\\.example\\.com)/(?<depName>.+)/(?<componentName>[^/]+?)@(?<currentValue>[^\\s\"]+)\"?"
+    ],
+    "datasourceTemplate": "gitlab-tags",
+    "versioningTemplate": "semver-coerced",
+    "registryUrlTemplate": "https://gitlab.example.com"
+  }
+]
+```
+
+Add to `packageRules`:
+
+```json
+{
+  "description": "Disable native gitlabci lookup for $CI_SERVER_FQDN components (handled by customManagers)",
+  "matchManagers": ["gitlabci"],
+  "matchPackageNames": ["/^my-group//", "/^shared-ci//"],
+  "enabled": false
+}
+```
+
 ### GitLab self-hosted runner (`.gitlab-ci.yml`)
 
 Renovate on GitLab is a scheduled CI job, not a managed app. Add a scheduled pipeline (Settings → CI/CD → Schedules, e.g. nightly) that runs:
@@ -114,3 +143,4 @@ Install the [Renovate GitHub App](https://github.com/apps/renovate) on the org. 
 - **Renovate covers tool versions too** ([mise](./mise.md) `.mise.toml`, pre-commit hooks) — unlike dependabot. One bot for deps + tools + CI + Dockerfiles.
 - **Renovate commits as `chore(deps):`** when the repo uses semantic commits (auto-detected). release-please hides `chore` (no release); this playbook's semantic-release / PSR configs release `chore` as a patch, so every merged bump cuts one — see [releases-gitlab](./releases-gitlab.md) Gotchas.
 - **Not a replacement for [security](./security.md).** Renovate bumps versions; trivy/semgrep find vulns. Run both.
+- **Use the `customManagers` snippet above for `include: component: $CI_SERVER_FQDN/...` refs** — never silence native `gitlabci` lookup warnings with `ignoreDeps`. If a component project lives in a group the Renovate runner cannot read, grant the Renovate runner project read access on the component project under **Settings → CI/CD → Job token permissions** (`Fine-grained permissions` → `Repositories: Read`).
