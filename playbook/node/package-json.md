@@ -41,7 +41,7 @@ Prefer `check` / `check:fix` (lint + format + import sort); `check:staged` is fo
 - Pin biome exact (`"@biomejs/biome": "X.Y.Z"`, resolved to latest compatible stable)
   — minor releases change rules.
 - Other devDeps caret OK.
-- App deps: caret. Expo-managed packages: let `npx expo install` choose (see Expo below).
+- App deps: caret. Expo-managed packages: let `npx expo install` choose (see [Expo](expo.md)).
 
 ## Supply-chain delay
 
@@ -87,8 +87,7 @@ If the repo isn't a JS project but needs lefthook installed:
 
 ## Expo
 
-- Add Expo-aware libs with `npx expo install <pkg>`, not `npm install` — it picks versions compatible with the SDK (React, React Native, `expo-dev-client` included). Don't pin those independently.
-- `expo run:ios` builds the dev client and launches it; `expo start` runs Metro only and needs an existing build.
+See [Expo iOS](expo.md) for package and development commands.
 
 ## Overrides
 
