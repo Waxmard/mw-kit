@@ -11,23 +11,16 @@ detect: ["scripts/check-line-limit.sh"]
 
 ## What
 
-A small portable-bash script fails the build when any hand-written source file
-exceeds a per-file line cap (**default 800**). **CI is the gate** — a full-tree
-scan that can't be bypassed.
+A portable Bash script checks hand-written source files against a line cap (default 800). Run a full-tree scan in CI and pass individual files for local checks.
 
 ## Why
 
-- Forces decomposition before a file becomes a 1,500-line grab-bag nobody wants to touch.
-- Language-agnostic and dependency-free: one threshold across shell, Python, Go, TS, Makefiles, config. Just `wc -l` + git, so it works in repos with no linter at all.
-
-## Why line count
-
-Sprawl has no clean lint rule — cohesion metrics (LCOM/`cohesion`, Radon MI, Debtmap) are all class-scoped, single-language, or need git/coverage data, and none touches shell/Makefiles/config. Line count is the only file-level, all-language, zero-data proxy. It's orthogonal to *internal* complexity (long/branchy functions), which ruff (`C901`, `PLR091x`) and biome cover well — use both.
+Line count is a dependency-free, language-agnostic proxy for file sprawl, not cohesion. Use it alongside function-complexity checks, not instead of them.
 
 ## When to use it / when not
 
-- **Use** on repos you actively maintain and want to keep modular. Deliberate and opinionated, so it's opt-in: tooling-sync only compares repos that already have the script. To adopt it, copy the script below.
-- **Exclude** what shouldn't be governed: generated files, vendored code, test fixtures, prompt text, lockfiles. The check only looks at *hand-written source*.
+- Opt in by copying the script below. tooling-sync only compares repos that already contain it.
+- Exclude generated files, vendored code, fixtures, prompt text, and lockfiles.
 
 ## The script
 
@@ -95,15 +88,11 @@ fi
 printf 'line-limit OK (<= %d lines): %d files checked\n' "$LIMIT" "$checked"
 ```
 
-Two per-repo knobs: `EXCLUDE_DIRS` — folder paths to skip, as plain substrings —
-and `is_source()`, the hand-written source set (dirs + extensions). Keep the
-exclusions in the list rather than folding them into the `case`: a `case`-branch
-exclusion is invisible at a glance, and `${EXCLUDE_DIRS[@]+...}` is what keeps the
-script safe under `set -u` on bash 3.2 (macOS) when the array is empty.
+Adjust `is_source()` for the repo's source files and `EXCLUDE_DIRS` for excluded path substrings. The `${EXCLUDE_DIRS[@]+...}` expansion keeps empty arrays safe under `set -u` on Bash 3.2 (macOS).
 
 ## CI — the gate
 
-CI is the gate: a full-tree scan that also catches pre-existing over-limit files.
+Use a full-tree CI scan to catch existing over-limit files.
 
 **GitHub** — `.github/workflows/line-limit.yml`:
 
@@ -139,9 +128,7 @@ Fold `line-limit` into the aggregate `make ci`/`make lint` target.
 
 ## Optional: local pre-commit feedback
 
-A latency optimization, not the gate — surface an over-limit file before it
-reaches CI. Any hook runner can call the script on staged files. If you use
-[lefthook](lefthook.md) (the playbook baseline):
+For earlier feedback, run the script on staged files with [lefthook](lefthook.md):
 
 ```yaml
 pre-commit:
@@ -154,5 +141,4 @@ pre-commit:
 
 ## Gotchas
 
-- **Tune the threshold deliberately** — too low forces artificial splits that hurt cohesion (a blunt cap can fragment a genuinely cohesive module). When you raise the limit for a repo, log *why*.
-- A hard cap is a guardrail, not a design principle — split along real seams (cohesive function clusters), not at the arbitrary line where the counter trips.
+- Treat the cap as a guardrail. Split along cohesive boundaries, not arbitrary lines; document why you raise the threshold.

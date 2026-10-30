@@ -37,31 +37,7 @@ tests/               pytest for scope.py
 
 ## Tooling at a glance
 
-| Concern | Choice |
-|---|---|
-| Tool versions (node/polyglot) | [mise](https://mise.jdx.dev/), opt-in (applies only where `mise.toml` exists) |
-| Git hooks | [lefthook](https://lefthook.dev/) (autofix + restage) |
-| Python lint/format | [ruff](https://docs.astral.sh/ruff/) |
-| Python typecheck | [mypy](https://mypy.readthedocs.io/) strict |
-| Python deps | [uv](https://docs.astral.sh/uv/) |
-| JS/TS lint/format | [biome](https://biomejs.dev/) |
-| Local iOS builds | [Capacitor](playbook/node/capacitor.md) or [Expo](playbook/node/expo.md) — standalone iPhone installs |
-| GitHub TestFlight delivery | [TestFlight workflow](playbook/node/testflight-github.md) — signed archive and upload |
-| YAML lint (k8s) | [yamllint](https://www.yamllint.com/) (kubectl-style config) |
-| K8s manifest validation | [kubeconform](https://github.com/yannh/kubeconform) (schema + CRD catalog, CI) |
-| Releases (GitHub) | [release-please](https://github.com/googleapis/release-please) |
-| Releases (GitLab) | semantic-release |
-| GitHub repo settings | `gh api` baseline: squash/rebase only, ruleset on default branch, read-only Actions token ([playbook](playbook/universal/github-settings.md)) |
-| CI (single project) | GitHub: `ci.yml` runs `make ci` · GitLab: `.gitlab-ci.yml` test stage |
-| GitLab CI dedup | `workflow:rules` in [ci-gitlab](playbook/universal/ci-gitlab.md) (MR pipeline when an MR is open, else branch) |
-| Dep updates (GitHub) | [dependabot](https://docs.github.com/en/code-security/dependabot) |
-| Dep updates (GitLab) | [renovate](https://docs.renovatebot.com/) |
-| SAST | semgrep |
-| Vuln scanning | trivy (fs + image) |
-| Multi-arch builds | docker bake |
-| Container images | Chainguard digest-pinned base, uv venv stage, non-root ([playbook](playbook/universal/dockerfile.md)) |
-| Per-file size cap | line-limit script, opt-in (applies only where `scripts/check-line-limit.sh` exists) |
-| Required reviewers | `CODEOWNERS` — path → owner, gates the human approval |
+See the [playbook manifest](playbook/MANIFEST.md) for tool choices, applicability, and configuration pages.
 
 ## Page format
 
