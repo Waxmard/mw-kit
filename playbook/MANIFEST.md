@@ -13,24 +13,20 @@ Machine-readable index of every playbook page. Source of truth = each page's YAM
 
 | Tool | Tier | Summary | Targets | Detect | Platform | Page |
 |---|---|---|---|---|---|---|
-| `agent-instructions` | baseline | Agent-agnostic AGENTS.md as the only instructions file, no CLAUDE.md | `AGENTS.md` | `AGENTS.md`, `CLAUDE.md` | any | [universal/agent-instructions.md](universal/agent-instructions.md) |
 | `ci-github` | baseline | Single-project GitHub Actions CI: lint + typecheck + test on every PR | `.github/workflows/ci.yml` | — | `github` | [universal/ci-github.md](universal/ci-github.md) |
 | `ci-gitlab` | baseline | Single-project GitLab CI: lint + typecheck + test pipeline skeleton | `.gitlab-ci.yml` | — | `gitlab` | [universal/ci-gitlab.md](universal/ci-gitlab.md) |
 | `codeowners` | baseline | Required reviewers auto-assigned per path | `.github/CODEOWNERS`, `.gitlab/CODEOWNERS` | — | any | [universal/codeowners.md](universal/codeowners.md) |
-| `contributing` | baseline | CONTRIBUTING.md: branching, commits, MR/PR + review flow | `CONTRIBUTING.md` | — | any | [universal/contributing.md](universal/contributing.md) |
 | `conventional-commits` | baseline | Commit message format feeding release tooling | — | — | any | [universal/conventional-commits.md](universal/conventional-commits.md) |
 | `dependabot` | baseline | GitHub-native dependency update PRs | `.github/dependabot.yml` | — | `github` | [universal/dependabot.md](universal/dependabot.md) |
 | `dockerfile` | baseline | Dockerfile + .dockerignore: digest-pinned Chainguard base, uv venv stage, non-root, build-time import check | `Dockerfile`, `.dockerignore` | `Dockerfile`, `**/Dockerfile*` | any | [universal/dockerfile.md](universal/dockerfile.md) |
 | `github-settings` | baseline | Repo settings, default-branch ruleset, Actions token, Dependabot alerts via gh api | — | — | `github` | [universal/github-settings.md](universal/github-settings.md) |
-| `gitlab-pipeline-dedup` | baseline | GitLab workflow:rules dedup (one pipeline per change) + auto-cancel of superseded runs | `.gitlab-ci.yml` | `.gitlab-ci.yml` | `gitlab` | [universal/gitlab-pipeline-dedup.md](universal/gitlab-pipeline-dedup.md) |
 | `lefthook` | baseline | Git hooks with autofix + restage (stage_fixed) | `lefthook.yml` | — | any | [universal/lefthook.md](universal/lefthook.md) |
-| `line-limit` | optional | Per-file line cap as a deliberate sprawl proxy — CI-gated script, optional local hook | `scripts/check-line-limit.sh` | — | any | [universal/line-limit.md](universal/line-limit.md) |
-| `mise` | optional | Pinned per-project tool versions — best for node/polyglot; uv covers pure-python | `mise.toml` | `package.json`, `go.mod`, `**/*.go` | any | [universal/mise.md](universal/mise.md) |
-| `readme` | optional | README.md: one-sentence opener, flow diagram, runnable commands, layout table | `README.md` | — | any | [universal/project-readme.md](universal/project-readme.md) |
+| `line-limit` | optional | Opt-in per-file line cap: compared only in repos that already ship scripts/check-line-limit.sh | `scripts/check-line-limit.sh` | `scripts/check-line-limit.sh` | any | [universal/line-limit.md](universal/line-limit.md) |
+| `mise` | optional | Opt-in tool version pins: compared only in repos that already have mise.toml | `mise.toml` | `mise.toml` | any | [universal/mise.md](universal/mise.md) |
 | `releases-github` | baseline | release-please: PR-driven versioning + changelog on GitHub | `release-please-config.json`, `.release-please-manifest.json`, `.github/workflows/release-please.yml` | — | `github` | [universal/releases-github.md](universal/releases-github.md) |
 | `releases-gitlab` | baseline | semantic-release: tag + changelog on GitLab | `.releaserc.json`, `.gitlab-ci.yml` | — | `gitlab` | [universal/releases-gitlab.md](universal/releases-gitlab.md) |
 | `renovate` | baseline | Platform-agnostic dependency update bot (required on GitLab) | `renovate.json` | — | any | [universal/renovate.md](universal/renovate.md) |
-| `security` | baseline | semgrep (SAST) + trivy fs/image scanning in CI | `.github/workflows/security.yml`, `.gitlab-ci.yml` | — | any | [universal/security.md](universal/security.md) |
+| `security` | baseline | semgrep (SAST) + trivy fs/image scanning in CI | `.github/workflows/security.yml`, `.gitlab-ci.yml`, `.trivyignore.yaml` | — | any | [universal/security.md](universal/security.md) |
 
 ## python
 

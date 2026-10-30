@@ -11,15 +11,11 @@ detect: ["package.json"]
 
 ## Scripts
 
-Standard names across all projects:
+Biome repos use these names:
 
 ```json
 {
   "scripts": {
-    "lint": "biome lint src/",
-    "lint:fix": "biome lint --write src/",
-    "format": "biome format --write src/",
-    "format:check": "biome format src/",
     "check": "biome check src/",
     "check:fix": "biome check --write src/",
     "check:staged": "biome check --write --no-errors-on-unmatched",
@@ -30,6 +26,8 @@ Standard names across all projects:
 ```
 
 Prefer `check` / `check:fix` (lint + format + import sort); `check:staged` is for lefthook.
+
+Repos on the ESLint + Prettier accepted alternative keep their own script names; don't add wrapper aliases.
 
 ## Dependencies
 
@@ -56,19 +54,6 @@ min-release-age=7
 from resolution. Security fixes blocked by this window fail loudly; temporarily add
 the package to `min-release-age-exclude[]` when a verified urgent fix cannot wait.
 Requires npm 11.10 or newer.
-
-In `package.json`:
-
-```json
-{
-  "allowScripts": {
-    "fsevents": false,
-    "lefthook": true
-  }
-}
-```
-
-`allowScripts` blocks arbitrary install lifecycle scripts from dependencies while permitting known local tooling (`lefthook`).
 
 ## Root package.json (monorepo dev tooling)
 

@@ -88,7 +88,7 @@ A fine-grained PAT with `contents: write` and `pull-requests: write`. The defaul
 
 ## Bump rules
 
-release-please's bump algorithm is **hardcoded**: breaking → major, `feat` → minor, `fix` → patch, everything else → no release. **It is not configurable per commit type** — `changelog-sections` only controls changelog *display*, not whether a type bumps. Making `refactor`/`build`/`chore` cut a patch requires a custom `VersioningStrategy` class (code, not config), which isn't worth it. If you need "most commit types cut a patch," that's a reason to prefer semantic-release ([releases-gitlab](./releases-gitlab.md) / [releases-python](../python/releases-python.md)), whose `releaseRules` / `patch_tags` support it directly.
+release-please's bump algorithm is **hardcoded**: breaking → major, `feat` → minor, `fix` → patch, everything else → no release. **It is not configurable per commit type** — `changelog-sections` only controls changelog *display*, not whether a type bumps. Making `refactor`/`build`/`chore` cut a patch requires a custom `VersioningStrategy` class (code, not config), which isn't worth it.
 
 The only built-in knobs (`bump-minor-pre-major`, `bump-patch-for-minor-pre-major`) *lower* severity for pre-1.0 repos — the opposite direction.
 
@@ -97,7 +97,6 @@ The only built-in knobs (`bump-minor-pre-major`, `bump-patch-for-minor-pre-major
 - `release-type: simple` = manage version in `.release-please-manifest.json`. Use `release-type: python` / `node` to also bump `pyproject.toml`/`package.json`.
 - Version living in another file (a browser extension's `manifest.json`, a Helm `Chart.yaml`, or `pyproject.toml`)? Keep `simple` and add `"extra-files": [{ "type": "json", "path": "src/manifest.json", "jsonpath": "$.version" }]` to the package config (`type: yaml` for YAML, or `{ "type": "toml", "path": "pyproject.toml", "jsonpath": "$.project.version" }` for TOML).
 - **Default branch not `main`:** `release-please-action` defaults `target-branch` to the repo's default branch. Set `target-branch: main` under `with:` if development happens on `dev` and releases cut from `main`. For the full dev → main flow, including back-syncing `dev` after a release, see [Dev → main flow](#dev--main-flow-back-sync-dev) below.
-- Pair with a CONTRIBUTING note enforcing Conventional Commits — see [contributing](./contributing.md).
 
 ## Dev → main flow: back-sync dev
 
@@ -142,4 +141,3 @@ Gotchas:
 
 - **The back-sync push starts `dev` CI.** It's pushed with a PAT, not `GITHUB_TOKEN`, so `on: push` workflows for `dev` run on the rebased tip. That's harmless; if no new commits landed on `dev` during the release, it's the same tree `main` already tested.
 - **If the back-sync step fails, the release is already out.** The tag and GitHub Release exist. Run `git fetch origin && git checkout dev && git rebase origin/main && git push --force-with-lease origin dev` locally to finish the back-sync.
-- GitLab equivalent: [releases-gitlab](./releases-gitlab.md#dev--main-flow-back-sync-dev).

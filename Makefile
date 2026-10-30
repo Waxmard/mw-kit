@@ -7,11 +7,9 @@ help:
 	@echo "Quality:  fmt | lint | typecheck | test | line-limit | ci"
 	@echo "Playbook: manifest        regenerate playbook/MANIFEST.md"
 
-# ----- Setup -----
 setup:
 	uv sync
 
-# ----- Quality -----
 fmt:
 	uv run ruff check --fix scripts/ tests/
 	uv run ruff format scripts/ tests/
@@ -32,6 +30,5 @@ line-limit:
 # Aggregate gate (what CI runs)
 ci: lint typecheck test line-limit
 
-# ----- Playbook -----
 manifest:
 	python3 scripts/build_manifest.py

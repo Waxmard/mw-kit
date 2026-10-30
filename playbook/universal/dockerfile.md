@@ -48,14 +48,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Stage 2: Final runtime image
 FROM cgr.dev/chainguard/python:latest-dev@sha256:<digest>
 
-# The project is never pip-installed into the image (`--no-install-project` above,
-# then a raw `src/` copy), so package metadata can't carry the version — the build
-# stamps it here and the app reads it for logs and metrics.
-ARG APP_VERSION=""
-
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    APP_VERSION=$APP_VERSION \
     PATH="/app/.venv/bin:$PATH"
 
 WORKDIR /app
@@ -67,7 +61,8 @@ COPY src/ ./src/
 # dependency. A startup ModuleNotFoundError only surfaces as an opaque
 # "failed to listen on PORT" health-check timeout after deploy; catching it
 # here turns that into an instant, legible build failure.
-RUN python -c "import <runtime deps>"
+# Exec form: distroless runtimes (Chainguard `latest`, non-dev) have no /bin/sh.
+RUN ["/app/.venv/bin/python", "-c", "import <runtime deps>"]
 
 USER 65532
 
@@ -160,16 +155,6 @@ CMD ["nginx", "-g", "daemon off;"]
 If using a private npm registry, build with `--build-arg NPM_PKG_REGISTRY=<registry host and path>` and `--secret id=npm_token,env=NPM_TOKEN`.
 
 Why this shape: a built SPA needs no Node at runtime, so the final image has less attack surface, and `npm ci --ignore-scripts` blocks install-time scripts from running in the build.
-
-## Lint (hadolint)
-
-```yaml
-hadolint:
-  stage: test
-  image: hadolint/hadolint:vX.Y.Z-debian # pin to latest stable; renovate bumps it
-  script:
-    - hadolint Dockerfile
-```
 
 ## Gotchas
 

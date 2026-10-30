@@ -1,7 +1,5 @@
 # Contributing to mw-kit
 
-Thanks for contributing. This guide covers how a change flows from a branch to a release.
-
 ## Branching
 `main` is the default and target branch — branch off the latest `main`, never push to it
 directly. Every change lands through a pull request.
@@ -13,7 +11,7 @@ directly. Every change lands through a pull request.
 We follow [Conventional Commits](https://www.conventionalcommits.org/): `<type>(<scope>): <subject>`.
 `feat:` → minor, `fix:` → patch, `!`/`BREAKING CHANGE:` → major. `docs`/`chore`/`refactor`/`test`
 are used as normal. See [`.git-ai-instructions`](.git-ai-instructions) for this repo's
-type-classification deltas (e.g. `docs` is the default here, not `feat`).
+type-classification deltas (e.g. new tool pages or recommendations use `feat`, config/frontmatter fixes use `fix`, and rewording uses `docs`).
 
 Let [git-ai](https://github.com/Waxmard/git-ai) draft a conventional commit from staged changes.
 Install the CLI once with `npm install -g @waxmard/git-ai` (or `uv tool install waxmard-git-ai` /

@@ -39,7 +39,7 @@ tests/               pytest for scope.py
 
 | Concern | Choice |
 |---|---|
-| Tool versions (node/polyglot) | [mise](https://mise.jdx.dev/) — uv covers pure-python |
+| Tool versions (node/polyglot) | [mise](https://mise.jdx.dev/), opt-in (applies only where `mise.toml` exists) |
 | Git hooks | [lefthook](https://lefthook.dev/) (autofix + restage) |
 | Python lint/format | [ruff](https://docs.astral.sh/ruff/) |
 | Python typecheck | [mypy](https://mypy.readthedocs.io/) strict |
@@ -53,17 +53,14 @@ tests/               pytest for scope.py
 | Releases (GitLab) | semantic-release |
 | GitHub repo settings | `gh api` baseline: squash/rebase only, ruleset on default branch, read-only Actions token ([playbook](playbook/universal/github-settings.md)) |
 | CI (single project) | GitHub: `ci.yml` runs `make ci` · GitLab: `.gitlab-ci.yml` test stage |
-| GitLab CI dedup | `workflow:rules` (one pipeline per change, build-on-MR) |
+| GitLab CI dedup | `workflow:rules` in [ci-gitlab](playbook/universal/ci-gitlab.md) (MR pipeline when an MR is open, else branch) |
 | Dep updates (GitHub) | [dependabot](https://docs.github.com/en/code-security/dependabot) |
 | Dep updates (GitLab) | [renovate](https://docs.renovatebot.com/) |
 | SAST | semgrep |
 | Vuln scanning | trivy (fs + image) |
 | Multi-arch builds | docker bake |
 | Container images | Chainguard digest-pinned base, uv venv stage, non-root ([playbook](playbook/universal/dockerfile.md)) |
-| Agent instructions | `AGENTS.md` (agent-agnostic) as the only instructions file, no `CLAUDE.md` |
-| README | One-sentence opener, flow diagram, commands that run ([playbook](playbook/universal/project-readme.md)) |
-| Per-file size cap | line-limit script (CI gate, optional local hook), default 800 lines |
-| Contribution flow | `CONTRIBUTING.md` — branching, commits, MR/PR + human review |
+| Per-file size cap | line-limit script, opt-in (applies only where `scripts/check-line-limit.sh` exists) |
 | Required reviewers | `CODEOWNERS` — path → owner, gates the human approval |
 
 ## Page format
@@ -76,5 +73,3 @@ tests/               pytest for scope.py
   its scope.
 - Body: **What**, **Why**, **Config**, **Gotchas**. `## Config` is what
   tooling-sync diffs a repo against.
-- `MANIFEST.md` is generated. Run `make manifest` after editing frontmatter;
-  never hand-edit it.

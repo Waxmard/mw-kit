@@ -83,4 +83,4 @@ One block per ecosystem **per directory** — monorepos repeat the `npm`/`pip` b
 - **`open-pull-requests-limit` is per-ecosystem-block, not per-repo.** Baseline `3`. Since minor/patch collapse to 1 grouped PR, **concurrent majors = limit − 1** → 1 group + at most 2 majors per block. Three blocks = that × 3, so total open can still reach ~9 across ecosystems. Adjust the number to change the major ceiling.
 - **`github-actions` block is mandatory.** Workflow pins (`@v4`, `@v6`) rot silently otherwise.
 - **Security updates ignore the limit** and aren't grouped by `version-updates` rules — they always land. They also **bypass `cooldown`** — so the 3-day buffer never delays a vuln fix.
-- **`chore(deps):` prefix.** release-please hides `chore` (no release); this playbook's semantic-release / PSR configs release `chore` as a patch, so every merged bump cuts one — see [releases-gitlab](./releases-gitlab.md) Gotchas.
+- **`chore(deps):` prefix.** `chore` doesn't release in this playbook's release configs, so bumps ship with the next `feat`/`fix` release.

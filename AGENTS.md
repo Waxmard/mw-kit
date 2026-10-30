@@ -1,7 +1,5 @@
 # AGENTS.md
 
-This file provides guidance to AI coding agents working in this repository.
-
 ## What this is
 
 `mw-kit` is mostly a **prose playbook**: one Markdown page per tool, each explaining
@@ -37,9 +35,6 @@ carries a dev toolchain managed by uv: ruff + mypy (strict) + pytest. Run via
 arbitrary machines (stock macOS ships 3.9.6), so the support floor is broad like a
 published library, not a deployed app. mypy targets `3.10` only because mypy 2.x
 can't go lower; ruff guards the real 3.9 floor.
-
-`scope.py` is the `tooling-sync` skill's pre-flight + scope resolver, and it
-powers incremental sync — see `scripts/AGENTS.md` before editing it.
 
 ## Page structure (the core contract)
 

@@ -46,9 +46,6 @@ STATE_SCHEMA = 1
 SETTLED_DECISIONS = {"synced", "declined", "override"}
 
 
-# glob helpers (detect patterns + target paths)
-
-
 def expand_braces(pattern: str) -> list[str]:
     """Only one `{a,b,c}` group is supported; that is all the detect schema uses."""
     start = pattern.find("{")
@@ -131,9 +128,6 @@ def resolve_target(
     return out
 
 
-# repo inspection
-
-
 def git(repo: Path, *args: str) -> str | None:
     try:
         out = subprocess.run(
@@ -193,9 +187,6 @@ def detect_structure(tracked: list[str]) -> dict[str, Any]:
         "manifests": sorted(manifests),
         "component_dirs": sorted(d for d in dirs if d),
     }
-
-
-# incremental-sync memory (.tooling-sync.json)
 
 
 def load_state(repo: Path) -> dict[str, Any] | None:
@@ -301,9 +292,6 @@ def annotate_state(
         "orphaned_tools": orphaned,
         "all_settled": bool(in_scope) and not stale and not fresh,
     }
-
-
-# page scoping
 
 
 def scope_pages(

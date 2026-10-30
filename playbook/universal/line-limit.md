@@ -2,8 +2,9 @@
 tool: line-limit
 scope: universal
 tier: optional
-summary: "Per-file line cap as a deliberate sprawl proxy — CI-gated script, optional local hook"
+summary: "Opt-in per-file line cap: compared only in repos that already ship scripts/check-line-limit.sh"
 targets: ["scripts/check-line-limit.sh"]
+detect: ["scripts/check-line-limit.sh"]
 ---
 
 # Per-File Line Limit
@@ -25,7 +26,7 @@ Sprawl has no clean lint rule — cohesion metrics (LCOM/`cohesion`, Radon MI, D
 
 ## When to use it / when not
 
-- **Use** on repos you actively maintain and want to keep modular. Deliberate and opinionated — hence `optional` tier, not baseline.
+- **Use** on repos you actively maintain and want to keep modular. Deliberate and opinionated, so it's opt-in: tooling-sync only compares repos that already have the script. To adopt it, copy the script below.
 - **Exclude** what shouldn't be governed: generated files, vendored code, test fixtures, prompt text, lockfiles. The check only looks at *hand-written source*.
 
 ## The script
@@ -150,23 +151,6 @@ pre-commit:
       glob: "*.{ts,tsx,vue,py,sh}"
       run: bash scripts/check-line-limit.sh {staged_files}
 ```
-
-## Decomposition pattern (when a file nears the cap)
-
-Split into focused modules without changing the public source contract:
-
-- **Shell** — umbrella pattern: keep the entry file thin and have it `source` the split-out siblings, so `source entry.sh` still pulls the full surface and nothing that sources it needs to change.
-
-  ```bash
-  # entry.sh keeps core helpers, then:
-  _DIR="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
-  source "${_DIR}/auth.sh"
-  source "${_DIR}/config.sh"
-  ```
-
-- **Python** — extract a cohesive cluster into a new module that imports its low-level deps *one-directionally* (no cycle), then re-export from the package `__init__.py` so the public API is unchanged.
-
-If `make install`-style symlinking enumerates lib files explicitly, switch it to a `lib/*.sh` loop so new split-out modules are picked up automatically.
 
 ## Gotchas
 

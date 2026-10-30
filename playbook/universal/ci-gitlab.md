@@ -15,10 +15,7 @@ The full `.gitlab-ci.yml` skeleton for a single-toolchain repo: a `test` stage w
 lint, typecheck, and test jobs, sharing one image, one lockfile-keyed cache, and one
 rules anchor. The GitLab equivalent of [ci-github](./ci-github.md).
 
-This page owns the **pipeline body** (stages, image, cache, job definitions).
-[gitlab-pipeline-dedup](./gitlab-pipeline-dedup.md) owns the **rules** that decide
-*when* it runs (the `workflow:rules` dedup block + the `.test-rules` anchor). Apply
-both: this gives you jobs, that stops them running twice.
+Jobs run on MRs and branches. The `workflow:` block keeps one pipeline per change (the MR pipeline when an MR is open, otherwise the branch pipeline) and lets a newer commit cancel the in-flight one.
 
 ## Why
 
@@ -30,9 +27,7 @@ both: this gives you jobs, that stops them running twice.
 
 ## Config
 
-`.gitlab-ci.yml` (Python / uv). The `workflow:` block is the MR-preferred dedup variant
-(jobs run on MRs via `.test-rules`) — see
-[gitlab-pipeline-dedup](./gitlab-pipeline-dedup.md) for why each rule is there:
+`.gitlab-ci.yml` (Python / uv):
 
 ```yaml
 stages: [test]
@@ -41,8 +36,7 @@ default:
   image: ghcr.io/astral-sh/uv:python3.X-trixie-slim  # newest stable Python
   interruptible: true              # a newer commit cancels these (deploys opt out, see below)
 
-# One pipeline per change, and a newer commit cancels the in-flight old one — see
-# [gitlab-pipeline-dedup](./gitlab-pipeline-dedup.md).
+# One pipeline per change; a newer commit cancels interruptible jobs of the old one.
 workflow:
   auto_cancel:
     on_new_commit: interruptible
@@ -143,6 +137,30 @@ test:
   script: [npm test]
 ```
 
+## Monorepo variant
+
+Same `workflow:` block. Scope each component's jobs with one `changes:` list and one rules anchor, defined **above** the first job that uses them:
+
+```yaml
+.service-a-changes: &service-a-changes
+  - service-a/**/*
+  - docker-bake.hcl
+
+.service-a-rules: &service-a-rules
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    changes: *service-a-changes
+  - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH   # default branch always runs
+  - if: $CI_COMMIT_BRANCH
+    changes: *service-a-changes
+
+service-a-lint:
+  stage: test
+  extends: [.uv]
+  rules: *service-a-rules
+```
+
+Every component job, build and image scan included, uses the same anchor. Only `release` stays gated to the default branch (see [releases-monorepo](../monorepo/releases-monorepo.md)).
+
 ## Gotchas
 
 - **`uv sync --locked`** fails if `uv.lock` is out of date with `pyproject.toml` —
@@ -157,12 +175,12 @@ test:
   `test` job.
 - **Pin the image** (`uv:python3.X-trixie-slim`, `node:NN`) with the real current version, not `:latest` — reproducible
   pipelines, intentional bumps (renovate handles them — see [renovate](./renovate.md)).
-- **Adding a `release` stage?** Don't rebuild — see
-  [releases-python](../python/releases-python.md) / [releases-gitlab](./releases-gitlab.md)
-  for the release job + the `[skip ci]` release commit that stops it spawning another
-  pipeline. Also give that job (and any deploy)
-  `interruptible: false` — the `default: interruptible: true` above makes jobs
-  auto-cancellable, which you don't want mid-release. See
-  [gitlab-pipeline-dedup](./gitlab-pipeline-dedup.md#auto-cancel-superseded-pipelines).
-- **Multi-component repo?** This is single-project only — add `changes:` filters per
-  [ci-paths](../monorepo/ci-paths.md) (the `workflow:` block stays identical).
+- **Adding a `release` stage?** Don't rebuild. See
+  [releases-python](../python/releases-python.md) / [releases-gitlab](./releases-gitlab.md).
+  Give release and deploy jobs `interruptible: false`; `default: interruptible: true`
+  otherwise lets `auto_cancel` kill them mid-release.
+- **Every job needs a `merge_request_event` rule.** The `workflow:` block drops the
+  branch pipeline while an MR is open, so a job gated only on `$CI_COMMIT_BRANCH` never
+  runs on MRs. If no job matches, GitLab refuses the pipeline with `Pipeline creation failed`.
+- **An alias before its anchor fails pipeline creation.** YAML anchors (`&name`) must
+  appear above every `*name` use. Run `glab ci lint` after inserting jobs.

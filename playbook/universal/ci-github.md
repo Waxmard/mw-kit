@@ -89,8 +89,7 @@ use mise, use `actions/setup-node@v7` with its existing version file instead.
 When you push a fixup to a PR, the run testing the previous commit is now wasted —
 cancel it. GitHub's `concurrency` block does this: runs sharing a `group` can't overlap,
 and `cancel-in-progress` kills the older one when a newer starts. The GitLab counterpart
-is `workflow:auto_cancel` (see
-[gitlab-pipeline-dedup](./gitlab-pipeline-dedup.md#auto-cancel-superseded-pipelines)).
+is `workflow:auto_cancel` (see [ci-gitlab](./ci-gitlab.md)).
 
 ```yaml
 concurrency:
@@ -134,6 +133,4 @@ committed. Same pattern works for any deterministic generator.
   already exempts `main`; if a workflow *only* deploys, leave `cancel-in-progress` off
   entirely. Same intent as the GitLab `interruptible: false` exemption.
 - **GitLab** uses `.gitlab-ci.yml` with a different shape (stages + `workflow:rules`);
-  see [ci-gitlab](./ci-gitlab.md) for the pipeline skeleton and
-  [gitlab-pipeline-dedup](./gitlab-pipeline-dedup.md) for the dedup rules. This page's
-  canonical block is GitHub-only.
+  see [ci-gitlab](./ci-gitlab.md). This page's canonical block is GitHub-only.

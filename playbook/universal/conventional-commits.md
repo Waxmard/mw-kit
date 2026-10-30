@@ -16,11 +16,11 @@ Types: `feat`, `fix`, `perf`, `refactor`, `docs`, `style`, `test`, `chore`, `bui
 
 `feat!` or `BREAKING CHANGE:` footer → major bump.
 
+PRs and MRs are squash-merged, so the squashed commit title must itself be conventional; it's the line release tooling reads.
+
 ## Why
 
 - Release tooling (release-please, semantic-release) parses these to compute version bumps and changelog sections.
-
-Stated as a contributor expectation in [contributing](./contributing.md).
 
 ## Examples
 
@@ -34,7 +34,7 @@ chore(deps): bump biome
 
 ## Enforcement
 
-Optional — commitlint via lefthook `commit-msg` hook. In practice, code review + release-please's behavior (no version bump on chore-only) creates enough pressure without a hook.
+Optional: commitlint via a lefthook `commit-msg` hook. Code review is usually enough without it.
 
 If desired:
 

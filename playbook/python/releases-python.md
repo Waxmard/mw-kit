@@ -33,9 +33,6 @@ tag_format = "{version}"
 commit_message = "chore(release): {version} [skip ci]"
 commit_parser = "conventional"
 
-[tool.semantic_release.commit_parser_options]
-patch_tags = ["fix", "perf", "refactor", "build", "chore", "ci", "style"]
-
 [tool.semantic_release.changelog]
 mode = "update"
 insertion_flag = "<!-- version list -->"
@@ -53,8 +50,6 @@ token = { env = "SEMANTIC_RELEASE_TOKEN" }
 [tool.semantic_release.branches.main]
 match = "main"
 ```
-
-`patch_tags` **replaces** the parser default (`["fix", "perf"]`) — list every patch-bumping type, hence `fix`/`perf` are repeated. `minor_tags` stays default (`["feat"]`); `allowed_tags` already covers all these types, so no extra config. `docs`/`test` stay non-releasing by omission.
 
 ## Pipeline
 
@@ -103,6 +98,5 @@ Project access token with `api` + `write_repository` scope, saved as masked `SEM
   PSR sets `$PACKAGE_NAME` and runs `build_command` before its release commit, so the job
   image needs `uv` (the `uv run semantic-release version` variant above). See PSR's
   [uv integration guide](https://python-semantic-release.readthedocs.io/en/latest/configuration/configuration-guides/uv_integration.html).
-- **`chore(deps)` now releases.** With `chore` in `patch_tags`, Renovate bumps ([renovate](../universal/renovate.md)) each cut a patch instead of accumulating — more frequent tags than the stock config. Drop `chore` from `patch_tags` to revert to accumulate-until-`feat`/`fix`.
 - Requires [conventional-commits](../universal/conventional-commits.md) adherence — a `Fix stuff` commit is invisible to the version calculator.
 - **`GitPython<3.1.60` pin for `python-semantic-release <= 10.6.1`.** GitPython 3.1.60 removed `Actor.name_email_regex`, which crashes PSR `<= 10.6.1` at import/parse time; pin `"GitPython<3.1.60"` alongside PSR until upgrading past 10.6.1.

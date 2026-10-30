@@ -14,11 +14,8 @@ import scope
 # --- glob helpers ---------------------------------------------------------
 
 
-def test_a_brace_group_expands_to_one_pattern_per_option():
+def test_expand_braces():
     assert scope.expand_braces("*.{ts,tsx}") == ["*.ts", "*.tsx"]
-
-
-def test_a_pattern_without_braces_is_returned_unchanged():
     assert scope.expand_braces("**/*.py") == ["**/*.py"]
 
 
@@ -52,28 +49,17 @@ def test_resolve_target_finds_files_dirs_and_globs(tmp_path: Path):
 
 def test_detect_matches_anchored_at_component_root():
     assert scope.detect_matches("app.json", ["frontend/app.json"], ["frontend"]) is True
-
-
-def test_detect_matches_anchor_does_not_loosen_scope():
     assert scope.detect_matches("app.json", ["vendor/app.json"], ["frontend"]) is False
-
-
-def test_detect_matches_without_roots_is_unchanged():
     assert scope.detect_matches("app.json", ["frontend/app.json"]) is False
 
 
-def test_resolve_target_finds_nested_component_target(tmp_path: Path):
+def test_resolve_target_returns_all_matches_root_first(tmp_path: Path):
     (tmp_path / "fastapi").mkdir()
     (tmp_path / "fastapi" / "pyproject.toml").write_text("x")
     assert scope.resolve_target("pyproject.toml", tmp_path, ["fastapi"]) == [
         "fastapi/pyproject.toml"
     ]
-
-
-def test_resolve_target_returns_all_matches_root_first(tmp_path: Path):
     (tmp_path / "pyproject.toml").write_text("x")
-    (tmp_path / "fastapi").mkdir()
-    (tmp_path / "fastapi" / "pyproject.toml").write_text("x")
     assert scope.resolve_target("pyproject.toml", tmp_path, ["fastapi"]) == [
         "pyproject.toml",
         "fastapi/pyproject.toml",
@@ -276,10 +262,10 @@ def test_scope_pages_filters_by_platform_and_detect(tmp_path: Path):
         pages, tmp_path, tracked, "github", {"verdict": "single_project"}
     )
     tools = {r["tool"] for r in out["in_scope"]}
-    assert "ruff" in tools  # detect matched + target present
-    assert "security" in tools  # github page on github
-    assert "biome" not in tools  # no package.json tracked
-    assert "gitlab-dedup" not in tools  # gitlab page on github
+    assert "ruff" in tools
+    assert "security" in tools
+    assert "biome" not in tools
+    assert "gitlab-dedup" not in tools
     ruff = next(r for r in out["in_scope"] if r["tool"] == "ruff")
     assert ruff["targets_present"] == ["pyproject.toml"]
 
@@ -332,7 +318,6 @@ def test_detect_content_no_match_when_no_manifest(tmp_path: Path):
     (tmp_path / "values.yaml").write_text("replicas: 3\n")
     tracked = ["values.yaml"]
     assert scope.detect_content_matches([r"^kind:\s"], tmp_path, tracked) is None
-    # empty patterns short-circuit
     assert scope.detect_content_matches([], tmp_path, tracked) is None
 
 
@@ -347,8 +332,8 @@ def test_scope_pages_content_detect_identifies_k8s_repo(tmp_path: Path):
         pages, tmp_path, tracked, "gitlab", {"verdict": "single_project"}
     )
     tools = {r["tool"] for r in out["in_scope"]}
-    assert "kubeconform" in tools  # content detect fired on the manifest
-    assert "ruff" not in tools  # no .py files
+    assert "kubeconform" in tools
+    assert "ruff" not in tools
     kc = next(r for r in out["in_scope"] if r["tool"] == "kubeconform")
     assert kc["matched_detect"] == r"content:^kind:\s"
 
@@ -377,16 +362,10 @@ def _scoped_row(tool, page=None):
     return {"tool": tool, "page": page or f"python/{tool}.md"}
 
 
-def test_load_state_absent_is_none(tmp_path: Path):
+def test_load_state_invalid_or_absent_is_none(tmp_path: Path):
     assert scope.load_state(tmp_path) is None
-
-
-def test_load_state_corrupt_is_none(tmp_path: Path):
     (tmp_path / scope.STATE_FILE).write_text("{not json")
     assert scope.load_state(tmp_path) is None
-
-
-def test_load_state_wrong_schema_is_none(tmp_path: Path):
     (tmp_path / scope.STATE_FILE).write_text('{"schema": 99, "tools": {}}')
     assert scope.load_state(tmp_path) is None
 

@@ -53,12 +53,7 @@ Each component dir holds two files.
         "preset": "conventionalcommits",
         "releaseRules": [
           { "breaking": true, "release": "major" },
-          { "revert": true, "release": "patch" },
-          { "type": "refactor", "release": "patch" },
-          { "type": "build", "release": "patch" },
-          { "type": "chore", "release": "patch" },
-          { "type": "ci", "release": "patch" },
-          { "type": "style", "release": "patch" }
+          { "revert": true, "release": "patch" }
         ]
       }
     ],
@@ -70,11 +65,11 @@ Each component dir holds two files.
           { "type": "fix", "section": "Bug Fixes" },
           { "type": "perf", "section": "Performance Improvements" },
           { "type": "revert", "section": "Reverts" },
-          { "type": "refactor", "section": "Refactoring" },
-          { "type": "build", "section": "Build System" },
-          { "type": "chore", "section": "Chores" },
-          { "type": "ci", "section": "Continuous Integration" },
-          { "type": "style", "section": "Styles" },
+          { "type": "refactor", "hidden": true },
+          { "type": "build", "hidden": true },
+          { "type": "chore", "hidden": true },
+          { "type": "ci", "hidden": true },
+          { "type": "style", "hidden": true },
           { "type": "docs", "hidden": true },
           { "type": "test", "hidden": true }
         ]
@@ -176,10 +171,7 @@ changed:
 The image build is one `docker buildx bake <component>` target (one per
 component, see [docker-bake](./docker-bake.md)).
 
-The test/build/scan job `rules` (the dedup × per-component `changes:` pattern)
-live in [gitlab-pipeline-dedup](../universal/gitlab-pipeline-dedup.md) §"Monorepo (GitLab)". Gate `build` on
-`merge_request_event` **and** `$CI_COMMIT_BRANCH` (both `changes:`-scoped), never
-`$CI_COMMIT_BRANCH` alone — otherwise the image never builds on MRs.
+Test/build/scan job `rules`: the [ci-gitlab](../universal/ci-gitlab.md#monorepo-variant) monorepo anchor.
 
 ## Commit convention
 
@@ -200,10 +192,6 @@ Two monorepo commit rules:
   *can't* build images on the tag. Build on `main` with `$SHORT_SHA`, then
   `gcrane`-retag to the version inside the release job. Same pattern works for a
   single repo (`releases-python` + gcrane).
-- **`chore`→patch means [renovate](../universal/renovate.md) releases on every bump.** A patch per
-  `chore(deps): …`. To accumulate instead, add
-  `{ "type": "chore", "scope": "deps", "release": false }` ahead of the `chore`
-  rule.
 - **Tokens:** `GITLAB_TOKEN` (api + write_repository, bot allowed on protected
   `main`) for `@semantic-release/gitlab`. Artifact Registry auth is minted in the
   release job itself: the gcp-auth component injects a `GCP_JOB_JWT` id_token
@@ -222,10 +210,6 @@ Two monorepo commit rules:
 - **Gitignore `.gcloud/`.** The credential files land in `$CI_PROJECT_DIR/.gcloud/`.
   `@semantic-release/git` stages only `assets`, but the ignore rule keeps them out of any
   broader `git add`.
-- **No `when: always` on the release rule.** [gitlab-pipeline-dedup](../universal/gitlab-pipeline-dedup.md)
-  puts `when: always` on build/scan jobs. Copied onto the release rule, together with the
-  `optional: true` needs, it releases (and pushes the tag) after a failed build, so
-  `gcrane tag` retags an image that was never pushed.
 - **`gcrane` fails silently.** If the env credentials don't resolve (wrong cwd,
   missing file) it falls back to anonymous and you only see `DENIED:
   Unauthenticated request`. Add `-v` to see the real `Google env error`. Both

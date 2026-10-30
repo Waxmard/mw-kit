@@ -2,9 +2,9 @@
 tool: mise
 scope: universal
 tier: optional
-summary: "Pinned per-project tool versions — best for node/polyglot; uv covers pure-python"
+summary: "Opt-in tool version pins: compared only in repos that already have mise.toml"
 targets: ["mise.toml"]
-detect: ["package.json", "go.mod", "**/*.go"]
+detect: ["mise.toml"]
 ---
 
 # mise

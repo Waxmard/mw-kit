@@ -3,7 +3,7 @@ tool: security
 scope: universal
 tier: baseline
 summary: "semgrep (SAST) + trivy fs/image scanning in CI"
-targets: [".github/workflows/security.yml", ".gitlab-ci.yml"]
+targets: [".github/workflows/security.yml", ".gitlab-ci.yml", ".trivyignore.yaml"]
 ---
 
 # Security Scanning
@@ -52,9 +52,7 @@ jobs:
             p/python
             p/typescript
             p/react
-            p/security-audit
             p/secrets
-            p/owasp-top-ten
             p/dockerfile
       - uses: github/codeql-action/upload-sarif@v4
         if: always()
@@ -112,7 +110,7 @@ semgrep-sast:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
   script:
-    - semgrep scan --error --config p/python --config p/security-audit --config p/secrets --config p/owasp-top-ten .
+    - semgrep scan --error --config p/python --config p/secrets .
 
 trivy-fs:
   stage: test
@@ -131,6 +129,7 @@ trivy-image:
     name: ghcr.io/aquasecurity/trivy:X.Y.Z # pin to latest stable; renovate bumps it
     entrypoint: [""]
   needs: ["build-image"]
+  allow_failure: true
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
@@ -138,11 +137,19 @@ trivy-image:
     - trivy image --scanners vuln --exit-code 1 --severity CRITICAL,HIGH --ignore-unfixed --ignorefile .trivyignore.yaml "$IMAGE_TAG"
 ```
 
+`.trivyignore.yaml`:
+
+```yaml
+vulnerabilities: []
+```
+
+Both GitLab trivy jobs pass `--ignorefile .trivyignore.yaml`, and trivy exits fatally (`ignore file not found`) if the file is missing, so ship it empty.
+
 Use `.trivyignore.yaml` with `expired_at` dates (e.g. `id: CVE-YYYY-NNNN` + `expired_at: YYYY-MM-DD`) so temporary suppressions re-alert automatically if unaddressed.
 
 ## Gotchas
 
-- Keep only the semgrep packs matching the repo's languages (`p/react` for frontends, `p/dockerfile` if you ship images). Skipped on purpose: `p/default` — noisy, overlaps the rest.
+- Add one pack per repo language (`p/typescript` for TS, `p/react` for frontends, `p/dockerfile` if you ship images). Leave out `p/security-audit`, `p/owasp-top-ten` and `p/default`: their config-hygiene rules (e.g. renovate `minimum-release-age`) fail PRs/MRs on things that aren't vulnerabilities.
 - `ignore-unfixed: true` on trivy — there's nothing you can do about an unfixed CVE except wait, so don't gate PRs on it.
 - `TRIVY_INCLUDE_DEV_DEPS: 'true'` keeps npm/yarn/Gradle application dependencies
   visible when they live under development dependency classifications. Without it,

@@ -6,4 +6,4 @@ This repo is almost all prose, so do not default everything to docs:
 - A new tool page, or a recommendation a consumer can newly adopt → feat
 - Correcting a wrong ## Config block, frontmatter target, or detect glob → fix
 - Rewording or restructuring a page without changing the guidance it gives → docs
-- scripts/build_manifest.py (the only executable) → classify by its own change, not docs
+- scripts/ (executables and tests) → classify by their own change, not docs
