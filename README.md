@@ -45,6 +45,8 @@ tests/               pytest for scope.py
 | Python typecheck | [mypy](https://mypy.readthedocs.io/) strict |
 | Python deps | [uv](https://docs.astral.sh/uv/) |
 | JS/TS lint/format | [biome](https://biomejs.dev/) |
+| Local iOS builds | [Capacitor](playbook/node/capacitor.md) or [Expo](playbook/node/expo.md) — standalone iPhone installs |
+| GitHub TestFlight delivery | [TestFlight workflow](playbook/node/testflight-github.md) — signed archive and upload |
 | YAML lint (k8s) | [yamllint](https://www.yamllint.com/) (kubectl-style config) |
 | K8s manifest validation | [kubeconform](https://github.com/yannh/kubeconform) (schema + CRD catalog, CI) |
 | Releases (GitHub) | [release-please](https://github.com/googleapis/release-please) |

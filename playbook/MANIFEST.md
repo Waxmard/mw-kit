@@ -47,8 +47,11 @@ Machine-readable index of every playbook page. Source of truth = each page's YAM
 | Tool | Tier | Summary | Targets | Detect | Platform | Page |
 |---|---|---|---|---|---|---|
 | `biome` | baseline | JS/TS lint + format + import sort (replaces eslint + prettier) | `biome.json`, `package.json` | `biome.json`, `biome.jsonc`, `**/*.{ts,tsx,js,jsx,mjs,cjs,vue}` | any | [node/biome.md](node/biome.md) |
+| `capacitor` | optional | Bundled Capacitor iOS builds and a local iPhone install loop | `capacitor.config.*`, `Makefile`, `package.json` | `capacitor.config.*` | any | [node/capacitor.md](node/capacitor.md) |
+| `expo` | optional | Expo iOS development and standalone local iPhone builds | `app.config.{js,ts}`, `app.json`, `package.json`, `Makefile`, `scripts/ios.sh` | `app.config.{js,ts}` | any | [node/expo.md](node/expo.md) |
 | `package-json` | baseline | Standard scripts, dependency pinning, and release-age policy | `package.json`, `.npmrc` | `package.json` | any | [node/package-json.md](node/package-json.md) |
 | `playwright` | optional | Built-app browser checks for desktop and mobile web flows | `playwright.config.ts`, `package.json`, `.github/workflows/ci.yml` | `playwright.config.*` | any | [node/playwright.md](node/playwright.md) |
+| `testflight-github` | optional | Separate GitHub Actions signing, archive, and TestFlight upload workflow | `.github/workflows/deploy-testflight.yml`, `scripts/build-ios-testflight.sh` | `capacitor.config.*`, `app.config.{js,ts}`, `.github/workflows/deploy-testflight.yml` | `github` | [node/testflight-github.md](node/testflight-github.md) |
 | `typescript` | baseline | Strict tsconfig, noEmit type-checking | `tsconfig.json` | `tsconfig.json`, `**/*.{ts,tsx}` | any | [node/typescript.md](node/typescript.md) |
 
 ## k8s
