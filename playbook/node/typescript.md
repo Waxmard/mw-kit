@@ -39,6 +39,23 @@ For Expo, extend their base instead:
 }
 ```
 
+### SvelteKit
+
+For SvelteKit, extend its framework-provided base instead of the standalone config. This strict example includes the app source and Vite config.
+
+```json
+{
+  "extends": "$app/tsconfig",
+  "include": ["src", "vite.config.ts"],
+  "exclude": ["node_modules"],
+  "compilerOptions": {
+    "strict": true
+  }
+}
+```
+
+Keep the existing framework-provided base if the installed SvelteKit version uses a different one. `tsc --noEmit` alone does not check Svelte templates. Use `svelte-check` with warnings treated as failures, as shown in the [SvelteKit scripts](package-json.md#sveltekit).
+
 ## CI
 
 ```yaml

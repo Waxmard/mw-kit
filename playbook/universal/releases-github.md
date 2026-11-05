@@ -39,6 +39,7 @@ semantic-release is more flexible but Node-centric and tag-on-push (no review PR
         { "type": "fix", "section": "Bug Fixes" },
         { "type": "perf", "section": "Performance Improvements" },
         { "type": "refactor", "section": "Code Refactoring" },
+        { "type": "ci", "section": "CI", "hidden": false },
         { "type": "docs", "section": "Documentation", "hidden": true },
         { "type": "chore", "section": "Miscellaneous", "hidden": true },
         { "type": "test", "section": "Tests", "hidden": true }
@@ -63,6 +64,7 @@ name: Release Please
 on:
   push:
     branches: [main]
+  workflow_dispatch: {}
 permissions:
   contents: write
   pull-requests: write
@@ -77,20 +79,28 @@ jobs:
 
       - name: Auto-merge release PR
         if: steps.release.outputs.prs_created == 'true'
-        run: gh pr merge --rebase --auto --repo "${{ github.repository }}" "${{ fromJSON(steps.release.outputs.pr).number }}"
+        run: |
+          PR_NUMBER="$(jq -r '.number // empty' <<<"$PR_JSON")"
+          test -n "$PR_NUMBER"
+          gh pr merge --rebase --auto --repo "${{ github.repository }}" "$PR_NUMBER"
         env:
           GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          PR_JSON: ${{ steps.release.outputs.pr }}
 ```
+
+Manual dispatch reruns release discovery. It does not force a release when there are no release-worthy changes.
 
 ## Token
 
-A fine-grained PAT with `contents: write` and `pull-requests: write`. The default `GITHUB_TOKEN` works but **won't trigger downstream workflows** when the release PR merges (e.g. publish workflows that listen on `release` events).
+Set the repository-level `RELEASE_PLEASE_TOKEN` to a fine-grained PAT with `contents: write` and `pull-requests: write`. A release published with the default `GITHUB_TOKEN` does not trigger a separate workflow listening for release events, such as [TestFlight delivery](../node/testflight-github.md).
 
 ## Bump rules
 
-release-please's bump algorithm is **hardcoded**: breaking → major, `feat` → minor, `fix` → patch, everything else → no release. **It is not configurable per commit type** — `changelog-sections` only controls changelog *display*, not whether a type bumps. Making `refactor`/`build`/`chore` cut a patch requires a custom `VersioningStrategy` class (code, not config), which isn't worth it.
+The default strategy's [`determineReleaseType`](https://github.com/googleapis/release-please/blob/main/src/versioning-strategies/default.ts) chooses a major bump for breaking changes, a minor bump for features, and a patch bump otherwise. Separately, [`buildReleasePullRequest`](https://github.com/googleapis/release-please/blob/main/src/strategies/base.ts) suppresses a release PR when the generated changelog is empty.
 
-The only built-in knobs (`bump-minor-pre-major`, `bump-patch-for-minor-pre-major`) *lower* severity for pre-1.0 repos — the opposite direction.
+The visible `ci` section lets CI-only commits produce a changelog and therefore a patch release without a custom versioning strategy.
+
+For pre-1.0 repos, `bump-minor-pre-major` and `bump-patch-for-minor-pre-major` can lower the bump severity.
 
 ## Gotchas
 

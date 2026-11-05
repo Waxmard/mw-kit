@@ -19,7 +19,9 @@ A bundled Release build lets you install and launch the app on a paired iPhone w
 
 ## Config
 
-On macOS, install an Xcode version compatible with the project's Capacitor release. Configure signing for the actual bundle ID and entitlements. Pair and trust the iPhone, and enable Developer Mode when requested.
+On macOS, install an Xcode version compatible with the project's Capacitor release. Configure signing for the actual bundle ID and entitlements. Pair and trust the iPhone over USB when needed, and enable Developer Mode when requested. In Xcode's **Devices and Simulators**, select **Connect via network**. For routine wireless installs, keep the iPhone unlocked and on the same Wi-Fi network as the Mac.
+
+Local signing expires, so a local install is not permanent. Inspect the actual provisioning profile's expiration in Xcode and renew signing when needed.
 
 **Protect local data before installing.** Sync or export unsynced data and retain the app's bundle and signing identity. Never uninstall the app or clear its storage to fix signing errors. Replacing a TestFlight install with a local install does not guarantee preservation of every local record. If replacement fails, stop and preserve the data before proceeding.
 
@@ -66,10 +68,18 @@ Build, install, and launch on the selected iPhone.
 make ios IOS_DEVICE="My iPhone"
 ```
 
+For an Xcode fallback, first preserve local data if replacement failed. Open the native project.
+
+```sh
+npx cap open ios
+```
+
+Select the app scheme and physical device. In **Edit Scheme**, select **Run** → **Info**, set **Build Configuration** to **Release**, and disable **Debug executable**. Verify the existing signing team in **Signing & Capabilities**, then run the app.
+
 ## Gotchas
 
 - Browser and shared-UI checks do not verify native APIs, signing, or physical-device behavior. Keep native-only calls behind the app's existing Capacitor adapter or plugin boundary.
 - The native build bundles web assets. Publishing a new web build to Hosting does not update an installed app; rebuild and reinstall it.
-- Check the standalone app on the iPhone: close Xcode, force-quit the app, and relaunch it from the home screen. Network-backed features may still require a network connection.
+- Check the standalone app on the iPhone: close Xcode, force-quit the app, and launch it from the home screen without a Mac or development server. Verify the app's intended persistent-state behavior after relaunch and after an iPhone restart. Check network-dependent features while connected and offline behavior separately; do not assume offline authentication or preservation of every local record.
 - WebView inspection is opt-in and is not a prerequisite for a Release install. Inspectability depends on the app's configuration.
 - A local install does not verify TestFlight signing, upload, processing, or installation. Use the separate [GitHub TestFlight recipe](testflight-github.md) for distribution.
