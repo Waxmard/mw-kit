@@ -138,7 +138,7 @@ export default {
 };
 ```
 
-Tailwind projects also need `prettier-plugin-tailwindcss`. Append it last in `plugins` and set `tailwindStylesheet` to the app's stylesheet; Champion's Atlas uses `./src/routes/layout.css`.
+Tailwind projects also need `prettier-plugin-tailwindcss`. Append it last in `plugins` and set `tailwindStylesheet` to the app's stylesheet.
 
 Use the [SvelteKit scripts](package-json.md#sveltekit) and [SvelteKit TypeScript config](typescript.md#sveltekit).
 

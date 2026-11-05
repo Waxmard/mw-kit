@@ -98,7 +98,7 @@ Set the repository-level `RELEASE_PLEASE_TOKEN` to a fine-grained PAT with `cont
 
 The default strategy's [`determineReleaseType`](https://github.com/googleapis/release-please/blob/main/src/versioning-strategies/default.ts) chooses a major bump for breaking changes, a minor bump for features, and a patch bump otherwise. Separately, [`buildReleasePullRequest`](https://github.com/googleapis/release-please/blob/main/src/strategies/base.ts) suppresses a release PR when the generated changelog is empty.
 
-The visible `ci` section lets CI-only commits produce a changelog and therefore a patch release without a custom versioning strategy. Champion's Atlas [3.2.1 changelog](https://github.com/Waxmard/champions-atlas/blob/main/CHANGELOG.md) records an example.
+The visible `ci` section lets CI-only commits produce a changelog and therefore a patch release without a custom versioning strategy.
 
 For pre-1.0 repos, `bump-minor-pre-major` and `bump-patch-for-minor-pre-major` can lower the bump severity.
 

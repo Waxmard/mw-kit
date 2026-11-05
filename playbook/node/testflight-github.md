@@ -310,7 +310,7 @@ SCHEME=App
 PRODUCT=App
 ```
 
-Champion's Atlas uses `npm ci --ignore-scripts` on macOS after inspecting its dependency tree. Use that optimization only when no dependency needs lifecycle builds. Keep `npm ci` as the safe default, especially for Expo.
+Use `npm ci --ignore-scripts` on macOS only after inspecting the app's dependency tree and verifying no dependency needs lifecycle builds. Keep `npm ci` as the safe default, especially for Expo.
 
 After any failure or artifact expiration, choose **Re-run all jobs**. Do not choose **Re-run failed jobs**: the incremented `github.run_attempt` can make macOS look for an artifact that the successful Linux job did not rebuild. See GitHub's documentation on [rerunning workflows and jobs](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs) and [default variables](https://docs.github.com/en/actions/reference/workflows-and-actions/variables).
 
