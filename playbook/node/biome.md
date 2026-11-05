@@ -19,7 +19,7 @@ detect: ["biome.json", "biome.jsonc", "**/*.{ts,tsx,js,jsx,mjs,cjs,vue}"]
 
 ## Accepted alternative
 
-ESLint + Prettier: a repo that already lints with `eslint.config.*` and formats with Prettier (`.prettierrc*`) keeps them; don't migrate it to biome. New repos start on biome.
+ESLint + Prettier: a repo that already lints with `eslint.config.*` and formats with Prettier (`.prettierrc*`) keeps them; don't migrate it to biome. New repos usually start on biome. SvelteKit projects requiring full Svelte-aware diagnostics may use ESLint + Prettier from the start.
 
 ## Config
 
@@ -76,6 +76,71 @@ Pin `@biomejs/biome` exact in devDependencies (see [package-json](package-json.m
 Scripts: see [package-json](package-json.md).
 
 Hook: see [lefthook](../universal/lefthook.md).
+
+### SvelteKit: ESLint and Prettier
+
+For SvelteKit projects using the ESLint + Prettier alternative, use the following configuration instead of the generic biome config. These settings do not apply to ordinary Node projects.
+
+Use these dev dependencies: `eslint`, `@eslint/js`, `typescript-eslint`, `eslint-plugin-svelte`, `eslint-config-prettier`, `globals`, `prettier`, `prettier-plugin-svelte`, `svelte-check`, and `typescript`. Reuse the app's existing SvelteKit, Svelte, and Lefthook dependencies.
+
+Set `eslint.config.js` to load `.gitignore` and apply the recommended JavaScript, TypeScript, and Svelte rules.
+
+```js
+import prettier from 'eslint-config-prettier';
+import path from 'node:path';
+import js from '@eslint/js';
+import svelte from 'eslint-plugin-svelte';
+import { defineConfig, includeIgnoreFile } from 'eslint/config';
+import globals from 'globals';
+import ts from 'typescript-eslint';
+
+const gitignorePath = path.resolve(import.meta.dirname, '.gitignore');
+
+export default defineConfig(
+  includeIgnoreFile(gitignorePath),
+  js.configs.recommended,
+  ts.configs.recommended,
+  svelte.configs.recommended,
+  prettier,
+  svelte.configs.prettier,
+  {
+    languageOptions: { globals: { ...globals.browser, ...globals.node } },
+    rules: {
+      'no-undef': 'off',
+      '@typescript-eslint/consistent-type-imports': 'error',
+      '@typescript-eslint/no-non-null-assertion': 'error',
+    },
+  },
+  {
+    files: ['**/*.svelte', '**/*.svelte.ts', '**/*.svelte.js'],
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        extraFileExtensions: ['.svelte'],
+        parser: ts.parser,
+      },
+    },
+  }
+);
+```
+
+Set `prettier.config.js` to format Svelte files with the Svelte parser.
+
+```js
+export default {
+  useTabs: false,
+  tabWidth: 2,
+  singleQuote: true,
+  trailingComma: 'es5',
+  printWidth: 80,
+  plugins: ['prettier-plugin-svelte'],
+  overrides: [{ files: '*.svelte', options: { parser: 'svelte' } }],
+};
+```
+
+Tailwind projects also need `prettier-plugin-tailwindcss`. Append it last in `plugins` and set `tailwindStylesheet` to the app's stylesheet; Champion's Atlas uses `./src/routes/layout.css`.
+
+Use the [SvelteKit scripts](package-json.md#sveltekit) and [SvelteKit TypeScript config](typescript.md#sveltekit).
 
 ## CI
 

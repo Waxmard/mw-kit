@@ -29,6 +29,27 @@ Prefer `check` / `check:fix` (lint + format + import sort); `check:staged` is fo
 
 Repos on the ESLint + Prettier accepted alternative keep their own script names; don't add wrapper aliases.
 
+### SvelteKit
+
+For SvelteKit with ESLint and Prettier, use these scripts alongside the app's existing `build` and `test` scripts.
+
+```json
+{
+  "scripts": {
+    "prepare": "svelte-kit sync && lefthook install",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "npm run lint && npm run format:check",
+    "typecheck": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
+    "ci": "npm run check && npm run typecheck && npm run build && npm test"
+  }
+}
+```
+
+Retain framework sync alongside existing hook preparation; do not replace it with a bare Lefthook command. Keep any other preparation tasks and existing check stages, such as `line-limit`, in the appropriate aggregate. Build before tests when tests read built output.
+
 ## Dependencies
 
 - Verify peer dependency ranges before major upgrades. Keep the latest compatible
