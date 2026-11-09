@@ -32,8 +32,9 @@ Add `.github/workflows/deploy-testflight.yml` for a root app. The example public
 name: Deploy TestFlight
 
 on:
-  release:
-    types: [published]
+  push:
+    branches: [main]
+    paths: ['CHANGELOG.md']
   workflow_dispatch: {}
 
 permissions:
@@ -49,8 +50,6 @@ jobs:
     environment: preview
     steps:
       - uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.sha }}
       - uses: jdx/mise-action@v5
       - name: Install dependencies
         run: npm ci
@@ -70,7 +69,7 @@ jobs:
           APPLE_DEVELOPMENT_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DEVELOPMENT_CERTIFICATE_PASSWORD }}
 ```
 
-Release runs build the published tag. Manual runs build the commit captured for the selected ref when the run started, even if its branch advances. The explicit fallback uses `github.sha` because an explicit ref bypasses checkout's [automatic event-commit pinning](https://github.com/actions/checkout/blob/main/src/input-helper.ts).
+Release commits on `main` update `CHANGELOG.md` (or `version.txt` when `release-please` uses `release-type: simple`), so filtering `push` to `paths: ['CHANGELOG.md']` triggers TestFlight uploads on `main` release commits while skipping ordinary pull-request merges and keeping runs visible under `branch:main`. Manual runs build the commit captured for the selected ref when the run started.
 
 Delivery does not wait for continuous integration (CI). Retain the repository's required checks and release controls.
 
@@ -267,8 +266,6 @@ Add this job under `jobs` alongside `deploy-ios-testflight`. Supply the app's pu
     environment: preview
     steps:
       - uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.sha }}
       - uses: jdx/mise-action@v5
       - run: npm ci
       - run: npm run build

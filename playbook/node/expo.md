@@ -21,7 +21,7 @@ The development loop supports iteration with Metro. A standalone local install l
 
 ## Config
 
-On macOS, install an Xcode version compatible with the app's Expo SDK and install CocoaPods. Configure signing for the actual bundle ID and entitlements. Pair and trust the iPhone, and enable Developer Mode when requested.
+On macOS, install an Xcode version compatible with the app's Expo SDK and install CocoaPods. Configure signing for the actual bundle ID and entitlements. Pair and trust the iPhone, and enable Developer Mode when requested. For routine wireless installs, keep the paired iPhone on the same Wi-Fi network as the Mac; device discovery and installation work while the screen is locked, and launching prompts the iPhone to unlock.
 
 **Protect local data before installing.** Sync or export unsynced data and retain the app's bundle and signing identity. Never uninstall the app or clear its storage to fix signing errors. Replacing a TestFlight install with a local install does not guarantee preservation of every local record. If replacement fails, stop and preserve the data before proceeding.
 
@@ -81,6 +81,7 @@ else
     -destination 'generic/platform=iOS' -derivedDataPath ios/DerivedData build
 fi
 
+xcrun devicectl list devices --timeout 10
 xcrun devicectl device install app --device "$device" "$app"
 xcrun devicectl device process launch --device "$device" "com.example.myapp"
 ```

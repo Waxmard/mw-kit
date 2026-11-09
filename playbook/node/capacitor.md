@@ -19,7 +19,7 @@ A bundled Release build lets you install and launch the app on a paired iPhone w
 
 ## Config
 
-On macOS, install an Xcode version compatible with the project's Capacitor release. Configure signing for the actual bundle ID and entitlements. Pair and trust the iPhone over USB when needed, and enable Developer Mode when requested. In Xcode's **Devices and Simulators**, select **Connect via network**. For routine wireless installs, keep the iPhone unlocked and on the same Wi-Fi network as the Mac.
+On macOS, install an Xcode version compatible with the project's Capacitor release. Configure signing for the actual bundle ID and entitlements. Pair and trust the iPhone over USB when needed, and enable Developer Mode when requested. In Xcode's **Devices and Simulators**, select **Connect via network**. For routine wireless installs, keep the paired iPhone on the same Wi-Fi network as the Mac; device discovery and installation work while the screen is locked, and launching prompts the iPhone to unlock.
 
 Local signing expires, so a local install is not permanent. Inspect the actual provisioning profile's expiration in Xcode and renew signing when needed.
 
@@ -52,6 +52,7 @@ ios:
 	npm run build
 	npx cap sync ios
 	xcrun xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -destination 'generic/platform=iOS' -derivedDataPath ios/DerivedData build
+	xcrun devicectl list devices --timeout 10
 	xcrun devicectl device install app --device "$(IOS_DEVICE)" ios/DerivedData/Build/Products/Release-iphoneos/App.app
 	xcrun devicectl device process launch --device "$(IOS_DEVICE)" "$(IOS_BUNDLE_ID)"
 ```

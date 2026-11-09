@@ -92,7 +92,7 @@ Manual dispatch reruns release discovery. It does not force a release when there
 
 ## Token
 
-Set the repository-level `RELEASE_PLEASE_TOKEN` to a fine-grained PAT with `contents: write` and `pull-requests: write`. A release published with the default `GITHUB_TOKEN` does not trigger a separate workflow listening for release events, such as [TestFlight delivery](../node/testflight-github.md).
+Set the repository-level `RELEASE_PLEASE_TOKEN` to a fine-grained PAT with `contents: write` and `pull-requests: write`. Merging the release PR with the default `GITHUB_TOKEN` does not trigger downstream `push` workflows such as CI or [TestFlight delivery](../node/testflight-github.md).
 
 ## Bump rules
 
