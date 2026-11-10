@@ -17,7 +17,7 @@ make setup                                    # uv sync
 python3 scripts/scope.py ~/code/some-repo     # JSON: which pages apply, which targets exist
 python3 scripts/scope.py --no-state .         # same, ignoring .tooling-sync.json decisions
 make manifest                                 # regenerate MANIFEST.md after editing frontmatter
-make ci                                       # lint, typecheck, tests
+make ci                                       # lint, typecheck, tests, line limit
 ```
 
 ## Layout
@@ -31,6 +31,7 @@ playbook/            one page per tool, by scope
   monorepo/          docker bake, multi-package layout
 scripts/
   build_manifest.py  regenerates MANIFEST.md from page frontmatter
+  check-line-limit.sh  per-file line cap (CI gate)
   scope.py           the deterministic half of tooling-sync
 tests/               pytest for scope.py
 ```
@@ -41,11 +42,4 @@ See the [playbook manifest](playbook/MANIFEST.md) for tool choices, applicabilit
 
 ## Page format
 
-- Each tool gets one page under `playbook/<scope>/`.
-- Frontmatter: `tool`, `scope`, `tier` (`baseline` or `optional`), `summary`,
-  `targets`, `detect` and/or `detect_content`, and optional `platform`.
-  `detect_content` matches regexes against YAML bodies, for repos with no path
-  marker (k8s keys on `^kind:`). A page with neither applies to every repo in
-  its scope.
-- Body: **What**, **Why**, **Config**, **Gotchas**. `## Config` is what
-  tooling-sync diffs a repo against.
+See [AGENTS.md](AGENTS.md#page-structure-the-core-contract) for frontmatter keys and body sections.
