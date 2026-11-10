@@ -47,7 +47,7 @@ ios:
 	IOS_REUSE="$(IOS_REUSE)" bash scripts/ios.sh "$(IOS_DEVICE)"
 ```
 
-Create `scripts/ios.sh` at the repository root. A normal run rebuilds the standalone app; `IOS_REUSE=1` installs the existing build instead.
+Create `scripts/ios.sh` at the repository root. A normal run rebuilds the standalone app; `IOS_REUSE=1` installs the existing build instead. Xcode's output goes to `ios/DerivedData/xcodebuild.log` and reaches the terminal only when the build fails, because the warnings in it come from Expo, React Native and CocoaPods generated code and cannot be fixed in the app.
 
 ```bash
 #!/bin/bash
@@ -77,8 +77,15 @@ else
   fi
   npx expo prebuild --platform ios --no-install
   (cd ios && pod install)
-  xcrun xcodebuild -workspace ios/MyApp.xcworkspace -scheme MyApp -configuration Release \
-    -destination 'generic/platform=iOS' -derivedDataPath ios/DerivedData build
+  build_log="ios/DerivedData/xcodebuild.log"
+  mkdir -p ios/DerivedData
+  echo "Building the iOS app (log: frontend/$build_log)"
+  if ! xcrun xcodebuild -quiet -workspace ios/MyApp.xcworkspace -scheme MyApp -configuration Release \
+    -destination 'generic/platform=iOS' -derivedDataPath ios/DerivedData build >"$build_log" 2>&1; then
+    { grep 'error: ' "$build_log" | grep -v 'exit code 0 but produced no further output' || true; tail -n 20 "$build_log"; } >&2
+    echo "iOS build failed. Full log: frontend/$build_log" >&2
+    exit 1
+  fi
 fi
 
 xcrun devicectl list devices --timeout 10
@@ -112,3 +119,4 @@ make ios IOS_DEVICE="My iPhone" IOS_REUSE=1
 - Edit Expo config and plugins rather than generated native files. Do not use `prebuild --clean` as routine recovery.
 - Check the standalone app on the iPhone: close Xcode and Metro, force-quit the app, and relaunch it from the home screen. Network-backed features may still require a network connection.
 - A local install does not verify TestFlight signing, upload, processing, or installation. Use the separate [GitHub TestFlight recipe](testflight-github.md) for distribution.
+- A failed build can print `error: the following command failed with exit code 0 but produced no further output`. It is a false Xcode message; the script filters it out, so look at the other `error:` lines.

@@ -36,7 +36,7 @@ FROM cgr.dev/chainguard/python:latest-dev@sha256:<digest> AS builder
 # pin to latest stable; renovate bumps it
 COPY --from=ghcr.io/astral-sh/uv:X.Y.Z /uv /uvx /bin/
 
-ENV UV_COMPILE_BYTECODE=1 UV_PYTHON_DOWNLOADS=never
+ENV UV_COMPILE_BYTECODE=1 UV_PYTHON_DOWNLOADS=never UV_LINK_MODE=copy
 
 WORKDIR /app
 
@@ -164,3 +164,6 @@ Why this shape: a built SPA needs no Node at runtime, so the final image has les
 - Alpine + Vite/rolldown builds need `ARG ROLLDOWN_SKIP_NATIVE_BUILD=true` in the builder stage.
 - Use `python:3.X-slim` only when a native dependency needs glibc tooling Chainguard lacks; the default is Chainguard.
 - Don't serve a built SPA from a Node runtime image; use the nginx variant above.
+- `UV_LINK_MODE=copy` is required with the uv cache mount: the cache is a different filesystem from the venv, so without it every build warns "Failed to hardlink files".
+- Before adding `gcc`, `-dev` headers or runtime libraries such as `libpq5` with a package manager, check that the locked dependencies don't already ship wheels for the target platform; an unneeded `apt-get install` adds tens of seconds to every build. If a wheel is missing, `uv sync` fails the build, so nothing ships broken.
+- Set ownership with `COPY --chown=<user>:<group>`, not a later `RUN chown -R`: the recursive chown rewrites every file into a second layer and gets slower as the venv grows.
