@@ -22,7 +22,7 @@ Line count is a dependency-free, language-agnostic proxy for file sprawl, not co
 - Opt in by copying the script below. tooling-sync only compares repos that already contain it.
 - Exclude generated files, vendored code, fixtures, prompt text, and lockfiles.
 
-## The script
+## Config
 
 `scripts/check-line-limit.sh` — dual-mode: a no-arg full-tree scan for CI, or a file list for any local hook:
 

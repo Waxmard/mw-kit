@@ -11,7 +11,6 @@ Stdlib only. Run: python3 scripts/build_manifest.py
 
 from __future__ import annotations
 
-import contextlib
 import json
 import sys
 from pathlib import Path
@@ -48,8 +47,10 @@ def parse_frontmatter(text: str) -> dict[str, Any] | None:
         key, _, val = line.partition(":")
         key, val = key.strip(), val.strip()
         if val.startswith(("[", "{")):
-            with contextlib.suppress(json.JSONDecodeError):
+            try:
                 val = json.loads(val)
+            except json.JSONDecodeError as e:
+                raise ValueError(f"invalid JSON for key {key!r}: {val!r}") from e
         else:
             val = val.strip('"').strip("'")
         data[key] = val
@@ -81,7 +82,10 @@ def load_pages(*, warn: bool = False) -> list[dict[str, Any]]:
     for md in sorted(PLAYBOOK.rglob("*.md")):
         if md.name in {"README.md", "MANIFEST.md"}:
             continue
-        fm = parse_frontmatter(md.read_text())
+        try:
+            fm = parse_frontmatter(md.read_text())
+        except ValueError as e:
+            raise ValueError(f"{md.relative_to(ROOT)}: {e}") from e
         if not fm or "tool" not in fm:
             if warn:
                 print(

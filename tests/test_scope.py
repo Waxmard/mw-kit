@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import build_manifest
+import pytest
 import scope
 
 # --- glob helpers ---------------------------------------------------------
@@ -594,3 +596,49 @@ def test_detect_platform_falls_back_to_glab_config(tmp_path: Path, monkeypatch):
 
     monkeypatch.setattr(scope, "git", fake_git)
     assert scope.detect_platform(tmp_path, ["README.md"]) == ("gitlab", "glab-config")
+
+
+@pytest.mark.parametrize(
+    ("url", "expected"),
+    [
+        ("https://github.com/acme/app.git", "github"),
+        ("https://gitlab.com/acme/app.git", "gitlab"),
+        ("git@github.com:acme/gitlab-runner.git", "github"),
+        ("git@gitlab.example.internal:team/service.git", "gitlab"),
+    ],
+)
+def test_detect_platform_from_remote_url(
+    url: str, expected: str, tmp_path: Path, monkeypatch
+):
+    monkeypatch.setattr(
+        scope, "git", lambda repo, *a: url if a[0] == "remote" else None
+    )
+    assert scope.detect_platform(tmp_path, []) == (expected, "remote")
+
+
+def test_page_changed_since_treats_option_like_commit_as_unknown(tmp_path: Path):
+    assert scope.page_changed_since(f"--output={tmp_path}/x", "x.md") is True
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_parse_frontmatter_scalars_and_lists():
+    fm = build_manifest.parse_frontmatter(
+        "---\ntool: ruff\ntier: \"baseline\"\nsummary: 'quoted'\n"
+        'targets: ["a.toml", "b.toml"]\n---\nbody\n'
+    )
+    assert fm == {
+        "tool": "ruff",
+        "tier": "baseline",
+        "summary": "quoted",
+        "targets": ["a.toml", "b.toml"],
+    }
+
+
+def test_parse_frontmatter_malformed_list_names_key_and_value():
+    with pytest.raises(ValueError, match=r"'targets'.*\[\"a\""):
+        build_manifest.parse_frontmatter('---\ntargets: ["a"\n---\n')
+
+
+def test_parse_frontmatter_without_block_returns_none():
+    assert build_manifest.parse_frontmatter("# just a page\n") is None
+    assert build_manifest.parse_frontmatter("---\ntool: x\nno closing\n") is None
