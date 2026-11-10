@@ -21,7 +21,7 @@ Three scanners running on every PR + weekly cron, results uploaded as SARIF to G
 - SARIF integration → findings appear inline on PRs and in the Security tab.
 - Cron run catches new CVEs disclosed against unchanged code.
 
-## Workflow
+## Config
 
 `.github/workflows/security.yml`:
 

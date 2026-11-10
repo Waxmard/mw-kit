@@ -31,7 +31,7 @@ uv lock                        # refresh lockfile
 uv tool install ruff           # install global tool (pipx-style)
 ```
 
-## Project layout
+## Config
 
 ```toml
 [project]

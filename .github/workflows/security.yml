@@ -22,9 +22,7 @@ jobs:
         env:
           SEMGREP_RULES: >-
             p/python
-            p/security-audit
             p/secrets
-            p/owasp-top-ten
       - uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:

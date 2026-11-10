@@ -152,10 +152,10 @@ def detect_platform(repo: Path, tracked: list[str]) -> tuple[str, str]:
     url = git(repo, "remote", "get-url", "origin")
     if url:
         low = url.lower()
-        if "gitlab" in low:
-            return "gitlab", "remote"
         if "github.com" in low:
             return "github", "remote"
+        if "gitlab" in low:
+            return "gitlab", "remote"
     has_gitlab = ".gitlab-ci.yml" in tracked or any(
         t.startswith(".gitlab/") for t in tracked
     )
@@ -217,6 +217,7 @@ def page_changed_since(commit: str, page: str) -> bool:
         ROOT,
         "log",
         "--oneline",
+        "--end-of-options",
         f"{commit}..HEAD",
         "--",
         f"playbook/{page}",
@@ -509,7 +510,6 @@ def resolve_alternatives(
         root_semrel_configured=rc == {".releaserc.json"},
     )
 
-    dropped: list[str] = []
     alternatives = {"dependabot", "renovate"} | {
         "releases-github",
         "releases-gitlab",

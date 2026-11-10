@@ -9,7 +9,7 @@ detect: ["package.json"]
 
 # package.json Conventions
 
-## Scripts
+## Config
 
 Biome repos use these names:
 

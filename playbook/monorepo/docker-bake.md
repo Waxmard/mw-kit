@@ -23,7 +23,7 @@ detect: ["**/Dockerfile*", "docker-bake.hcl"]
 
 Goal: every push to main builds + pushes service images, **but skip pushes if source/Dockerfile unchanged** (no churn, faster CI, smaller registry storage).
 
-## docker-bake.hcl
+## Config
 
 ```hcl
 variable "REGISTRY" {

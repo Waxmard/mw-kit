@@ -12,7 +12,7 @@ scripts in `scripts/` (the manifest generator + the skill's scope resolver). The
 
 ```bash
 make help                           # list targets
-make ci                             # lint + typecheck + test (what CI runs)
+make ci                             # lint + typecheck + test + line-limit (what CI runs)
 make manifest                       # regenerate playbook/MANIFEST.md from frontmatter
 make fmt                            # ruff autofix + format
 python3 scripts/build_manifest.py   # (what `make manifest` calls)
@@ -75,7 +75,7 @@ scopes there.
 
 - Adding a tool → new page under the right scope dir with full frontmatter +
   body, then regenerate the manifest. Also add it to that scope's `README.md`
-  page list and the README "Tooling at a glance" table if it's a headline choice.
+  page list.
 - Renaming/removing a tool → update the scope `README.md` and root `README.md`
   references too (manifest regenerates itself). Leaving stale cross-references is
   the main hazard here.
