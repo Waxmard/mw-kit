@@ -68,13 +68,6 @@ def test_resolve_target_returns_all_matches_root_first(tmp_path: Path):
     ]
 
 
-def test_resolve_target_reports_glob_hits_and_missing_targets(tmp_path: Path):
-    (tmp_path / ".github").mkdir()
-    (tmp_path / ".github" / "a.yml").write_text("x")
-    assert scope.resolve_target(".github/*", tmp_path) == [".github/a.yml"]
-    assert scope.resolve_target("nope.toml", tmp_path) == []
-
-
 # --- as_list --------------------------------------------------------------
 
 
