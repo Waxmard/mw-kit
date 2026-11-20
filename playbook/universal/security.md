@@ -3,7 +3,7 @@ tool: security
 scope: universal
 tier: baseline
 summary: "semgrep (SAST) + trivy fs/image scanning in CI"
-targets: [".github/workflows/security.yml", ".gitlab-ci.yml", ".trivyignore.yaml"]
+targets: [".github/workflows/security.yml", ".trivyignore.yaml"]
 ---
 
 # Security Scanning
@@ -42,7 +42,7 @@ jobs:
   semgrep:
     runs-on: ubuntu-latest
     container:
-      image: semgrep/semgrep:X.Y.Z # pin to latest stable; renovate bumps it
+      image: semgrep/semgrep:X.Y.Z # pin to latest stable
     steps:
       - uses: actions/checkout@v7
       - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
@@ -98,44 +98,7 @@ jobs:
           category: trivy-image
 ```
 
-## GitLab variant
-
-In `.gitlab-ci.yml`, run the scanners as `test`-stage jobs on MRs and the default branch:
-
-```yaml
-semgrep-sast:
-  stage: test
-  image: semgrep/semgrep:X.Y.Z # pin to latest stable; renovate bumps it
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-  script:
-    - semgrep scan --error --config p/python --config p/secrets .
-
-trivy-fs:
-  stage: test
-  image:
-    name: ghcr.io/aquasecurity/trivy:X.Y.Z # pin to latest stable; renovate bumps it
-    entrypoint: [""]
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-  script:
-    - trivy fs --scanners vuln,misconfig,secret --exit-code 1 --severity CRITICAL,HIGH --ignore-unfixed --ignorefile .trivyignore.yaml .
-
-trivy-image:
-  stage: test
-  image:
-    name: ghcr.io/aquasecurity/trivy:X.Y.Z # pin to latest stable; renovate bumps it
-    entrypoint: [""]
-  needs: ["build-image"]
-  allow_failure: true
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-  script:
-    - trivy image --scanners vuln --exit-code 1 --severity CRITICAL,HIGH --ignore-unfixed --ignorefile .trivyignore.yaml "$IMAGE_TAG"
-```
+### Ignoring CVEs (`.trivyignore.yaml`)
 
 `.trivyignore.yaml`:
 
@@ -143,19 +106,17 @@ trivy-image:
 vulnerabilities: []
 ```
 
-Both GitLab trivy jobs pass `--ignorefile .trivyignore.yaml`, and trivy exits fatally (`ignore file not found`) if the file is missing, so ship it empty.
-
-Use `.trivyignore.yaml` with `expired_at` dates (e.g. `id: CVE-YYYY-NNNN` + `expired_at: YYYY-MM-DD`) so temporary suppressions re-alert automatically if unaddressed.
+Trivy auto-detects `.trivyignore.yaml` at the scan root. Use `.trivyignore.yaml` with `expired_at` dates (e.g. `id: CVE-YYYY-NNNN` + `expired_at: YYYY-MM-DD`) so temporary suppressions re-alert automatically if unaddressed.
 
 ## Gotchas
 
-- Add one pack per repo language (`p/typescript` for TS, `p/react` for frontends, `p/dockerfile` if you ship images). Leave out `p/security-audit`, `p/owasp-top-ten` and `p/default`: their config-hygiene rules (e.g. renovate `minimum-release-age`) fail PRs/MRs on things that aren't vulnerabilities.
+- Add one pack per repo language (`p/typescript` for TS, `p/react` for frontends, `p/dockerfile` if you ship images). Leave out `p/security-audit`, `p/owasp-top-ten` and `p/default`: their config-hygiene rules (e.g. dependabot `cooldown`) fail PRs on things that aren't vulnerabilities.
 - `ignore-unfixed: true` on trivy — there's nothing you can do about an unfixed CVE except wait, so don't gate PRs on it.
 - `TRIVY_INCLUDE_DEV_DEPS: 'true'` keeps npm/yarn/Gradle application dependencies
   visible when they live under development dependency classifications. Without it,
   an app with every package in `devDependencies` produces an empty vulnerability scan.
 - `severity: CRITICAL,HIGH,MEDIUM` — drop MEDIUM if signal-to-noise hurts.
-- Semgrep container pin (`semgrep/semgrep:X.Y.Z`) gives reproducible scans — pin to a real version, don't run `:latest`. Renovate bumps it.
+- Semgrep container pin (`semgrep/semgrep:X.Y.Z`) gives reproducible scans — pin to a real version, don't run `:latest`.
 - `if: always()` on SARIF upload so a scan failure still uploads partial results.
 - `--exclude-rule=…github-actions-mutable-action-tag` — semgrep otherwise blocks on every `uses: …@vN` tag, including this workflow's own. Major-tag pins are deliberate policy here (Dependabot bumps them); SHA pinning isn't worth the churn — except `trivy-action`, which is SHA-pinned because its tags were force-pushed to malware on 2026-03-19 (GHSA-69fq-xp46-6x23). Dependabot still bumps the SHA + version comment.
 - `actions: read` is required by `upload-sarif` on **private** repos (it reads the workflow run); without it the upload fails with `Resource not accessible by integration`.

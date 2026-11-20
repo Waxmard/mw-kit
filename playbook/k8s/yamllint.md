@@ -5,7 +5,6 @@ tier: baseline
 summary: "Lint all YAML for syntax/style, tuned for kubectl-style manifests"
 targets: [".yamllint"]
 detect_content: ["^kind:\\s"]
-platform: any
 ---
 
 # yamllint
@@ -60,20 +59,29 @@ pre-commit:
 
 Needs yamllint on PATH (`uv tool install yamllint`, `uvx yamllint -c .yamllint`, or `brew install yamllint`).
 
-### CI job (GitLab)
+### CI job (GitHub Actions)
+
+`.github/workflows/yamllint.yml`:
 
 ```yaml
-yaml-lint:
-  stage: lint
-  image: python:3.X-slim  # newest stable Python
-  rules:
-    - changes: ["**/*.yaml", "**/*.yml", ".yamllint"]
-  script:
-    - pip install --no-cache-dir yamllint==X.Y.Z # pin to latest stable; renovate bumps it
-    - yamllint .
+name: yamllint
+on:
+  pull_request:
+    paths: ["**/*.yaml", "**/*.yml", ".yamllint"]
+  push:
+    branches: [main]
+    paths: ["**/*.yaml", "**/*.yml", ".yamllint"]
+
+jobs:
+  yaml-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: pip install --no-cache-dir yamllint==X.Y.Z # pin to latest stable
+      - run: yamllint .
 ```
 
-Zero-install alternatives: `uvx yamllint -c .yamllint .` or container image `cytopia/yamllint:1`. On GitHub, run `pip install yamllint && yamllint .` in a workflow step.
+Zero-install alternatives: `uvx yamllint -c .yamllint .` or container image `cytopia/yamllint:1`.
 
 ## Gotchas
 

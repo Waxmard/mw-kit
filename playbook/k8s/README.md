@@ -14,7 +14,3 @@ templates/overlays contain `kind:`) — see the "render first" note in
 - [yamllint.md](./yamllint.md) — lint all YAML, tuned for kubectl-style manifests
 - [kubeconform.md](./kubeconform.md) — schema-validate manifests in CI (K8s + CRD schemas)
 
-## See also
-
-- [universal/renovate.md](../universal/renovate.md) — tracks Helm chart versions, image
-  tags, and the kubeconform CI image.

@@ -4,7 +4,6 @@ scope: universal
 tier: baseline
 summary: "Repo settings, default-branch ruleset, Actions token, Dependabot alerts via gh api"
 targets: []
-platform: github
 ---
 
 # GitHub repo settings

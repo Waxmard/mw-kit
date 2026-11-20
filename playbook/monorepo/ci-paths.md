@@ -4,7 +4,6 @@ scope: monorepo
 tier: baseline
 summary: "Path-filtered per-subproject CI workflows"
 targets: [".github/workflows/"]
-platform: github
 ---
 
 # Path-Filtered CI Workflows

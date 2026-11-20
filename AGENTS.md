@@ -46,8 +46,7 @@ Every `playbook/<scope>/<tool>.md` page has two halves, and both matter:
    `scope`, `tier` (`baseline` | `optional`), `summary`, `targets` (files the page
    governs in a consumer repo), `detect` (path globs that signal relevance),
    `detect_content` (regexes matched against YAML file bodies — for repo classes
-   with no path marker, e.g. plain-YAML k8s keyed on `^kind:`), optional `platform`
-   (`github` | `gitlab`).
+   with no path marker, e.g. plain-YAML k8s keyed on `^kind:`).
 2. **Body** — sections `## What`, `## Why`, `## Config`, `## Gotchas` (pages add
    `## Commands`, `## Lefthook`, etc. as needed). `## Accepted alternative` names a
    tool a repo may already run instead; `tooling-sync` leaves such a repo on it, and
@@ -57,12 +56,12 @@ Every `playbook/<scope>/<tool>.md` page has two halves, and both matter:
 
 **Never hardcode versions** of runtimes, tools, images or packages in playbook
 snippets; they rot. Tools/packages: use a `vX.Y.Z` / `X.Y.Z` placeholder plus a
-`# pin to latest stable; renovate bumps it` comment. Runtimes: Python is `3.X`
+`# pin to latest stable; dependabot bumps it` comment. Runtimes: Python is `3.X`
 (`# newest stable Python`) and Node is `NN` (`# current Node Active LTS`),
 resolved to the real current version when tooling-sync applies the page.
 Dependency lists in snippets name packages without version floors. *The one
 exception stays concrete:* version-ref pins that must resolve to run and are
-bot-managed (GitHub Action `uses:@v7`, GitLab CI component `@x.y.z`). The kit's own
+bot-managed (GitHub Action `uses:@v7`). The kit's own
 files (`.github/workflows/ci.yml`, `pyproject.toml`) are real config, not snippets,
 so they pin real versions.
 

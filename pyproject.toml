@@ -19,10 +19,15 @@ dev = [
 
 [tool.uv]  # nosemgrep: package_managers.uv.uv-missing-dependency-cooldown.uv-missing-dependency-cooldown
 package = false  # scripts-only repo — nothing imports/installs mw-kit
+preview-features = ["audit-command"]
+environments = ["python_version >= '3.10'"]  # dev venv only; scripts stay bare python3 >=3.9
 
 [tool.ruff]
 line-length = 88
 target-version = "py39"
+
+[tool.ruff.format]
+docstring-code-format = true
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM", "RUF", "PL", "S"]
@@ -52,7 +57,12 @@ combine-as-imports = true
 # annotations` and no 3.10+ runtime syntax, so they run fine on stock 3.9.6).
 python_version = "3.10"
 strict = true
-ignore_missing_imports = true
+follow_untyped_imports = true
+
+[tool.pyright]
+venv = ".venv"
+venvPath = "."
+extraPaths = ["scripts"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

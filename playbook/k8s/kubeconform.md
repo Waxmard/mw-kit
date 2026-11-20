@@ -3,9 +3,8 @@ tool: kubeconform
 scope: k8s
 tier: baseline
 summary: "Schema-validate K8s manifests in CI against K8s + CRD schemas"
-targets: [".gitlab-ci.yml"]
+targets: [".github/workflows/kubeconform.yml"]
 detect_content: ["^kind:\\s"]
-platform: any
 ---
 
 # kubeconform
@@ -32,26 +31,35 @@ the resource is real.
 ## Config
 
 CI-only — kubeconform fetches CRD schemas over the network, so it belongs in the
-pipeline, not a commit hook. GitLab job:
+pipeline, not a commit hook. `.github/workflows/kubeconform.yml`:
 
 ```yaml
 # Schema-validate Kubernetes manifests so a malformed resource can't reach Argo CD.
 # Only files containing `kind:` are checked (skips helm/ values, monitoring/ alerts,
 # docs, etc.). CRDs absent from the catalog are soft-skipped.
-validate-manifests:
-  stage: lint
-  image:
-    name: ghcr.io/yannh/kubeconform:vX.Y.Z-alpine # pin to latest stable; renovate bumps it
-    entrypoint: [""]
-  rules:
-    - changes: ["**/*.yaml", "**/*.yml"]
-  script:
-    - |
-      find . -type f \( -name '*.yaml' -o -name '*.yml' \) -not -path './.git/*' \
-        -exec grep -lE '^kind:' {} + \
-        | xargs -r /kubeconform -strict -summary -ignore-missing-schemas \
-            -schema-location default \
-            -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
+name: kubeconform
+on:
+  pull_request:
+    paths: ["**/*.yaml", "**/*.yml"]
+  push:
+    branches: [main]
+    paths: ["**/*.yaml", "**/*.yml"]
+
+jobs:
+  validate-manifests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: |
+          docker run --rm -v "$PWD:/work" -w /work --entrypoint "" \
+            ghcr.io/yannh/kubeconform:vX.Y.Z-alpine \ # pin to latest stable
+            sh -c '
+              find . -type f \( -name "*.yaml" -o -name "*.yml" \) -not -path "./.git/*" \
+                -exec grep -lE "^kind:" {} + \
+                | xargs -r /kubeconform -strict -summary -ignore-missing-schemas \
+                    -schema-location default \
+                    -schema-location "https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json"
+            '
 ```
 
 Flags that matter: `-strict` (reject unknown fields), `-ignore-missing-schemas` (don't
@@ -71,38 +79,50 @@ kustomize build . | kubeconform -strict -ignore-missing-schemas -schema-location
 (The `grep '^kind:'` selection above is for repos of already-plain manifests, like an
 Argo CD GitOps repo.)
 
-For Kustomize overlay repos in GitLab CI, split into a two-stage pipeline so rendered overlays are archived and inspected directly:
+For Kustomize overlay repos in GitHub Actions, split into two jobs so rendered overlays are archived and inspected directly:
 
 ```yaml
-render-manifests:
-  stage: render
-  image:
-    name: registry.k8s.io/kustomize/kustomize:vX.Y.Z # pin to latest stable; renovate bumps it
-    entrypoint: [""]
-  script:
-    - mkdir -p rendered
-    - |
-      for f in $(find . -name kustomization.yaml -not -path './base/*'); do
-        dir=$(dirname "$f")
-        name=$(echo "$dir" | tr '/' '_' | sed 's/^\._//')
-        kustomize build --load-restrictor LoadRestrictionsNone "$dir" > "rendered/${name}.yaml"
-      done
-  artifacts:
-    paths: [rendered/]
+jobs:
+  render-manifests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: |
+          mkdir -p rendered
+          docker run --rm -v "$PWD:/work" -w /work --entrypoint "" \
+            registry.k8s.io/kustomize/kustomize:vX.Y.Z \ # pin to latest stable
+            sh -c '
+              for f in $(find . -name kustomization.yaml -not -path "./base/*"); do
+                dir=$(dirname "$f")
+                name=$(echo "$dir" | tr "/" "_" | sed "s/^\._//")
+                kustomize build --load-restrictor LoadRestrictionsNone "$dir" > "rendered/${name}.yaml"
+              done
+            '
+      - uses: actions/upload-artifact@v7
+        with:
+          name: rendered-manifests
+          path: rendered/
 
-validate-manifests:
-  stage: lint
-  needs: ["render-manifests"]
-  image:
-    name: ghcr.io/yannh/kubeconform:vX.Y.Z-alpine # pin to latest stable; renovate bumps it
-    entrypoint: [""]
-  script:
-    - /kubeconform -strict -summary -ignore-missing-schemas -schema-location default -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' rendered/*.yaml
+  validate-manifests:
+    needs: [render-manifests]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          name: rendered-manifests
+          path: rendered/
+      - run: |
+          docker run --rm -v "$PWD:/work" -w /work --entrypoint "" \
+            ghcr.io/yannh/kubeconform:vX.Y.Z-alpine \ # pin to latest stable
+            /kubeconform -strict -summary -ignore-missing-schemas \
+              -schema-location default \
+              -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
+              rendered/*.yaml
 ```
 
 ### Image tag existence check
 
-Extract `image:` references from rendered manifests and verify each digest exists in the registry with `crane digest` so missing tags fail the MR before Argo CD hits `ImagePullBackOff`:
+Extract `image:` references from rendered manifests and verify each digest exists in the registry with `crane digest` so missing tags fail the PR before Argo CD hits `ImagePullBackOff`:
 
 ```bash
 grep -hE '^\s*image:\s*' rendered/*.yaml | awk '{print $2}' | tr -d '"'"'" | sort -u | while read -r img; do
@@ -113,7 +133,7 @@ done
 ## Gotchas
 
 - **The binary lives at `/kubeconform`, not on `PATH`.** The official image's entrypoint
-  *is* kubeconform; once you override `entrypoint: [""]` to run a shell pipeline, a bare
+  *is* kubeconform; once you override `--entrypoint ""` to run a shell pipeline, a bare
   `kubeconform` is "not found". Call it by absolute path: `/kubeconform`.
 - **`-ignore-missing-schemas` is load-bearing for custom CRDs.** Vendor CRDs not in the
   catalog (e.g. GKE's `networking.gke.io` `GCPBackendPolicy` / `HealthCheckPolicy`)

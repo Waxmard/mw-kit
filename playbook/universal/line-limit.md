@@ -106,7 +106,7 @@ Adjust `is_source()` for the repo's source files and `EXCLUDE_DIRS` for excluded
 
 Use a full-tree CI scan to catch existing over-limit files.
 
-**GitHub** — `.github/workflows/line-limit.yml`:
+`.github/workflows/line-limit.yml`:
 
 ```yaml
 name: Line limit
@@ -121,13 +121,6 @@ jobs:
       - run: bash scripts/check-line-limit.sh
 ```
 
-**GitLab** — add a job to `.gitlab-ci.yml`:
-
-```yaml
-line-limit:
-  stage: test
-  script: bash scripts/check-line-limit.sh
-```
 
 ## Makefile
 

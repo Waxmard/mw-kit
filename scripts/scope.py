@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Pre-flight and scope resolution for the tooling-sync skill.
 
-Given a repo path, prints one JSON scope plan: platform, project structure,
-which playbook pages apply (by `detect` glob or `detect_content` regex), the
-winning baseline alternatives, which `targets` exist, and each page's
-recalled `.tooling-sync.json` decision with whether the page changed since.
+Given a repo path, prints one JSON scope plan: project structure, which
+playbook pages apply (by `detect` glob or `detect_content` regex), which
+`targets` exist, and each page's recalled `.tooling-sync.json` decision with
+whether the page changed since.
 
 It never reads config contents or judges drift; that reasoning stays in the
 skill. Anything ambiguous lands in `needs_ask` instead of being guessed.
@@ -141,34 +141,6 @@ def git(repo: Path, *args: str) -> str | None:
         return None
 
 
-def detect_platform(repo: Path, tracked: list[str]) -> tuple[str, str]:
-    """Return (platform, source). platform is github | gitlab | unknown.
-
-    Prefer the origin remote; if that's inconclusive (no remote, or a
-    self-hosted instance on a vanity domain that contains neither "gitlab"
-    nor "github.com"), fall back to platform-specific CI config files in the
-    tree, which are domain-agnostic.
-    """
-    url = git(repo, "remote", "get-url", "origin")
-    if url:
-        low = url.lower()
-        if "github.com" in low:
-            return "github", "remote"
-        if "gitlab" in low:
-            return "gitlab", "remote"
-    has_gitlab = ".gitlab-ci.yml" in tracked or any(
-        t.startswith(".gitlab/") for t in tracked
-    )
-    has_github = any(t.startswith(".github/workflows/") for t in tracked)
-    if has_gitlab and not has_github:
-        return "gitlab", "ci-file"
-    if has_github and not has_gitlab:
-        return "github", "ci-file"
-    if git(repo, "config", "--get-regexp", r"^remote\..*\.glab-resolved$"):
-        return "gitlab", "glab-config"
-    return "unknown", "no-remote" if not url else "remote"
-
-
 def detect_structure(tracked: list[str]) -> dict[str, Any]:
     manifests = [f for f in tracked if f.rsplit("/", 1)[-1] in PROJECT_MANIFESTS]
     dirs = {f.rsplit("/", 1)[0] if "/" in f else "" for f in manifests}
@@ -229,14 +201,13 @@ def annotate_state(
     in_scope: list[dict[str, Any]],
     state: dict[str, Any] | None,
     pb_head: str | None,
-    changed_fn: Any = page_changed_since,
     known_tools: set[str] | None = None,
 ) -> dict[str, Any]:
     """Attach a `state` block to each in-scope row and return a run-level summary.
 
     Per row: decision recalled from the state file, whether the governing page
     changed since that decision, and whether the row is `settled` (decision still
-    holds → the skill may skip the compare). `changed_fn` is injectable for tests.
+    holds → the skill may skip the compare).
 
     `known_tools` is every tool the playbook still has a page for; recorded tools
     outside it are reported as `orphaned_tools` (the page was deleted or renamed,
@@ -257,7 +228,7 @@ def annotate_state(
         if at and pb_head and at == pb_head:
             changed = False
         elif at:
-            changed = bool(changed_fn(at, row["page"]))
+            changed = bool(page_changed_since(at, row["page"]))
         else:
             changed = True
         is_settled = (not changed) and decision in SETTLED_DECISIONS
@@ -299,7 +270,6 @@ def scope_pages(
     pages: list[dict[str, Any]],
     repo: Path,
     tracked: list[str],
-    platform: str,
     structure: dict[str, Any],
 ) -> dict[str, Any]:
     in_scope: list[dict[str, Any]] = []
@@ -319,7 +289,6 @@ def scope_pages(
         tool = p.get("tool", "")
         page = p["_page"]
         scope = p.get("scope", "")
-        pf = p.get("platform") or "any"
         detect = as_list(p.get("detect"))
         detect_content = as_list(p.get("detect_content"))
         targets = as_list(p.get("targets"))
@@ -333,15 +302,6 @@ def scope_pages(
                 }
             )
             continue
-
-        platform_pending = False
-        if pf != "any" and platform not in ("unknown", pf):
-            skipped.append(
-                {"tool": tool, "page": page, "reason": f"platform: {pf}-only"}
-            )
-            continue
-        if pf != "any" and platform == "unknown":
-            platform_pending = True  # can't decide until platform known
 
         # Empty detect = always relevant within its scope. Otherwise a page is
         # relevant if any path glob (`detect`) OR any content regex
@@ -373,9 +333,7 @@ def scope_pages(
 
         present: list[str] = []
         missing: list[str] = []
-        target_roots = (
-            [] if (scope == "monorepo" and tool != "releases-monorepo") else roots
-        )
+        target_roots = [] if scope == "monorepo" else roots
         for t in targets:
             hits = resolve_target(t, repo, target_roots)
             if hits:
@@ -387,14 +345,11 @@ def scope_pages(
             "page": page,
             "scope": scope,
             "tier": p.get("tier", ""),
-            "platform": pf,
             "targets": targets,
             "targets_present": present,
             "targets_missing": missing,
             "matched_detect": matched,
         }
-        if platform_pending:
-            row["platform_pending"] = True
         in_scope.append(row)
     return {"in_scope": in_scope, "skipped": skipped}
 
@@ -407,7 +362,7 @@ def nested_target_warnings(
     Every component root is known only via its manifest, so a nested project without
     one is still invisible — say so instead of reporting the target as absent. A
     target whose basename the page already resolved elsewhere (`CODEOWNERS` at
-    `.github/` vs `.gitlab/`) is a location convention, not a hidden component.
+    `docs/` vs `.github/`) is a location convention, not a hidden component.
     """
     by_base: dict[str, list[str]] = {}
     for f in tracked:
@@ -429,112 +384,10 @@ def nested_target_warnings(
     return out
 
 
-def _resolve_dep_bot(platform: str, configured: set[str]) -> tuple[str, str]:
-    if platform == "gitlab":
-        return "renovate", "gitlab (renovate only)"
-    if "renovate" in configured and "dependabot" not in configured:
-        return "renovate", "renovate already configured"
-    if "dependabot" in configured and "renovate" not in configured:
-        return "dependabot", "dependabot already configured"
-    return "dependabot", "github default (renovate is the alternative)"
-
-
-def _resolve_release(
-    platform: str,
-    multi: bool,
-    is_py: bool,
-    semrel_configured: bool = False,
-    root_semrel_configured: bool = False,
-) -> dict[str, Any]:
-    """Pick the release tool, but only one with a page for the platform.
-
-    The releases-monorepo page is gitlab-only; release-please (github) handles
-    monorepos natively via config, so on a github multi-component repo we stay
-    on releases-github and flag the caveat in `note`.
-    """
-    if multi and platform == "gitlab" and root_semrel_configured:
-        return {
-            "chosen": "releases-gitlab",
-            "reason": "root semantic-release already configured (.releaserc.json)",
-        }
-    if multi and platform == "gitlab":
-        return {
-            "chosen": "releases-monorepo",
-            "reason": "gitlab multi-component (path-scoped bumps)",
-        }
-    if platform == "github":
-        out: dict[str, Any] = {
-            "chosen": "releases-github",
-            "reason": "github (release-please)",
-        }
-        if multi:
-            out["note"] = (
-                "multi-component: configure release-please for monorepo "
-                "(no dedicated page)"
-            )
-        return out
-    if platform == "gitlab" and semrel_configured:
-        return {
-            "chosen": "releases-gitlab",
-            "reason": "semantic-release already configured (.releaserc.json)",
-        }
-    if platform == "gitlab" and is_py:
-        return {
-            "chosen": "releases-python",
-            "reason": "gitlab + python (python-semantic-release)",
-        }
-    if platform == "gitlab":
-        return {"chosen": "releases-gitlab", "reason": "gitlab (semantic-release)"}
-    return {"chosen": None, "reason": "platform unknown"}
-
-
-def resolve_alternatives(
-    in_scope: list[dict[str, Any]], platform: str, structure: dict[str, Any]
-) -> dict[str, Any]:
-    tools = {r["tool"] for r in in_scope}
-    configured = {r["tool"] for r in in_scope if r["targets_present"]}
-
-    dep, dep_reason = _resolve_dep_bot(platform, configured)
-    rc = {
-        p
-        for r in in_scope
-        if r["tool"] in ("releases-gitlab", "releases-monorepo")
-        for p in (r.get("targets_present") or ())
-        if p == ".releaserc.json" or p.endswith("/.releaserc.json")
-    }
-    releases = _resolve_release(
-        platform,
-        multi=structure["verdict"] == "multi_component",
-        is_py=any(r["scope"] == "python" for r in in_scope),
-        semrel_configured=bool(rc),
-        root_semrel_configured=rc == {".releaserc.json"},
-    )
-
-    alternatives = {"dependabot", "renovate"} | {
-        "releases-github",
-        "releases-gitlab",
-        "releases-python",
-        "releases-monorepo",
-    }
-    chosen = {dep, releases["chosen"]}
-    dropped = sorted(alt for alt in alternatives if alt in tools and alt not in chosen)
-
-    return {
-        "dep_updates": {"chosen": dep, "reason": dep_reason},
-        "releases": releases,
-        "dropped": dropped,
-    }
-
-
 def main() -> int:
     ap = argparse.ArgumentParser(description="tooling-sync scope resolver")
     ap.add_argument(
         "repo", nargs="?", default=".", help="consumer repo path (default: CWD)"
-    )
-    ap.add_argument(
-        "--platform",
-        choices=["github", "gitlab"],
-        help="override platform detection (use after resolving a needs_ask)",
     )
     ap.add_argument(
         "--structure",
@@ -569,11 +422,6 @@ def main() -> int:
 
     tracked = (git(repo, "ls-files") or "").splitlines()
 
-    if a.platform:
-        platform, platform_source = a.platform, "override"
-    else:
-        platform, platform_source = detect_platform(repo, tracked)
-
     structure = detect_structure(tracked)
     if a.structure:
         structure["verdict"] = a.structure
@@ -581,32 +429,18 @@ def main() -> int:
         structure["source"] = "override"
 
     pages = load_pages()
-    scoped = scope_pages(pages, repo, tracked, platform, structure)
-    alternatives = resolve_alternatives(scoped["in_scope"], platform, structure)
-
-    in_scope: list[dict[str, Any]] = []
+    scoped = scope_pages(pages, repo, tracked, structure)
+    in_scope: list[dict[str, Any]] = scoped["in_scope"]
     skipped: list[dict[str, Any]] = list(scoped["skipped"])
-    for r in scoped["in_scope"]:
-        if r["tool"] in alternatives["dropped"]:
-            skipped.append(
-                {
-                    "tool": r["tool"],
-                    "page": r["page"],
-                    "reason": "alternative not chosen",
-                }
-            )
-        else:
-            in_scope.append(r)
 
-    # sanity: a chosen alternative must be in scope, else the plan is incoherent
-    scoped_tools = {r["tool"] for r in in_scope}
     warnings: list[str] = []
-    for kind in ("dep_updates", "releases"):
-        chosen = alternatives[kind]["chosen"]
-        if chosen and chosen not in scoped_tools:
-            reason = alternatives[kind]["reason"]
-            warnings.append(f"{kind}: chosen '{chosen}' is not in scope ({reason})")
-
+    if structure["verdict"] == "multi_component" and "releases-github" in {
+        r["tool"] for r in in_scope
+    }:
+        warnings.append(
+            "releases-github: multi-component repo — configure release-please "
+            "for monorepo (no dedicated page)"
+        )
     state = None if a.no_state else load_state(repo)
     state_summary = annotate_state(
         in_scope,
@@ -623,16 +457,6 @@ def main() -> int:
     warnings.extend(nested_target_warnings(in_scope, tracked))
 
     needs_ask: list[dict[str, str]] = []
-    if platform == "unknown":
-        needs_ask.append(
-            {
-                "key": "platform",
-                "question": (
-                    "Could not detect platform from the remote — "
-                    "is this GitHub or GitLab?"
-                ),
-            }
-        )
     if structure["ambiguous"]:
         nested = ", ".join(structure["manifests"])
         needs_ask.append(
@@ -649,11 +473,8 @@ def main() -> int:
         "preflight": {
             "ok": True,
             "repo": str(repo),
-            "platform": platform,
-            "platform_source": platform_source,
         },
         "structure": structure,
-        "alternatives": alternatives,
         "state": state_summary,
         "in_scope": in_scope,
         "skipped": sorted(skipped, key=lambda r: r["tool"]),

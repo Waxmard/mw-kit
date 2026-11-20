@@ -6,62 +6,56 @@ Machine-readable index of every playbook page. Source of truth = each page's YAM
 
 - **tier** — `baseline` (most repos should adopt) vs `optional` (context-specific pattern).
 - **targets** — files/dirs in a consumer repo this page governs (what to compare / where to apply).
-- **detect** — path globs, plus `content:<re>` regexes matched against YAML bodies; if any matches the page is relevant (— = always relevant for its scope/platform).
-- **platform** — restricts relevance to `github` or `gitlab` (any = no restriction).
+- **detect** — path globs, plus `content:<re>` regexes matched against YAML bodies; if any matches the page is relevant (— = always relevant for its scope).
 
 ## universal
 
-| Tool | Tier | Summary | Targets | Detect | Platform | Page |
-|---|---|---|---|---|---|---|
-| `ci-github` | baseline | Single-project GitHub Actions CI: lint + typecheck + test on every PR | `.github/workflows/ci.yml` | — | `github` | [universal/ci-github.md](universal/ci-github.md) |
-| `ci-gitlab` | baseline | Single-project GitLab CI: lint + typecheck + test pipeline skeleton | `.gitlab-ci.yml` | — | `gitlab` | [universal/ci-gitlab.md](universal/ci-gitlab.md) |
-| `claude-review` | optional | Optional Claude Code review on every non-draft pull request | `.github/workflows/claude.yml` | — | `github` | [universal/claude-review.md](universal/claude-review.md) |
-| `codeowners` | baseline | Required reviewers auto-assigned per path | `.github/CODEOWNERS`, `.gitlab/CODEOWNERS` | — | any | [universal/codeowners.md](universal/codeowners.md) |
-| `conventional-commits` | baseline | Commit message format feeding release tooling | — | — | any | [universal/conventional-commits.md](universal/conventional-commits.md) |
-| `dependabot` | baseline | GitHub-native dependency update PRs | `.github/dependabot.yml` | — | `github` | [universal/dependabot.md](universal/dependabot.md) |
-| `dockerfile` | baseline | Dockerfile + .dockerignore: digest-pinned Chainguard base, uv venv stage, non-root, build-time import check | `Dockerfile`, `.dockerignore` | `Dockerfile`, `**/Dockerfile*` | any | [universal/dockerfile.md](universal/dockerfile.md) |
-| `github-settings` | baseline | Repo settings, default-branch ruleset, Actions token, Dependabot alerts via gh api | — | — | `github` | [universal/github-settings.md](universal/github-settings.md) |
-| `lefthook` | baseline | Git hooks with autofix + restage (stage_fixed) | `lefthook.yml` | — | any | [universal/lefthook.md](universal/lefthook.md) |
-| `line-limit` | optional | Opt-in per-file line cap: compared only in repos that already ship scripts/check-line-limit.sh | `scripts/check-line-limit.sh` | `scripts/check-line-limit.sh` | any | [universal/line-limit.md](universal/line-limit.md) |
-| `mise` | optional | Opt-in tool version pins: compared only in repos that already have mise.toml | `mise.toml` | `mise.toml` | any | [universal/mise.md](universal/mise.md) |
-| `releases-github` | baseline | release-please: PR-driven versioning + changelog on GitHub | `release-please-config.json`, `.release-please-manifest.json`, `.github/workflows/release-please.yml` | — | `github` | [universal/releases-github.md](universal/releases-github.md) |
-| `releases-gitlab` | baseline | semantic-release: tag + changelog on GitLab | `.releaserc.json`, `.gitlab-ci.yml` | — | `gitlab` | [universal/releases-gitlab.md](universal/releases-gitlab.md) |
-| `renovate` | baseline | Platform-agnostic dependency update bot (required on GitLab) | `renovate.json` | — | any | [universal/renovate.md](universal/renovate.md) |
-| `security` | baseline | semgrep (SAST) + trivy fs/image scanning in CI | `.github/workflows/security.yml`, `.gitlab-ci.yml`, `.trivyignore.yaml` | — | any | [universal/security.md](universal/security.md) |
+| Tool | Tier | Summary | Targets | Detect | Page |
+|---|---|---|---|---|---|
+| `ci-github` | baseline | Single-project GitHub Actions CI: lint + typecheck + test on every PR | `.github/workflows/ci.yml` | — | [universal/ci-github.md](universal/ci-github.md) |
+| `claude-review` | optional | Optional Claude Code review on every non-draft pull request | `.github/workflows/claude.yml` | — | [universal/claude-review.md](universal/claude-review.md) |
+| `codeowners` | baseline | Required reviewers auto-assigned per path | `.github/CODEOWNERS` | — | [universal/codeowners.md](universal/codeowners.md) |
+| `conventional-commits` | baseline | Commit message format feeding release tooling | — | — | [universal/conventional-commits.md](universal/conventional-commits.md) |
+| `dependabot` | baseline | GitHub-native dependency update PRs | `.github/dependabot.yml` | — | [universal/dependabot.md](universal/dependabot.md) |
+| `dockerfile` | baseline | Dockerfile + .dockerignore: digest-pinned Chainguard base, uv venv stage, non-root, build-time import check | `Dockerfile`, `.dockerignore` | `Dockerfile`, `**/Dockerfile*` | [universal/dockerfile.md](universal/dockerfile.md) |
+| `github-settings` | baseline | Repo settings, default-branch ruleset, Actions token, Dependabot alerts via gh api | — | — | [universal/github-settings.md](universal/github-settings.md) |
+| `lefthook` | baseline | Git hooks with autofix + restage (stage_fixed) | `lefthook.yml` | — | [universal/lefthook.md](universal/lefthook.md) |
+| `line-limit` | optional | Opt-in per-file line cap: compared only in repos that already ship scripts/check-line-limit.sh | `scripts/check-line-limit.sh` | `scripts/check-line-limit.sh` | [universal/line-limit.md](universal/line-limit.md) |
+| `mise` | optional | Opt-in tool version pins: compared only in repos that already have mise.toml | `mise.toml` | `mise.toml` | [universal/mise.md](universal/mise.md) |
+| `releases-github` | baseline | release-please: PR-driven versioning + changelog on GitHub | `release-please-config.json`, `.release-please-manifest.json`, `.github/workflows/release-please.yml` | — | [universal/releases-github.md](universal/releases-github.md) |
+| `security` | baseline | semgrep (SAST) + trivy fs/image scanning in CI | `.github/workflows/security.yml`, `.trivyignore.yaml` | — | [universal/security.md](universal/security.md) |
 
 ## python
 
-| Tool | Tier | Summary | Targets | Detect | Platform | Page |
-|---|---|---|---|---|---|---|
-| `mypy` | baseline | Static type checker, strict mode | `pyproject.toml` | `**/*.py` | any | [python/mypy.md](python/mypy.md) |
-| `pytest` | baseline | pytest + pytest-cov config and coverage gating | `pyproject.toml` | `**/*.py` | any | [python/pytest.md](python/pytest.md) |
-| `releases-python` | baseline | python-semantic-release: tag + changelog for Python repos on GitLab (no node) | `pyproject.toml`, `.gitlab-ci.yml` | `pyproject.toml`, `**/*.py` | `gitlab` | [python/releases-python.md](python/releases-python.md) |
-| `ruff` | baseline | Lint + format (replaces flake8 + isort + black + bandit-partial) | `pyproject.toml` | `**/*.py` | any | [python/ruff.md](python/ruff.md) |
-| `uv` | baseline | Fast Python package manager + venv + lockfile | `pyproject.toml`, `uv.lock` | `pyproject.toml`, `**/*.py` | any | [python/uv.md](python/uv.md) |
+| Tool | Tier | Summary | Targets | Detect | Page |
+|---|---|---|---|---|---|
+| `mypy` | baseline | Static type checker, strict mode | `pyproject.toml` | `**/*.py` | [python/mypy.md](python/mypy.md) |
+| `pytest` | baseline | pytest + pytest-cov config and coverage gating | `pyproject.toml` | `**/*.py` | [python/pytest.md](python/pytest.md) |
+| `ruff` | baseline | Lint + format (replaces flake8 + isort + black + bandit-partial) | `pyproject.toml` | `**/*.py` | [python/ruff.md](python/ruff.md) |
+| `uv` | baseline | Fast Python package manager + venv + lockfile | `pyproject.toml`, `uv.lock` | `pyproject.toml`, `**/*.py` | [python/uv.md](python/uv.md) |
 
 ## node
 
-| Tool | Tier | Summary | Targets | Detect | Platform | Page |
-|---|---|---|---|---|---|---|
-| `biome` | baseline | JS/TS lint + format + import sort (replaces eslint + prettier) | `biome.json`, `package.json` | `biome.json`, `biome.jsonc`, `**/*.{ts,tsx,js,jsx,mjs,cjs,vue}` | any | [node/biome.md](node/biome.md) |
-| `capacitor` | optional | Bundled Capacitor iOS builds and a local iPhone install loop | `capacitor.config.*`, `Makefile`, `package.json` | `capacitor.config.*` | any | [node/capacitor.md](node/capacitor.md) |
-| `expo` | optional | Expo iOS development and standalone local iPhone builds | `app.config.{js,ts}`, `app.json`, `package.json`, `Makefile`, `scripts/ios.sh` | `app.config.{js,ts}` | any | [node/expo.md](node/expo.md) |
-| `package-json` | baseline | Standard scripts, dependency pinning, and release-age policy | `package.json`, `.npmrc` | `package.json` | any | [node/package-json.md](node/package-json.md) |
-| `playwright` | optional | Built-app browser checks for desktop and mobile web flows | `playwright.config.ts`, `package.json`, `.github/workflows/ci.yml` | `playwright.config.*` | any | [node/playwright.md](node/playwright.md) |
-| `testflight-github` | optional | Separate GitHub Actions signing, archive, and TestFlight upload workflow | `.github/workflows/deploy-testflight.yml`, `scripts/build-ios-testflight.sh` | `capacitor.config.*`, `app.config.{js,ts}`, `.github/workflows/deploy-testflight.yml` | `github` | [node/testflight-github.md](node/testflight-github.md) |
-| `typescript` | baseline | Strict tsconfig, noEmit type-checking | `tsconfig.json` | `tsconfig.json`, `**/*.{ts,tsx}` | any | [node/typescript.md](node/typescript.md) |
+| Tool | Tier | Summary | Targets | Detect | Page |
+|---|---|---|---|---|---|
+| `biome` | baseline | JS/TS lint + format + import sort (replaces eslint + prettier) | `biome.json`, `package.json` | `biome.json`, `biome.jsonc`, `**/*.{ts,tsx,js,jsx,mjs,cjs,vue}` | [node/biome.md](node/biome.md) |
+| `capacitor` | optional | Bundled Capacitor iOS builds and a local iPhone install loop | `capacitor.config.*`, `Makefile`, `package.json` | `capacitor.config.*` | [node/capacitor.md](node/capacitor.md) |
+| `expo` | optional | Expo iOS development and standalone local iPhone builds | `app.config.{js,ts}`, `app.json`, `package.json`, `Makefile`, `scripts/ios.sh` | `app.config.{js,ts}` | [node/expo.md](node/expo.md) |
+| `package-json` | baseline | Standard scripts, dependency pinning, and release-age policy | `package.json`, `.npmrc` | `package.json` | [node/package-json.md](node/package-json.md) |
+| `playwright` | optional | Built-app browser checks for desktop and mobile web flows | `playwright.config.ts`, `package.json`, `.github/workflows/ci.yml` | `playwright.config.*` | [node/playwright.md](node/playwright.md) |
+| `testflight-github` | optional | Separate GitHub Actions signing, archive, and TestFlight upload workflow | `.github/workflows/deploy-testflight.yml`, `scripts/build-ios-testflight.sh` | `capacitor.config.*`, `app.config.{js,ts}`, `.github/workflows/deploy-testflight.yml` | [node/testflight-github.md](node/testflight-github.md) |
+| `typescript` | baseline | Strict tsconfig, noEmit type-checking | `tsconfig.json` | `tsconfig.json`, `**/*.{ts,tsx}` | [node/typescript.md](node/typescript.md) |
 
 ## k8s
 
-| Tool | Tier | Summary | Targets | Detect | Platform | Page |
-|---|---|---|---|---|---|---|
-| `kubeconform` | baseline | Schema-validate K8s manifests in CI against K8s + CRD schemas | `.gitlab-ci.yml` | `content:^kind:\s` | `any` | [k8s/kubeconform.md](k8s/kubeconform.md) |
-| `yamllint` | baseline | Lint all YAML for syntax/style, tuned for kubectl-style manifests | `.yamllint` | `content:^kind:\s` | `any` | [k8s/yamllint.md](k8s/yamllint.md) |
+| Tool | Tier | Summary | Targets | Detect | Page |
+|---|---|---|---|---|---|
+| `kubeconform` | baseline | Schema-validate K8s manifests in CI against K8s + CRD schemas | `.github/workflows/kubeconform.yml` | `content:^kind:\s` | [k8s/kubeconform.md](k8s/kubeconform.md) |
+| `yamllint` | baseline | Lint all YAML for syntax/style, tuned for kubectl-style manifests | `.yamllint` | `content:^kind:\s` | [k8s/yamllint.md](k8s/yamllint.md) |
 
 ## monorepo
 
-| Tool | Tier | Summary | Targets | Detect | Platform | Page |
-|---|---|---|---|---|---|---|
-| `ci-paths` | baseline | Path-filtered per-subproject CI workflows | `.github/workflows/` | — | `github` | [monorepo/ci-paths.md](monorepo/ci-paths.md) |
-| `docker-bake` | optional | Declarative multi-platform builds + skip-redundant-push CI | `docker-bake.hcl` | `**/Dockerfile*`, `docker-bake.hcl` | any | [monorepo/docker-bake.md](monorepo/docker-bake.md) |
-| `releases-monorepo` | baseline | Per-component independent releases via semantic-release-monorepo (path-scoped bumps, component-scoped tags) | `.releaserc.json`, `package.json`, `.gitlab-ci.yml` | — | `gitlab` | [monorepo/releases-monorepo.md](monorepo/releases-monorepo.md) |
+| Tool | Tier | Summary | Targets | Detect | Page |
+|---|---|---|---|---|---|
+| `ci-paths` | baseline | Path-filtered per-subproject CI workflows | `.github/workflows/` | — | [monorepo/ci-paths.md](monorepo/ci-paths.md) |
+| `docker-bake` | optional | Declarative multi-platform builds + skip-redundant-push CI | `docker-bake.hcl` | `**/Dockerfile*`, `docker-bake.hcl` | [monorepo/docker-bake.md](monorepo/docker-bake.md) |

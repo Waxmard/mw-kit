@@ -48,6 +48,7 @@ exclude_lines = [
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
 pythonpath = ["."]
 ```
@@ -67,9 +68,10 @@ uv run pytest                                       # all tests
 uv run pytest tests/test_items.py                   # one file
 uv run pytest -k "test_name"                        # filter
 uv run pytest --cov=app --cov-report=term-missing   # with coverage
+uv run pytest --junitxml=junit.xml --cov --cov-report=term-missing --cov-report=xml:coverage.xml  # CI reports (JUnit + Cobertura)
 ```
 
 ## Gotchas
 
-- `asyncio_mode = "auto"` (set above): `async def test_*` runs without `@pytest.mark.asyncio`.
+- `asyncio_mode = "auto"` (set above): `async def test_*` runs without `@pytest.mark.asyncio`. This is the baseline default for async-heavy services (FastAPI/SQLAlchemy); small libraries or repos mixing async runners (`anyio`/`trio`) may omit `asyncio_mode` (defaulting to `strict`) and mark async tests explicitly with `@pytest.mark.asyncio`. Setting `asyncio_default_fixture_loop_scope = "function"` silences `pytest-asyncio`'s unset-scope deprecation warning under either mode.
 - Use `aiosqlite` as test DB to skip Postgres in unit tests. Integration tests can hit real Postgres.

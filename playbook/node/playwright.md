@@ -32,6 +32,7 @@ export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
   workers: process.env.CI ? 4 : undefined,
+  reporter: process.env.CI ? [['list'], ['junit', { outputFile: 'test-results/junit.xml' }]] : 'list',
   use: {
     baseURL: 'http://127.0.0.1:4173',
     trace: 'retain-on-failure',

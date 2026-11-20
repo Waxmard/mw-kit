@@ -4,7 +4,6 @@ scope: universal
 tier: baseline
 summary: "Single-project GitHub Actions CI: lint + typecheck + test on every PR"
 targets: [".github/workflows/ci.yml"]
-platform: github
 ---
 
 # Single-Project CI (GitHub Actions)
@@ -13,8 +12,7 @@ platform: github
 
 One workflow that runs the full check suite — lint, typecheck, test — on every PR
 and every push to `main`. The single-repo counterpart to
-[ci-paths](../monorepo/ci-paths.md) (which path-filters per subproject). The GitLab
-equivalent is [ci-gitlab](./ci-gitlab.md). If the repo has exactly one toolchain at
+[ci-paths](../monorepo/ci-paths.md) (which path-filters per subproject). If the repo has exactly one toolchain at
 its root, this page applies; if it has multiple subprojects, use `ci-paths` instead.
 
 ## Why
@@ -88,8 +86,7 @@ use mise, use `actions/setup-node@v7` with its existing version file instead.
 
 When you push a fixup to a PR, the run testing the previous commit is now wasted —
 cancel it. GitHub's `concurrency` block does this: runs sharing a `group` can't overlap,
-and `cancel-in-progress` kills the older one when a newer starts. The GitLab counterpart
-is `workflow:auto_cancel` (see [ci-gitlab](./ci-gitlab.md)).
+and `cancel-in-progress` kills the older one when a newer starts.
 
 ```yaml
 concurrency:
@@ -131,6 +128,4 @@ committed. Same pattern works for any deterministic generator.
 - **Don't `cancel-in-progress: true` a deploy/release workflow.** Cancelling a
   half-finished deploy or publish leaves things torn. Gating to `pull_request` (above)
   already exempts `main`; if a workflow *only* deploys, leave `cancel-in-progress` off
-  entirely. Same intent as the GitLab `interruptible: false` exemption.
-- **GitLab** uses `.gitlab-ci.yml` with a different shape (stages + `workflow:rules`);
-  see [ci-gitlab](./ci-gitlab.md). This page's canonical block is GitHub-only.
+  entirely.

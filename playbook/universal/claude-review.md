@@ -4,7 +4,6 @@ scope: universal
 tier: optional
 summary: "Optional Claude Code review on every non-draft pull request"
 targets: [".github/workflows/claude.yml"]
-platform: github
 ---
 
 # Claude review on pull requests

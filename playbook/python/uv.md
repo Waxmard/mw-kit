@@ -29,6 +29,8 @@ uv sync                        # install from lockfile
 uv run pytest                  # run inside project env
 uv lock                        # refresh lockfile
 uv tool install ruff           # install global tool (pipx-style)
+uv lock --check                # verify uv.lock matches pyproject.toml
+uv audit --locked              # check locked deps against OSV advisories
 ```
 
 ## Config
@@ -41,6 +43,9 @@ dependencies = ["fastapi"]
 
 [dependency-groups]
 dev = ["pytest", "pytest-cov", "mypy", "ruff"]
+
+[tool.uv]
+preview-features = ["audit-command"]  # preview feature; requires recent uv
 ```
 
 Dev tooling goes in `[dependency-groups]` (PEP 735); `uv sync` installs the `dev` group by default. `[project.optional-dependencies]` is only for user-facing extras.
@@ -103,6 +108,8 @@ or installs the project. Most services are apps — skip the ceremony.
 
 `enable-cache: true` caches uv downloads across runs, keyed on the lockfile.
 
+Run `uv audit --locked` as a standalone CI step or job (it reads `pyproject.toml` and `uv.lock` directly without `uv sync`).
+
 ## Gotchas
 
 - Commit `uv.lock`.
@@ -112,3 +119,5 @@ or installs the project. Most services are apps — skip the ceremony.
   Either way, the floor is independent of the version you dev on (the [mise](../universal/mise.md) pin) — keep that on the newest stable regardless.
 - `uv run` activates the venv per-command; don't `source .venv/bin/activate` manually.
 - Minimal/Chainguard Python images set `ENTRYPOINT ["/usr/bin/python"]`, so setting `ENTRYPOINT` (not `CMD`) to `/app/.venv/bin/...` is required to use the virtualenv's packages.
+- `uv audit` currently requires `[tool.uv] preview-features = ["audit-command"]` and a recent `uv` CLI/image; keep the CI `uv` version current or treat the job as opt-in on repos pinned to older `uv`.
+- Omit `exclude-newer` in `[tool.uv]` — hard resolver cooldowns block urgent CVE patches, while Dependabot (`cooldown`) already enforces cooldowns on routine bumps. If Semgrep's `package_managers.uv.uv-missing-dependency-cooldown` rule flags `[tool.uv]`, suppress it inline with `# nosemgrep: package_managers.uv.uv-missing-dependency-cooldown.uv-missing-dependency-cooldown`.

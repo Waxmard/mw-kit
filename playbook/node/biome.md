@@ -149,6 +149,7 @@ Use the [SvelteKit scripts](package-json.md#sveltekit) and [SvelteKit TypeScript
 - run: npm run check
 ```
 
+
 ## Gotchas
 
 - Keep `files.includes` and the CLI paths (`src/`) aligned.

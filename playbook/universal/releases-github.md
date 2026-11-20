@@ -4,7 +4,6 @@ scope: universal
 tier: baseline
 summary: "release-please: PR-driven versioning + changelog on GitHub"
 targets: ["release-please-config.json", ".release-please-manifest.json", ".github/workflows/release-please.yml"]
-platform: github
 ---
 
 # Releases on GitHub: release-please

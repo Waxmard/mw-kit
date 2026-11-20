@@ -18,7 +18,7 @@ targets: ["lefthook.yml"]
 
 ## Accepted alternative
 
-[pre-commit](https://pre-commit.com/): a repo that already runs hooks from `.pre-commit-config.yaml` keeps it; don't migrate it to lefthook. New repos start on lefthook.
+[pre-commit](https://pre-commit.com/) and [prek](https://github.com/j178/prek) (Rust drop-in replacement for `pre-commit`): a repo that already uses `.pre-commit-config.yaml` or `prek.toml` keeps it; don't migrate it to lefthook. New repos start on lefthook.
 
 ## Config
 
@@ -45,6 +45,16 @@ pre-commit:
       glob: "*.py"
       run: uv run ruff format {staged_files}
       stage_fixed: true
+
+    mypy:
+      root: fastapi/
+      glob: "*.py"
+      run: uv run --locked mypy .
+
+    uv-lock-check:
+      root: fastapi/
+      glob: "{pyproject.toml,uv.lock}"
+      run: uv lock --check
 ```
 
 ## Install
@@ -74,4 +84,5 @@ running `uv run ruff …` inside it.
   - A glob **containing a `/`** matches the full repo-relative path, and `**/` requires ≥1 intervening directory — so `src/**/*.ts` silently **misses** `src/index.ts` (a direct child of `src/`). Worse, with `root: frontend/` the glob `src/**/*.ts` matches **nothing**, because the real paths are `frontend/src/...`, not `src/...`. The miss is silent — the hook still runs, just on a subset (or empty).
   
   Prefer the slashless form. Reach for a path glob only to pin a specific location, and then mind both traps above. Always verify a glob change with a staged probe (`git add` a file at each depth, `lefthook run pre-commit`).
-- **Never `root: .`.** Repo root is already the default cwd, so it's a no-op — and worse, lefthook strips the leading dot of a dotfile under it, passing a staged `.releaserc.json` to the command as `./releaserc.json`. The tool then errors `No files matching the pattern`. Omit `root` for repo-root commands; use it only for a real subdirectory (`root: frontend/`).
+- **Never `root: .`.** Repo root is already the default cwd, so it's a no-op — and worse, lefthook strips the leading dot of a dotfile under it, passing a staged `.release-please-manifest.json` to the command as `./release-please-manifest.json`. The tool then errors `No files matching the pattern`. Omit `root` for repo-root commands; use it only for a real subdirectory (`root: frontend/`).
+- Keep `uv audit --locked` out of `lefthook.yml` (run it in CI instead) so local commits remain offline-capable.

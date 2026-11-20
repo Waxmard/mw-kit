@@ -5,7 +5,6 @@ tier: optional
 summary: "Separate GitHub Actions signing, archive, and TestFlight upload workflow"
 targets: [".github/workflows/deploy-testflight.yml", "scripts/build-ios-testflight.sh"]
 detect: ["capacitor.config.*", "app.config.{js,ts}", ".github/workflows/deploy-testflight.yml"]
-platform: github
 ---
 
 # TestFlight delivery with GitHub Actions

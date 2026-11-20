@@ -1,7 +1,7 @@
 """Unit tests for scope.py — the branchy, load-bearing logic the skill depends on.
 
-Covers the pure functions (glob matching, structure detection, alternative
-resolution) and scope_pages end-to-end with synthetic pages. The git/argparse/IO
+Covers the pure functions (glob matching, structure detection) and scope_pages
+end-to-end with synthetic pages. The git/argparse/IO
 shell in main() is left to the integration smoke run.
 """
 
@@ -12,8 +12,6 @@ from pathlib import Path
 import build_manifest
 import pytest
 import scope
-
-# --- glob helpers ---------------------------------------------------------
 
 
 def test_expand_braces():
@@ -33,8 +31,11 @@ def test_detect_matches_any_option_of_a_brace_group():
 
 
 def test_detect_matches_a_literal_path():
-    assert scope.detect_matches(".gitlab-ci.yml", [".gitlab-ci.yml"]) is True
-    assert scope.detect_matches(".gitlab-ci.yml", ["other.yml"]) is False
+    assert (
+        scope.detect_matches(".github/dependabot.yml", [".github/dependabot.yml"])
+        is True
+    )
+    assert scope.detect_matches(".github/dependabot.yml", ["other.yml"]) is False
 
 
 def test_resolve_target_finds_files_dirs_and_globs(tmp_path: Path):
@@ -68,17 +69,11 @@ def test_resolve_target_returns_all_matches_root_first(tmp_path: Path):
     ]
 
 
-# --- as_list --------------------------------------------------------------
-
-
 def test_as_list_wraps_scalars_and_drops_empties():
     assert scope.as_list(["a", "b"]) == ["a", "b"]
     assert scope.as_list("solo") == ["solo"]
     assert scope.as_list(None) == []
     assert scope.as_list("") == []
-
-
-# --- structure detection --------------------------------------------------
 
 
 def test_a_root_manifest_means_a_single_project():
@@ -112,88 +107,6 @@ def test_detect_structure_exposes_component_dirs():
     assert scope.detect_structure(["pyproject.toml"])["component_dirs"] == []
 
 
-# --- alternative resolution ----------------------------------------------
-
-
-def test_dep_bot_gitlab_forces_renovate():
-    assert scope._resolve_dep_bot("gitlab", set())[0] == "renovate"
-
-
-def test_dep_bot_github_default_is_dependabot():
-    assert scope._resolve_dep_bot("github", set())[0] == "dependabot"
-
-
-def test_dep_bot_respects_configured_renovate():
-    assert scope._resolve_dep_bot("github", {"renovate"})[0] == "renovate"
-
-
-def test_a_single_github_project_gets_release_please():
-    out = scope._resolve_release("github", multi=False, is_py=False)
-    assert out["chosen"] == "releases-github"
-    assert "note" not in out
-
-
-def test_release_github_monorepo_keeps_github_with_note():
-    out = scope._resolve_release("github", multi=True, is_py=True)
-    assert out["chosen"] == "releases-github"
-    assert "note" in out  # the gitlab-only releases-monorepo page can't apply
-
-
-def test_release_gitlab_monorepo_uses_monorepo_tool():
-    out = scope._resolve_release("gitlab", multi=True, is_py=True)
-    assert out["chosen"] == "releases-monorepo"
-
-
-def test_gitlab_python_gets_python_semantic_release_and_plain_gets_semantic_release():
-    assert scope._resolve_release("gitlab", multi=False, is_py=True)["chosen"] == (
-        "releases-python"
-    )
-    assert scope._resolve_release("gitlab", multi=False, is_py=False)["chosen"] == (
-        "releases-gitlab"
-    )
-
-
-def test_release_gitlab_existing_releaserc_beats_python_detect():
-    out = scope._resolve_release(
-        "gitlab", multi=False, is_py=True, semrel_configured=True
-    )
-    assert out["chosen"] == "releases-gitlab"
-
-
-def test_release_unknown_platform_is_none():
-    assert scope._resolve_release("unknown", multi=False, is_py=False)["chosen"] is None
-
-
-def _row(tool, scope_, present=False):
-    return {"tool": tool, "scope": scope_, "targets_present": ["x"] if present else []}
-
-
-def test_resolve_alternatives_drops_losers():
-    in_scope = [
-        _row("dependabot", "universal"),
-        _row("renovate", "universal"),
-        _row("releases-github", "universal"),
-    ]
-    out = scope.resolve_alternatives(in_scope, "github", {"verdict": "single_project"})
-    assert out["dep_updates"]["chosen"] == "dependabot"
-    assert "renovate" in out["dropped"]
-    assert out["releases"]["chosen"] == "releases-github"
-
-
-def test_resolve_alternatives_sees_nested_releaserc():
-    # a nested .releaserc.json still means "semantic-release already configured"
-    rows = [
-        {
-            "tool": "releases-gitlab",
-            "scope": "universal",
-            "targets_present": ["web/.releaserc.json"],
-        },
-        {"tool": "ruff", "scope": "python", "targets_present": ["web/pyproject.toml"]},
-    ]
-    out = scope.resolve_alternatives(rows, "gitlab", {"verdict": "single_project"})
-    assert out["releases"]["chosen"] == "releases-gitlab"
-
-
 def test_nested_target_warnings_flags_manifestless_nested_target():
     rows = [{"tool": "docker-bake", "targets_missing": ["docker-bake.hcl"]}]
     out = scope.nested_target_warnings(rows, ["vendor/x/docker-bake.hcl"])
@@ -213,13 +126,10 @@ def test_nested_target_warnings_quiet_when_basename_already_resolved():
         {
             "tool": "codeowners",
             "targets_present": [".github/CODEOWNERS"],
-            "targets_missing": [".gitlab/CODEOWNERS"],
+            "targets_missing": ["docs/CODEOWNERS"],
         }
     ]
     assert scope.nested_target_warnings(rows, [".github/CODEOWNERS"]) == []
-
-
-# --- scope_pages end-to-end ----------------------------------------------
 
 
 def _page(
@@ -227,7 +137,6 @@ def _page(
     scope_,
     *,
     tier="baseline",
-    platform="",
     detect=None,
     detect_content=None,
     targets=None,
@@ -237,30 +146,28 @@ def _page(
         "_page": f"{scope_}/{tool}.md",
         "scope": scope_,
         "tier": tier,
-        "platform": platform,
         "detect": detect or [],
         "detect_content": detect_content or [],
         "targets": targets or [],
     }
 
 
-def test_scope_pages_filters_by_platform_and_detect(tmp_path: Path):
+def test_scope_pages_filters_by_detect(tmp_path: Path):
     pages = [
         _page("ruff", "python", detect=["**/*.py"], targets=["pyproject.toml"]),
         _page("biome", "node", detect=["package.json"]),
-        _page("security", "universal", platform="github"),
-        _page("gitlab-dedup", "universal", platform="gitlab"),
+        _page("security", "universal"),
     ]
     (tmp_path / "pyproject.toml").write_text("x")
     tracked = ["scripts/x.py", "pyproject.toml"]
-    out = scope.scope_pages(
-        pages, tmp_path, tracked, "github", {"verdict": "single_project"}
-    )
+    out = scope.scope_pages(pages, tmp_path, tracked, {"verdict": "single_project"})
     tools = {r["tool"] for r in out["in_scope"]}
-    assert "ruff" in tools
-    assert "security" in tools
-    assert "biome" not in tools
-    assert "gitlab-dedup" not in tools
+    assert tools == {"ruff", "security"}
+    assert {
+        "tool": "biome",
+        "page": "node/biome.md",
+        "reason": "no detect match",
+    } in out["skipped"]
     ruff = next(r for r in out["in_scope"] if r["tool"] == "ruff")
     assert ruff["targets_present"] == ["pyproject.toml"]
 
@@ -290,7 +197,7 @@ def test_scope_pages_monorepo_resolves_nested_targets(tmp_path: Path):
         "verdict": "multi_component",
         "component_dirs": ["fastapi", "frontend"],
     }
-    out = scope.scope_pages(pages, tmp_path, tracked, "github", structure)
+    out = scope.scope_pages(pages, tmp_path, tracked, structure)
     rows = {r["tool"]: r for r in out["in_scope"]}
     assert "expo" in rows
     assert rows["expo"]["matched_detect"] == "app.json"
@@ -323,9 +230,7 @@ def test_scope_pages_content_detect_identifies_k8s_repo(tmp_path: Path):
     ]
     (tmp_path / "svc.yaml").write_text("kind: Service\n")
     tracked = ["svc.yaml"]
-    out = scope.scope_pages(
-        pages, tmp_path, tracked, "gitlab", {"verdict": "single_project"}
-    )
+    out = scope.scope_pages(pages, tmp_path, tracked, {"verdict": "single_project"})
     tools = {r["tool"] for r in out["in_scope"]}
     assert "kubeconform" in tools
     assert "ruff" not in tools
@@ -335,22 +240,9 @@ def test_scope_pages_content_detect_identifies_k8s_repo(tmp_path: Path):
 
 def test_scope_pages_drops_monorepo_when_single_project(tmp_path: Path):
     pages = [_page("layout", "monorepo")]
-    out = scope.scope_pages(
-        pages, tmp_path, [], "github", {"verdict": "single_project"}
-    )
+    out = scope.scope_pages(pages, tmp_path, [], {"verdict": "single_project"})
     assert out["in_scope"] == []
     assert out["skipped"][0]["tool"] == "layout"
-
-
-def test_scope_pages_platform_pending_when_unknown(tmp_path: Path):
-    pages = [_page("security", "universal", platform="github")]
-    out = scope.scope_pages(
-        pages, tmp_path, [], "unknown", {"verdict": "single_project"}
-    )
-    assert out["in_scope"][0]["platform_pending"] is True
-
-
-# --- incremental-sync memory ----------------------------------------------
 
 
 def _scoped_row(tool, page=None):
@@ -376,38 +268,39 @@ def test_load_state_valid_round_trips(tmp_path: Path):
 
 def test_annotate_state_no_state_marks_all_new():
     rows = [_scoped_row("ruff"), _scoped_row("mypy")]
-    summary = scope.annotate_state(rows, None, "HEAD", changed_fn=lambda c, p: False)
+    summary = scope.annotate_state(rows, None, "HEAD")
     assert summary["present"] is False
     assert summary["new_tools"] == ["mypy", "ruff"]
     assert summary["all_settled"] is False
     assert rows[0]["state"] == {"decision": "new", "settled": False}
 
 
-def test_annotate_state_same_commit_is_settled_without_git():
-    # decided at the current HEAD → page provably unchanged, changed_fn never called
+def test_annotate_state_same_commit_is_settled_without_git(monkeypatch):
     rows = [_scoped_row("ruff")]
     state = {
         "playbook_commit": "HEAD",
         "tools": {"ruff": {"decision": "synced", "playbook_commit": "HEAD"}},
     }
 
-    def boom(commit, page):  # must not be consulted when commit == head
-        raise AssertionError("changed_fn called for same-commit row")
+    def boom(commit, page):
+        raise AssertionError("page_changed_since called for same-commit row")
 
-    summary = scope.annotate_state(rows, state, "HEAD", changed_fn=boom)
+    monkeypatch.setattr(scope, "page_changed_since", boom)
+    summary = scope.annotate_state(rows, state, "HEAD")
     assert rows[0]["state"]["settled"] is True
     assert summary["settled_tools"] == ["ruff"]
     assert summary["all_settled"] is True
     assert summary["playbook_unchanged"] is True
 
 
-def test_annotate_state_changed_page_is_stale():
+def test_annotate_state_changed_page_is_stale(monkeypatch):
     rows = [_scoped_row("lefthook", "universal/lefthook.md")]
     state = {
         "playbook_commit": "old",
         "tools": {"lefthook": {"decision": "synced", "playbook_commit": "old"}},
     }
-    summary = scope.annotate_state(rows, state, "new", changed_fn=lambda c, p: True)
+    monkeypatch.setattr(scope, "page_changed_since", lambda c, p: True)
+    summary = scope.annotate_state(rows, state, "new")
     assert rows[0]["state"]["settled"] is False
     assert rows[0]["state"]["page_changed_since_decision"] is True
     assert summary["stale_tools"] == ["lefthook"]
@@ -422,20 +315,21 @@ def test_annotate_state_declined_unchanged_stays_suppressed():
             "tach": {"decision": "declined", "playbook_commit": "c", "reason": "flat"}
         },
     }
-    summary = scope.annotate_state(rows, state, "c", changed_fn=lambda c, p: False)
+    summary = scope.annotate_state(rows, state, "c")
     assert rows[0]["state"]["settled"] is True
     assert rows[0]["state"]["reason"] == "flat"
     assert summary["settled_tools"] == ["tach"]
 
 
-def test_annotate_state_missing_commit_assumes_changed():
+def test_annotate_state_missing_commit_assumes_changed(monkeypatch):
     rows = [_scoped_row("uv")]
     state = {"tools": {"uv": {"decision": "override"}}}  # no playbook_commit recorded
 
-    def boom(commit, page):  # changed_fn needs a commit to diff; must be skipped
-        raise AssertionError("changed_fn called without a recorded commit")
+    def boom(commit, page):
+        raise AssertionError("page_changed_since called without a recorded commit")
 
-    scope.annotate_state(rows, state, "HEAD", changed_fn=boom)
+    monkeypatch.setattr(scope, "page_changed_since", boom)
+    scope.annotate_state(rows, state, "HEAD")
     assert rows[0]["state"]["settled"] is False
     assert rows[0]["state"]["page_changed_since_decision"] is True
 
@@ -446,7 +340,7 @@ def test_annotate_state_unknown_decision_never_settles():
         "playbook_commit": "c",
         "tools": {"ruff": {"decision": "wat", "playbook_commit": "c"}},
     }
-    scope.annotate_state(rows, state, "c", changed_fn=lambda c, p: False)
+    scope.annotate_state(rows, state, "c")
     assert rows[0]["state"]["settled"] is False  # only synced/declined/override settle
 
 
@@ -460,9 +354,7 @@ def test_annotate_state_flags_record_whose_page_is_gone():
             "docs-gen": {"decision": "synced", "playbook_commit": "c"},
         },
     }
-    summary = scope.annotate_state(
-        rows, state, "c", changed_fn=lambda c, p: False, known_tools={"ruff", "mypy"}
-    )
+    summary = scope.annotate_state(rows, state, "c", known_tools={"ruff", "mypy"})
     assert summary["orphaned_tools"] == ["docs-gen"]
     assert summary["all_settled"] is True  # orphans don't block the fast path
 
@@ -470,7 +362,7 @@ def test_annotate_state_flags_record_whose_page_is_gone():
 def test_annotate_state_orphans_empty_without_known_tools():
     rows = [_scoped_row("ruff")]
     state = {"playbook_commit": "c", "tools": {"gone": {"decision": "synced"}}}
-    summary = scope.annotate_state(rows, state, "c", changed_fn=lambda c, p: False)
+    summary = scope.annotate_state(rows, state, "c")
     assert summary["orphaned_tools"] == []
 
 
@@ -489,7 +381,6 @@ def test_scope_pages_ignores_standalone_scripts_py_without_pyproject(tmp_path: P
         pages,
         tmp_path,
         ["scripts/validate.py", "deploy.yaml"],
-        "gitlab",
         {"verdict": "single_project"},
     )
     assert {r["tool"] for r in out_no_py["in_scope"]} == set()
@@ -499,7 +390,6 @@ def test_scope_pages_ignores_standalone_scripts_py_without_pyproject(tmp_path: P
         pages,
         tmp_path,
         ["scripts/validate.py", "pyproject.toml"],
-        "gitlab",
         {"verdict": "single_project"},
     )
     assert {r["tool"] for r in out_with_py["in_scope"]} == {"ruff"}
@@ -508,105 +398,28 @@ def test_scope_pages_ignores_standalone_scripts_py_without_pyproject(tmp_path: P
 def test_scope_pages_monorepo_root_tools_only_resolve_at_repo_root(tmp_path: Path):
     pages = [
         _page("docker-bake", "monorepo", targets=["docker-bake.hcl"]),
-        _page("releases-monorepo", "monorepo", targets=[".releaserc.json"]),
+        _page("ci-paths", "monorepo", targets=[".github/workflows/ci.yml"]),
     ]
     (tmp_path / "backend").mkdir()
     (tmp_path / "backend" / "docker-bake.hcl").write_text("")
-    (tmp_path / "backend" / ".releaserc.json").write_text("{}")
+    (tmp_path / "backend" / ".github" / "workflows").mkdir(parents=True)
+    (tmp_path / "backend" / ".github" / "workflows" / "ci.yml").write_text("")
     tracked = [
         "backend/pyproject.toml",
         "backend/docker-bake.hcl",
-        "backend/.releaserc.json",
+        "backend/.github/workflows/ci.yml",
         "frontend/package.json",
     ]
     structure = {
         "verdict": "multi_component",
         "component_dirs": ["backend", "frontend"],
     }
-    out = scope.scope_pages(pages, tmp_path, tracked, "gitlab", structure)
+    out = scope.scope_pages(pages, tmp_path, tracked, structure)
     rows = {r["tool"]: r for r in out["in_scope"]}
     assert rows["docker-bake"]["targets_present"] == []
     assert rows["docker-bake"]["targets_missing"] == ["docker-bake.hcl"]
-    assert rows["releases-monorepo"]["targets_present"] == ["backend/.releaserc.json"]
-
-
-def test_release_gitlab_monorepo_with_root_releaserc_keeps_releases_gitlab():
-    structure = {"verdict": "multi_component"}
-    root_only = [
-        {
-            "tool": "releases-gitlab",
-            "scope": "universal",
-            "targets_present": [".releaserc.json"],
-        },
-        {
-            "tool": "releases-monorepo",
-            "scope": "monorepo",
-            "targets_present": [],
-        },
-    ]
-    out_root = scope.resolve_alternatives(root_only, "gitlab", structure)
-    assert out_root["releases"]["chosen"] == "releases-gitlab"
-    assert "releases-monorepo" in out_root["dropped"]
-
-    component_scoped = [
-        {
-            "tool": "releases-gitlab",
-            "scope": "universal",
-            "targets_present": ["backend/.releaserc.json"],
-        },
-        {
-            "tool": "releases-monorepo",
-            "scope": "monorepo",
-            "targets_present": ["backend/.releaserc.json"],
-        },
-    ]
-    out_comp = scope.resolve_alternatives(component_scoped, "gitlab", structure)
-    assert out_comp["releases"]["chosen"] == "releases-monorepo"
-
-    unconfigured = [
-        {
-            "tool": "releases-gitlab",
-            "scope": "universal",
-            "targets_present": [],
-        },
-        {
-            "tool": "releases-monorepo",
-            "scope": "monorepo",
-            "targets_present": [],
-        },
-    ]
-    out_none = scope.resolve_alternatives(unconfigured, "gitlab", structure)
-    assert out_none["releases"]["chosen"] == "releases-monorepo"
-
-
-def test_detect_platform_falls_back_to_glab_config(tmp_path: Path, monkeypatch):
-    def fake_git(repo: Path, *args: str) -> str | None:
-        if args == ("remote", "get-url", "origin"):
-            return "git@git.example.internal:team/service.git"
-        if args == ("config", "--get-regexp", r"^remote\..*\.glab-resolved$"):
-            return "remote.origin.glab-resolved base"
-        return None
-
-    monkeypatch.setattr(scope, "git", fake_git)
-    assert scope.detect_platform(tmp_path, ["README.md"]) == ("gitlab", "glab-config")
-
-
-@pytest.mark.parametrize(
-    ("url", "expected"),
-    [
-        ("https://github.com/acme/app.git", "github"),
-        ("https://gitlab.com/acme/app.git", "gitlab"),
-        ("git@github.com:acme/gitlab-runner.git", "github"),
-        ("git@gitlab.example.internal:team/service.git", "gitlab"),
-    ],
-)
-def test_detect_platform_from_remote_url(
-    url: str, expected: str, tmp_path: Path, monkeypatch
-):
-    monkeypatch.setattr(
-        scope, "git", lambda repo, *a: url if a[0] == "remote" else None
-    )
-    assert scope.detect_platform(tmp_path, []) == (expected, "remote")
+    assert rows["ci-paths"]["targets_present"] == []
+    assert rows["ci-paths"]["targets_missing"] == [".github/workflows/ci.yml"]
 
 
 def test_page_changed_since_treats_option_like_commit_as_unknown(tmp_path: Path):

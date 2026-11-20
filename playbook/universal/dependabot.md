@@ -4,14 +4,13 @@ scope: universal
 tier: baseline
 summary: "GitHub-native dependency update PRs"
 targets: [".github/dependabot.yml"]
-platform: github
 ---
 
 # dependabot
 
 ## What
 
-GitHub's built-in dep update bot. PRs to bump `package.json`, `pyproject.toml`, GH Actions, Docker base images. GitLab → use [renovate](./renovate.md).
+GitHub's built-in dep update bot. PRs to bump `package.json`, `pyproject.toml`, GH Actions, Docker base images.
 
 ## Config
 
@@ -63,7 +62,7 @@ updates:
       prefix: "chore(deps)"
 ```
 
-`cooldown` holds a release back for three days before opening a PR — a supply-chain buffer (matching [renovate](./renovate.md)'s `minimumReleaseAge: "3 days"`) so a compromised or broken version gets yanked/fixed before it lands. The `# nosemgrep:` pragma silences Semgrep's rule that hardcodes a 7-day minimum. **Version updates only; security updates bypass it entirely**, so vuln fixes are not delayed. Aligns with [security](./security.md). Want majors to soak longer → split by semver: `semver-major-days: 30`, `semver-minor-days: 7`, `semver-patch-days: 3` (SemVer-aware managers only — npm/uv yes; Docker tags / GH Actions fall back to `default-days`).
+`cooldown` holds a release back for three days before opening a PR — a supply-chain buffer so a compromised or broken version gets yanked/fixed before it lands. The `# nosemgrep:` pragma silences Semgrep's rule that hardcodes a 7-day minimum. **Version updates only; security updates bypass it entirely**, so vuln fixes are not delayed. Aligns with [security](./security.md). Want majors to soak longer → split by semver: `semver-major-days: 30`, `semver-minor-days: 7`, `semver-patch-days: 3` (SemVer-aware managers only — npm/uv yes; Docker tags / GH Actions fall back to `default-days`).
 
 One block per ecosystem **per directory** — monorepos repeat the `npm`/`pip` block per path (`/`, `/frontend`, `/fastapi`). Each repeat carries the same `cooldown` + `groups` + limit.
 

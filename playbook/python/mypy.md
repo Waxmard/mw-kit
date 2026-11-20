@@ -19,22 +19,32 @@ detect: ["**/*.py"]
 [tool.mypy]
 python_version = "3.X"  # newest stable Python; match requires-python
 strict = true
-ignore_missing_imports = true
+follow_untyped_imports = true
 ```
 
-### `ignore_missing_imports = true`
+### `follow_untyped_imports = true`
 
-Many libraries ship without type stubs. Without this, every third-party import is an error. Lose precision; gain pragmatism.
+`follow_untyped_imports = true` inspects installed untyped third-party packages without silently turning missing imports into `Any` (which also breaks single-directory runs like `mypy tests/` by dropping local package types).
 
-For libraries that DO have stubs but you want enforced, override per-module:
+Typed-but-stubless deps: add `types-<lib>` to the `dev` dependency group.
+
+For genuinely stubless or broken third-party packages, opt out per-module:
 
 ```toml
 [[tool.mypy.overrides]]
-module = "<typed_lib>.*"
-ignore_missing_imports = false
+module = "<untyped_lib>.*"
+ignore_missing_imports = true
 ```
 
-Typed-but-stubless deps: add `types-<lib>` to the `dev` dependency group.
+### IDE venv discovery (`[tool.pyright]`)
+
+Optional editor-only Pyright/Pylance discovery so IDEs resolve `.venv` without making Pyright a CI gate (`mypy --strict` stays the sole CI typechecker):
+
+```toml
+[tool.pyright]
+venv = ".venv"
+venvPath = "."
+```
 
 ## CI
 
@@ -43,7 +53,6 @@ Typed-but-stubless deps: add `types-<lib>` to the `dev` dependency group.
 - run: uv run mypy app/
 ```
 
-In GitLab CI, cache `.mypy_cache/` keyed by branch slug with a fallback to the default branch (see [ci-gitlab](../universal/ci-gitlab.md)). This avoids repeating AST/type analysis from scratch on every run.
 
 ## Gotchas
 

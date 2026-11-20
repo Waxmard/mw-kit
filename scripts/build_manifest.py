@@ -23,8 +23,7 @@ MANIFEST = PLAYBOOK / "MANIFEST.md"
 SCOPE_ORDER = ["universal", "python", "node", "k8s", "monorepo"]
 
 ROW_TEMPLATE = (
-    "| `{tool}` | {tier} | {summary} | {targets} | "
-    "{detect} | {platform} | [{path}]({path}) |"
+    "| `{tool}` | {tier} | {summary} | {targets} | {detect} | [{path}]({path}) |"
 )
 
 
@@ -58,9 +57,7 @@ def parse_frontmatter(text: str) -> dict[str, Any] | None:
 
 
 def fmt_list(val: object) -> str:
-    if isinstance(val, list):
-        return ", ".join(f"`{x}`" for x in val) if val else "—"
-    return f"`{val}`" if val else "—"
+    return ", ".join(f"`{x}`" for x in as_list(val)) or "—"
 
 
 def as_list(val: object) -> list[str]:
@@ -116,9 +113,7 @@ def main() -> int:
         "(what to compare / where to apply).",
         "- **detect** — path globs, plus `content:<re>` regexes matched against "
         "YAML bodies; if any matches the page is relevant "
-        "(— = always relevant for its scope/platform).",
-        "- **platform** — restricts relevance to `github` or `gitlab` "
-        "(any = no restriction).",
+        "(— = always relevant for its scope).",
         "",
     ]
 
@@ -132,8 +127,8 @@ def main() -> int:
         out += [
             f"## {scope}",
             "",
-            "| Tool | Tier | Summary | Targets | Detect | Platform | Page |",
-            "|---|---|---|---|---|---|---|",
+            "| Tool | Tier | Summary | Targets | Detect | Page |",
+            "|---|---|---|---|---|---|",
         ]
         for p in group:
             out.append(
@@ -143,7 +138,6 @@ def main() -> int:
                     summary=p.get("summary", "") or "",
                     targets=fmt_list(p.get("targets")),
                     detect=fmt_list(combined_detect(p)),
-                    platform=f"`{p['platform']}`" if p.get("platform") else "any",
                     path=p["_page"],
                 )
             )

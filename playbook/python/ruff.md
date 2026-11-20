@@ -21,6 +21,9 @@ Canonical `[tool.ruff]` block — the full preferred config to diff a repo again
 [tool.ruff]
 target-version = "py3X"  # newest stable Python; match requires-python
 
+[tool.ruff.format]
+docstring-code-format = true
+
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM", "RUF", "PL", "S"]
 ignore = [
@@ -83,3 +86,4 @@ Hook: see [lefthook](../universal/lefthook.md).
 
 - Run lint **before** format, both with `stage_fixed: true` — format may rewrite lint-fixed code, both autofix layers compose cleanly.
 - **`target-version` must match the lowest runtime, not the newest.** Code loaded by another project's interpreter (plugins, scripts loaded via `importlib`) must target *that* project's `requires-python`.
+- Do not set global `fix = true` in `[tool.ruff]` — it mutates files during CI `ruff check .`; pass `--fix` explicitly in local commands and pre-commit hooks.

@@ -22,6 +22,14 @@ pre-commit:
       glob: "playbook/**/*.md"
       run: python3 scripts/build_manifest.py && git add playbook/MANIFEST.md
 
+    mypy:
+      glob: "*.py"
+      run: uv run --locked mypy scripts/
+
+    uv-lock-check:
+      glob: "{pyproject.toml,uv.lock}"
+      run: uv lock --check
+
 pre-push:
   commands:
     ci:

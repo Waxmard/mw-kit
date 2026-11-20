@@ -26,7 +26,7 @@ detect: ["mise.toml"]
 [tools]
 node = "NN"      # current Node Active LTS
 python = "3.X"   # newest stable Python
-uv = "X.Y"  # pin to latest stable; renovate bumps it
+uv = "X.Y"  # pin to latest stable
 ```
 
 ## Setup

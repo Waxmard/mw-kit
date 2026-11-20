@@ -16,11 +16,11 @@ Types: `feat`, `fix`, `perf`, `refactor`, `docs`, `style`, `test`, `chore`, `bui
 
 `feat!` or `BREAKING CHANGE:` footer → major bump.
 
-PRs and MRs are squash-merged, so the squashed commit title must itself be conventional; it's the line release tooling reads.
+PRs are squash-merged, so the squashed commit title must itself be conventional; it's the line release tooling reads.
 
 ## Why
 
-- Release tooling (release-please, semantic-release) parses these to compute version bumps and changelog sections.
+- Release tooling (`release-please`) parses these to compute version bumps and changelog sections.
 
 ## Examples
 

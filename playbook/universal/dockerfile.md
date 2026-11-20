@@ -16,7 +16,7 @@ Python services build in two stages on a digest-pinned Chainguard base: a `build
 ## Why
 
 - Chainguard images are minimal and ship few CVEs, so the [security](./security.md) image scan stays quiet.
-- Pinning by digest makes builds reproducible, and renovate/dependabot bumps the digest in an MR/PR.
+- Pinning by digest makes builds reproducible, and dependabot bumps the digest in a PR.
 - A non-root `USER` limits what a compromised process can do, and Cloud Run and Kubernetes policies often require it.
 - Installing dependencies before copying `src/` keeps the dependency layer cached across code-only changes.
 - A missing dependency otherwise surfaces only after deploy, as an opaque Cloud Run "failed to listen on PORT" timeout. The import check turns that into an instant build failure.
@@ -28,12 +28,12 @@ Python service `Dockerfile`:
 ```dockerfile
 # Stage 1: Build the virtual environment
 # Chainguard's free tier publishes only `latest`/`latest-dev` (no version tags),
-# so the runtime is pinned by digest for reproducibility; renovate bumps it.
+# so the runtime is pinned by digest for reproducibility; dependabot bumps it.
 # `requires-python>=3.X` (newest stable) makes `uv sync` below fail loudly if the base regresses.
 FROM cgr.dev/chainguard/python:latest-dev@sha256:<digest> AS builder
 
 # Copy the uv binary from the official image (static binary, works in Chainguard)
-# pin to latest stable; renovate bumps it
+# pin to latest stable; dependabot bumps it
 COPY --from=ghcr.io/astral-sh/uv:X.Y.Z /uv /uvx /bin/
 
 ENV UV_COMPILE_BYTECODE=1 UV_PYTHON_DOWNLOADS=never UV_LINK_MODE=copy
@@ -96,8 +96,6 @@ tests/
 docs/
 node_modules/
 .github/
-.gitlab-ci.yml
-renovate.json
 ```
 
 ## SPA frontend variant (nginx runtime)
@@ -126,7 +124,7 @@ COPY . .
 RUN npm run build
 
 # ─── Stage 2: Runtime ─────────────────────────────────────────────────────────
-# pin to latest stable; renovate bumps it
+# pin to latest stable; dependabot bumps it
 FROM nginx:X.Y.Z-alpine
 
 RUN addgroup -g 1000 appuser && \
