@@ -42,11 +42,11 @@ Every `playbook/<scope>/<tool>.md` page has two halves, and both matter:
 
 1. **YAML frontmatter** — the machine-readable index source. `build_manifest.py`
    parses it (with a hand-rolled parser, *not* PyYAML), so it only supports
-   scalars and inline JSON lists (`["a", "b"]`). Required key: `tool`. Other keys:
-   `scope`, `tier` (`baseline` | `optional`), `summary`, `targets` (files the page
-   governs in a consumer repo), `detect` (path globs that signal relevance),
-   `detect_content` (regexes matched against YAML file bodies — for repo classes
-   with no path marker, e.g. plain-YAML k8s keyed on `^kind:`).
+   scalars and inline JSON lists (`["a", "b"]`). Required keys: `tool`, `scope`,
+   `tier` (`baseline` | `optional`), `summary`, `targets` (files the page governs
+   in a consumer repo; `[]` when none). Optional keys: `detect` (path globs that
+   signal relevance), `detect_content` (regexes matched against YAML file bodies —
+   for repo classes with no path marker, e.g. plain-YAML k8s keyed on `^kind:`).
 2. **Body** — sections `## What`, `## Why`, `## Config`, `## Gotchas` (pages add
    `## Commands`, `## Lefthook`, etc. as needed). `## Accepted alternative` names a
    tool a repo may already run instead; `tooling-sync` leaves such a repo on it, and
