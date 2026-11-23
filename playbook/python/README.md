@@ -6,3 +6,4 @@
 - [ruff.md](./ruff.md) — lint + format (rule selection)
 - [mypy.md](./mypy.md) — strict typing config
 - [pytest.md](./pytest.md) — testing + coverage
+- [tach.md](./tach.md) — module dependency boundaries + cycle prevention

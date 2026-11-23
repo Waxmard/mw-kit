@@ -16,3 +16,5 @@ Tooling decisions applicable to every project regardless of language.
 - [claude-review.md](./claude-review.md) — optional Claude Code review on every non-draft pull request
 - [dependabot.md](./dependabot.md) — automated dep updates (GH Actions + npm + uv)
 - [dockerfile.md](./dockerfile.md) — Dockerfile + .dockerignore: digest-pinned Chainguard base, uv venv stage, non-root, build-time import check
+- [doc-budgets.md](./doc-budgets.md) — ratcheting byte ceilings for standing docs like AGENTS.md
+- [no-comments.md](./no-comments.md) — zero-comment and lint-suppression gate with a small keep-list

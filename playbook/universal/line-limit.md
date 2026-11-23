@@ -11,7 +11,7 @@ detect: ["scripts/check-line-limit.sh"]
 
 ## What
 
-The check is a ~50-line bash script (`scripts/check_line_limit.sh`). Any source or script file exceeding the cap (default 800 for source/scripts, 1500 for tests) fails the check.
+The check is a ~50-line bash script (`scripts/check-line-limit.sh`). Any source or script file exceeding the cap (default 800 for source/scripts, 1500 for tests) fails the check.
 
 ## Why
 

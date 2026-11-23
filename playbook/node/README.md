@@ -9,3 +9,5 @@
 - [package-json.md](./package-json.md) — scripts, deps conventions
 - [testflight-github.md](./testflight-github.md) — GitHub signing and TestFlight upload
 - [typescript.md](./typescript.md) — tsconfig defaults
+- [design-system-lint.md](./design-system-lint.md) — block raw hex colors and arbitrary Tailwind values outside tokens
+- [restricted-apis.md](./restricted-apis.md) — ban nuance-heavy APIs (React useEffect, imperative timers) outside dedicated modules

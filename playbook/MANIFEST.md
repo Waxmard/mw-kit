@@ -17,11 +17,13 @@ Machine-readable index of every playbook page. Source of truth = each page's YAM
 | `codeowners` | baseline | Required reviewers auto-assigned per path | `.github/CODEOWNERS` | — | [universal/codeowners.md](universal/codeowners.md) |
 | `conventional-commits` | baseline | Commit message format feeding release tooling | — | — | [universal/conventional-commits.md](universal/conventional-commits.md) |
 | `dependabot` | baseline | GitHub-native dependency update PRs | `.github/dependabot.yml` | — | [universal/dependabot.md](universal/dependabot.md) |
+| `doc-budgets` | optional | Ratcheting byte ceilings for standing docs like AGENTS.md | `scripts/check-doc-budgets.sh`, `doc-budgets.json` | `AGENTS.md` | [universal/doc-budgets.md](universal/doc-budgets.md) |
 | `dockerfile` | baseline | Dockerfile + .dockerignore: digest-pinned Chainguard base, uv venv stage, non-root, build-time import check | `Dockerfile`, `.dockerignore` | `Dockerfile`, `**/Dockerfile*` | [universal/dockerfile.md](universal/dockerfile.md) |
 | `github-settings` | baseline | Repo settings, default-branch ruleset, Actions token, Dependabot alerts via gh api | — | — | [universal/github-settings.md](universal/github-settings.md) |
 | `lefthook` | baseline | Git hooks with autofix + restage (stage_fixed) | `lefthook.yml` | — | [universal/lefthook.md](universal/lefthook.md) |
 | `line-limit` | optional | Opt-in per-file line cap: compared only in repos that already ship scripts/check-line-limit.sh | `scripts/check-line-limit.sh` | `scripts/check-line-limit.sh` | [universal/line-limit.md](universal/line-limit.md) |
 | `mise` | optional | Opt-in tool version pins: compared only in repos that already have mise.toml | `mise.toml` | `mise.toml` | [universal/mise.md](universal/mise.md) |
+| `no-comments` | optional | Block code comments and unapproved lint suppressions with a small keep-list | `scripts/check-comments.py` | `**/*.{ts,tsx,js,jsx,svelte,vue,py}` | [universal/no-comments.md](universal/no-comments.md) |
 | `releases-github` | baseline | release-please: PR-driven versioning + changelog on GitHub | `release-please-config.json`, `.release-please-manifest.json`, `.github/workflows/release-please.yml` | — | [universal/releases-github.md](universal/releases-github.md) |
 | `security` | baseline | semgrep (SAST) + trivy fs/image scanning in CI | `.github/workflows/security.yml`, `.trivyignore.yaml` | — | [universal/security.md](universal/security.md) |
 
@@ -32,6 +34,7 @@ Machine-readable index of every playbook page. Source of truth = each page's YAM
 | `mypy` | baseline | Static type checker, strict mode | `pyproject.toml` | `**/*.py` | [python/mypy.md](python/mypy.md) |
 | `pytest` | baseline | pytest + pytest-cov config and coverage gating | `pyproject.toml` | `**/*.py` | [python/pytest.md](python/pytest.md) |
 | `ruff` | baseline | Lint + format (replaces flake8 + isort + black + bandit-partial) | `pyproject.toml` | `**/*.py` | [python/ruff.md](python/ruff.md) |
+| `tach` | optional | Enforce Python module dependency boundaries and forbid cycles | `tach.toml` | `pyproject.toml`, `**/*.py` | [python/tach.md](python/tach.md) |
 | `uv` | baseline | Fast Python package manager + venv + lockfile | `pyproject.toml`, `uv.lock` | `pyproject.toml`, `**/*.py` | [python/uv.md](python/uv.md) |
 
 ## node
@@ -40,9 +43,11 @@ Machine-readable index of every playbook page. Source of truth = each page's YAM
 |---|---|---|---|---|---|
 | `biome` | baseline | JS/TS lint + format + import sort (replaces eslint + prettier) | `biome.json`, `package.json` | `biome.json`, `biome.jsonc`, `**/*.{ts,tsx,js,jsx,mjs,cjs,vue}` | [node/biome.md](node/biome.md) |
 | `capacitor` | optional | Bundled Capacitor iOS builds and a local iPhone install loop | `capacitor.config.*`, `Makefile`, `package.json` | `capacitor.config.*` | [node/capacitor.md](node/capacitor.md) |
+| `design-system-lint` | optional | Block raw hex colors, arbitrary Tailwind values, and off-system styles outside tokens | `biome.json`, `eslint.config.js` | `**/*.{tsx,jsx,svelte,vue}` | [node/design-system-lint.md](node/design-system-lint.md) |
 | `expo` | optional | Expo iOS development and standalone local iPhone builds | `app.config.{js,ts}`, `app.json`, `package.json`, `Makefile`, `scripts/ios.sh` | `app.config.{js,ts}` | [node/expo.md](node/expo.md) |
 | `package-json` | baseline | Standard scripts, dependency pinning, and release-age policy | `package.json`, `.npmrc` | `package.json` | [node/package-json.md](node/package-json.md) |
 | `playwright` | optional | Built-app browser checks for desktop and mobile web flows | `playwright.config.ts`, `package.json`, `.github/workflows/ci.yml` | `playwright.config.*` | [node/playwright.md](node/playwright.md) |
+| `restricted-apis` | optional | Ban nuance-heavy APIs (React useEffect, imperative timers) outside dedicated modules | `biome.json`, `eslint.config.js` | `biome.json`, `eslint.config.*`, `**/*.{ts,tsx,jsx}` | [node/restricted-apis.md](node/restricted-apis.md) |
 | `testflight-github` | optional | Separate GitHub Actions signing, archive, and TestFlight upload workflow | `.github/workflows/deploy-testflight.yml`, `scripts/build-ios-testflight.sh` | `capacitor.config.*`, `app.config.{js,ts}`, `.github/workflows/deploy-testflight.yml` | [node/testflight-github.md](node/testflight-github.md) |
 | `typescript` | baseline | Strict tsconfig, noEmit type-checking | `tsconfig.json` | `tsconfig.json`, `**/*.{ts,tsx}` | [node/typescript.md](node/typescript.md) |
 
