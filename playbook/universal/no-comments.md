@@ -3,7 +3,7 @@ tool: no-comments
 scope: universal
 tier: optional
 summary: "Block code comments and unapproved lint suppressions with a small keep-list"
-targets: ["scripts/check-comments.py"]
+targets: ["scripts/check-comments.py", "eslint.config.js"]
 detect: ["**/*.{ts,tsx,js,jsx,svelte,vue,py}"]
 ---
 
@@ -11,7 +11,7 @@ detect: ["**/*.{ts,tsx,js,jsx,svelte,vue,py}"]
 
 ## What
 
-A dependency-free Python script (`scripts/check-comments.py`) that blocks inline comments and unapproved lint/type suppressions across Python, JS/TS and Svelte files, allowing only a tight 6-item keep-list.
+A dependency-free Python script (`scripts/check-comments.py`) that blocks inline comments and unapproved lint/type suppressions across Python, JS/TS and Svelte files, allowing only a tight 6-item keep-list. Repos that already lint with ESLint use the inline rule under "ESLint repos" instead and do not install the script.
 
 ## Why
 
@@ -257,8 +257,61 @@ pre-commit:
 - run: python3 scripts/check-comments.py
 ```
 
+## ESLint repos
+
+When ESLint already parses the code, ban comments with an inline rule in `eslint.config.js` and skip the script, its Lefthook command and its CI step. The parser finds comments exactly, so no string or regex heuristics are needed. Keep the script only if the repo also has Python sources.
+
+```js
+const keptComment = /^\s*(?:ponytail:|prettier-ignore)|https?:\/\/\S+/;
+const suppression = /eslint-disable|svelte-ignore|@ts-ignore|@ts-expect-error/;
+const cssComment = /\/\*[\s\S]*?\*\//g;
+const noComments = {
+  create(context) {
+    const source = context.sourceCode;
+    const check = (text, loc) => {
+      if (suppression.test(text) || !keptComment.test(text))
+        context.report({
+          loc,
+          message:
+            'Disallowed comment; delete narration or encode the constraint in a type, lint, or test.',
+        });
+    };
+    return {
+      Program() {
+        for (const comment of source.getAllComments())
+          if (comment.type !== 'Shebang') check(comment.value, comment.loc);
+      },
+      SvelteHTMLComment(node) {
+        check(node.value, node.loc);
+      },
+      SvelteStyleElement(node) {
+        for (const match of source.getText(node).matchAll(cssComment)) {
+          const start = node.range[0] + match.index;
+          check(match[0].slice(2, -2), {
+            start: source.getLocFromIndex(start),
+            end: source.getLocFromIndex(start + match[0].length),
+          });
+        }
+      },
+    };
+  },
+};
+
+export default [
+  {
+    linterOptions: { noInlineConfig: true },
+    plugins: { local: { rules: { 'no-comments': noComments } } },
+    rules: { 'local/no-comments': 'error' },
+  },
+];
+```
+
+The two `Svelte*` visitors only fire under `svelte-eslint-parser`; drop them in repos without Svelte. The keep-list is `ponytail:`, `prettier-ignore`, and any comment carrying a URL; shebangs always pass.
+
 ## Gotchas
 
 - `tokenize.generate_tokens` avoids false positives on `#` inside Python strings and URLs, and `is_kept` preserves `#!` shebangs so executable scripts pass unmodified.
 - For JS/TS, the character scanner skips `'...'`, `"..."`, and `` `...` `` literals so `https://` URLs inside strings are never flagged; regex literals are skipped by looking at the token before the `/`; JSX text and template literals that nest backticks inside `${}` are not parsed.
 - Svelte: only `<script>`, `<style>` and markup comments are scanned; a `/* */` inside a `{...}` template expression is not.
+- ESLint variant: `noInlineConfig: true` is required. Without it an `eslint-disable` comment switches the rule off before the rule can report that comment.
+- ESLint variant: `svelte-eslint-parser` exposes script and `{...}` expression comments through `getAllComments()`, markup comments as `SvelteHTMLComment` nodes, and nothing for `<style>`, so style comments are matched by regex on the `SvelteStyleElement` text.

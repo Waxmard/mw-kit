@@ -23,7 +23,7 @@ Machine-readable index of every playbook page. Source of truth = each page's YAM
 | `lefthook` | baseline | Git hooks with autofix + restage (stage_fixed) | `lefthook.yml` | — | [universal/lefthook.md](universal/lefthook.md) |
 | `line-limit` | optional | Opt-in per-file line cap: compared only in repos that already ship scripts/check-line-limit.sh | `scripts/check-line-limit.sh` | `scripts/check-line-limit.sh` | [universal/line-limit.md](universal/line-limit.md) |
 | `mise` | optional | Opt-in tool version pins: compared only in repos that already have mise.toml | `mise.toml` | `mise.toml` | [universal/mise.md](universal/mise.md) |
-| `no-comments` | optional | Block code comments and unapproved lint suppressions with a small keep-list | `scripts/check-comments.py` | `**/*.{ts,tsx,js,jsx,svelte,vue,py}` | [universal/no-comments.md](universal/no-comments.md) |
+| `no-comments` | optional | Block code comments and unapproved lint suppressions with a small keep-list | `scripts/check-comments.py`, `eslint.config.js` | `**/*.{ts,tsx,js,jsx,svelte,vue,py}` | [universal/no-comments.md](universal/no-comments.md) |
 | `releases-github` | baseline | release-please: PR-driven versioning + changelog on GitHub | `release-please-config.json`, `.release-please-manifest.json`, `.github/workflows/release-please.yml` | — | [universal/releases-github.md](universal/releases-github.md) |
 | `security` | baseline | semgrep (SAST) + trivy fs/image scanning in CI | `.github/workflows/security.yml`, `.trivyignore.yaml` | — | [universal/security.md](universal/security.md) |
 
