@@ -127,3 +127,5 @@ export default [
 
 - `noRestrictedImports` only blocks named imports (`import { useEffect } from 'react'`), not `React.useEffect(...)`; add a GritQL or `no-restricted-syntax` rule if your codebase uses namespace React imports.
 - Keep `src/hooks/**` narrow and code-reviewed so it does not become a bypass folder for arbitrary component logic.
+- `no-restricted-globals` only reports bare calls; `window.setTimeout(...)` passes. Add `no-restricted-properties` with `{ object: 'window', property: 'setTimeout' }` for each timer.
+- Svelte repos: drop the `react` import rule and exempt the single timer module (`ignores: ['src/lib/timers.ts']`) instead of `src/hooks/**`.

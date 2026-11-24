@@ -108,7 +108,23 @@ export default [
 ];
 ```
 
+Svelte (`svelte-eslint-parser`) has no `JSXAttribute`; static attribute text is a `SvelteLiteral`, and class strings also live in script as `Literal` or `TemplateElement`. Match all three:
+
+```js
+const tokenBracket = String.raw`\b(?:text|bg|border|rounded)(?:-[a-z]{1,2})?-\[(?!inherit\]|calc\(|[\d.]+em\])`;
+const bracketSelectors = [
+  'Literal[value',
+  'TemplateElement[value.raw',
+  'SvelteLiteral[value',
+].map((node) => ({
+  selector: `${node}=/${tokenBracket}/]`,
+  message:
+    'Use a theme class (text-body, text-muted, rounded-field) instead of a bracket value for colour, font size or radius.',
+}));
+```
+
 ## Gotchas
 
 - Always verify every adapted GritQL or ESLint rule fires on a real violating file before shipping it; a syntax mismatch in GritQL can fail silently with zero diagnostics.
 - For existing repos with legacy violations, ratchet existing files via file-level `overrides` so no new off-system styling lands while legacy screens are migrated.
+- `tailwind-merge` reads an unknown `text-<name>` as a colour, so a custom font-size token (`--text-body`) silently drops a neighbouring text size or colour. Register the names with `extendTailwindMerge({ extend: { theme: { text: ['body'] } } })`.
