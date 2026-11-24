@@ -11,7 +11,7 @@ detect: ["pyproject.toml", "**/*.py"]
 
 ## What
 
-[tach](https://docs.astral.sh/ruff/) — fast Rust CLI that enforces module dependency boundaries and forbids circular imports across Python packages using `tach.toml`.
+[tach](https://docs.gauge.sh/) — fast Rust CLI that enforces module dependency boundaries and forbids circular imports across Python packages using `tach.toml`.
 
 ## Why
 

@@ -28,8 +28,8 @@ A dependency-free Python script (`scripts/check-comments.py`) that blocks inline
 from __future__ import annotations
 
 import io
+import os
 import re
-import subprocess
 import sys
 import tokenize
 from pathlib import Path
@@ -41,18 +41,36 @@ KEEP_PREFIXES = (
 )
 URL_RE = re.compile(r"https?://\S+")
 SUPPRESSION_RE = re.compile(
-    r"(?:eslint-disable|biome-ignore|@ts-ignore|@ts-expect-error|#\s*noqa\b|#\s*type:\s*ignore\b)"
+    r"(?:eslint-disable|biome-ignore|@ts-ignore|@ts-expect-error"
+    r"|#\s*noqa\b|#\s*type:\s*ignore\b)"
 )
 ALLOWED_SUPPRESSIONS: set[str] = set()
+TARGET_SUFFIXES = frozenset({".py", ".ts", ".tsx", ".js", ".jsx"})
+SKIP_DIRS = frozenset(
+    {
+        ".git",
+        ".venv",
+        "venv",
+        "node_modules",
+        "__pycache__",
+        ".mypy_cache",
+        ".ruff_cache",
+        ".pytest_cache",
+        "dist",
+        "build",
+    }
+)
 
 
 def is_kept(comment: str, *, allow_docstrings: bool = False) -> bool:
-    body = comment.lstrip("#/").lstrip("*").strip()
-    if SUPPRESSION_RE.search(comment) and not any(a in comment for a in ALLOWED_SUPPRESSIONS):
-        return False
-    if body.startswith(KEEP_PREFIXES):
+    if comment.startswith("#!"):
         return True
-    if URL_RE.search(body):
+    body = comment.lstrip("#/").lstrip("*").strip()
+    if SUPPRESSION_RE.search(comment) and not any(
+        a in comment for a in ALLOWED_SUPPRESSIONS
+    ):
+        return False
+    if body.startswith(KEEP_PREFIXES) or URL_RE.search(body):
         return True
     return allow_docstrings and comment.startswith("/**")
 
@@ -68,27 +86,35 @@ def check_python(path: Path, text: str) -> list[str]:
     return errs
 
 
+def _skip_js_string(text: str, start: int, line: int) -> tuple[int, int]:
+    quote = text[start]
+    i, n = start + 1, len(text)
+    while i < n:
+        ch = text[i]
+        if ch == "\\" and i + 1 < n:
+            if text[i + 1] == "\n":
+                line += 1
+            i += 2
+            continue
+        if ch == "\n":
+            line += 1
+        i += 1
+        if ch == quote:
+            break
+    return i, line
+
+
 def scan_js_comments(text: str) -> list[tuple[int, str]]:
     found: list[tuple[int, str]] = []
     i, n, line = 0, len(text), 1
-    quote = ""
     while i < n:
         ch = text[i]
         if ch == "\n":
             line += 1
-        if quote:
-            if ch == "\\" and i + 1 < n:
-                if text[i + 1] == "\n":
-                    line += 1
-                i += 2
-                continue
-            if ch == quote:
-                quote = ""
             i += 1
             continue
         if ch in ("'", '"', "`"):
-            quote = ch
-            i += 1
+            i, line = _skip_js_string(text, i, line)
             continue
         if text.startswith("//", i):
             end = text.find("\n", i)
@@ -108,16 +134,27 @@ def scan_js_comments(text: str) -> list[tuple[int, str]]:
     return found
 
 
+def iter_target_files(args: list[str]) -> list[Path]:
+    if args:
+        return [Path(raw) for raw in args]
+    paths: list[Path] = []
+    for root, dirs, files in os.walk("."):
+        dirs[:] = sorted(d for d in dirs if d not in SKIP_DIRS)
+        for name in sorted(files):
+            path = Path(root) / name
+            if path.suffix in TARGET_SUFFIXES:
+                paths.append(path)
+    return paths
+
+
 def main() -> int:
-    files = sys.argv[1:] or subprocess.check_output(["git", "ls-files"], text=True).splitlines()
     errors: list[str] = []
-    for raw in files:
-        p = Path(raw)
+    for p in iter_target_files(sys.argv[1:]):
         if not p.is_file():
             continue
         if p.suffix == ".py":
             errors.extend(check_python(p, p.read_text(encoding="utf-8")))
-        elif p.suffix in {".ts", ".tsx", ".js", ".jsx"}:
+        elif p.suffix in TARGET_SUFFIXES:
             for ln, body in scan_js_comments(p.read_text(encoding="utf-8")):
                 if not is_kept(body):
                     errors.append(
@@ -141,9 +178,25 @@ if __name__ == "__main__":
 4. Public API docstrings/JSDoc when opted in (`allow_docstrings=True`).
 5. External-dependency workarounds tagged with an upstream URL.
 
-Correctness suppressions (`eslint-disable`, `biome-ignore`, `@ts-ignore`, `@ts-expect-error`, `# noqa`, `# type: ignore`) are always rejected unless explicitly listed in `ALLOWED_SUPPRESSIONS`.
+Shebang lines (`#!`) are always preserved. Correctness suppressions (`eslint-disable`, `biome-ignore`, `@ts-ignore`, `@ts-expect-error`, `# noqa`, `# type: ignore`) are always rejected unless explicitly listed in `ALLOWED_SUPPRESSIONS`.
+
+## Lefthook
+
+```yaml
+pre-commit:
+  commands:
+    no-comments:
+      glob: "*.{py,ts,tsx,js,jsx}"
+      run: python3 scripts/check-comments.py {staged_files}
+```
+
+## CI
+
+```yaml
+- run: python3 scripts/check-comments.py
+```
 
 ## Gotchas
 
-- `tokenize.generate_tokens` avoids false positives on `#` inside Python strings and URLs.
+- `tokenize.generate_tokens` avoids false positives on `#` inside Python strings and URLs, and `is_kept` preserves `#!` shebangs so executable scripts pass unmodified.
 - For JS/TS, the character scanner skips `'...'`, `"..."`, and `` `...` `` literals so `https://` URLs inside strings are never flagged; if your codebase uses regex literals containing `//`, extend the scanner or rely on Biome/ESLint AST rules.
